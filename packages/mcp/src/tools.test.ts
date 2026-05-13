@@ -25,7 +25,15 @@ function setup() {
       title: 'Old thing',
       description: 'Original description.',
       tier: 'deprecated',
+      deprecationReason: 'use app.new.thing instead',
       execute: () => ok({ tag: 'old' }),
+    }),
+    defineCommand({
+      id: 'app.bare.deprecated',
+      title: 'Bare deprecated',
+      description: 'No reason given.',
+      tier: 'deprecated',
+      execute: () => ok({ tag: 'bare' }),
     }),
     defineCommand({
       id: 'app.fn.gated',
@@ -54,12 +62,22 @@ describe('buildToolsList', () => {
     expect(names).toContain('app.exp.thing');
   });
 
-  it('prefixes [DEPRECATED] on deprecated commands', () => {
+  it('prefixes [DEPRECATED — <reason>] when deprecationReason is set', () => {
     const { registry } = setup();
     const tools = buildToolsList(registry, { tiers: ['stable', 'deprecated'] });
     const dep = tools.find((t) => t.name === 'app.old.thing');
     expect(dep).toBeDefined();
-    expect(dep!.description).toMatch(/^\[DEPRECATED\]/);
+    expect(dep!.description).toMatch(
+      /^\[DEPRECATED — use app\.new\.thing instead\] Original description\.$/,
+    );
+  });
+
+  it('falls back to bare [DEPRECATED] when no reason is set', () => {
+    const { registry } = setup();
+    const tools = buildToolsList(registry, { tiers: ['stable', 'deprecated'] });
+    const dep = tools.find((t) => t.name === 'app.bare.deprecated');
+    expect(dep).toBeDefined();
+    expect(dep!.description).toMatch(/^\[DEPRECATED\] No reason given\.$/);
   });
 
   it('excludes commands with function-form when by default', () => {

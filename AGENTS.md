@@ -77,9 +77,18 @@ Full discussion is in `docs/redesign_takeaways.md` §3 and the `acture-hard-dont
 - Generalizing beyond what `v1_plan.md` commits to. Rule of three.
 - Modifying the central paper (`docs/command_dispatch_journal_article.md`). It is canonical.
 
-## Current state (Phase 3 DONE, 2026-05-13)
+## Current state (v1.1, Phase 4 + v1.1 increment DONE, 2026-05-13)
 
-Ten packages ship in the workspace: `acture`, `@acture/state-zustand`, `@acture/state-redux`, `@acture/palette-react` (with parameterized-command UX), `@acture/hotkeys`, `@acture/forms-autoform`, `@acture/forms-rjsf`, `@acture/mcp`, `@acture/ai-vercel`, `@acture/migration`. Three worked examples: `examples/greenfield/graph-editor/`, `examples/drop-in/`, and `examples/migration/zustand-wrap/{before,after}/`. **Phase 4 is next** (tier-system enforcement, `acture compare-schemas` CLI, devtools, hardening) — see `docs/next_session.md`.
+Thirteen packages ship in the workspace at v1.1.0 (or v1.0.0 if untouched in v1.1):
+
+- Core: `acture` — gained `enableTierWarnings`, `deprecationReason`, `internalToken`, `DispatchOptions`.
+- State: `@acture/state-zustand`, `@acture/state-redux`.
+- UI: `@acture/palette-react` (parameterized-command UX), `@acture/hotkeys`, `@acture/forms-autoform`, `@acture/forms-rjsf`.
+- Surfaces: `@acture/mcp`, `@acture/ai-vercel` — both honour the tier filter and prepend `[DEPRECATED — <reason>]`.
+- Migration: `@acture/migration`.
+- Tooling: `@acture/build-tier` (JSDoc tier mirror), `@acture/cli` (`compare-schemas`, `snapshot`), `@acture/devtools` (Inspector + instrumented dispatch log).
+
+Three worked examples: `examples/greenfield/graph-editor/` (now wires the Inspector), `examples/drop-in/`, `examples/migration/zustand-wrap/{before,after}/`. **v1.2 is next** — see `docs/next_session.md` for the backlog (codemods, DOM-event interception, etc.).
 
 ## Phase progression
 

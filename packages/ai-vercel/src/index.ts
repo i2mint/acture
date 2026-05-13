@@ -21,7 +21,13 @@ import type {
 } from 'acture';
 import { isFunctionWhen, isOk } from 'acture';
 
-const DEPRECATION_PREFIX = '[DEPRECATED]';
+/** See `@acture/mcp` tools.ts: identical banner format. */
+const DEPRECATION_PREFIX_BARE = '[DEPRECATED]';
+function deprecationBanner(reason?: string): string {
+  return reason && reason.length > 0
+    ? `[DEPRECATED — ${reason}]`
+    : DEPRECATION_PREFIX_BARE;
+}
 
 export interface ToAIToolsOptions {
   /** Tier filter. Default `['stable']`. */
@@ -87,5 +93,5 @@ function applyDeprecationPrefix(
 ): string | undefined {
   if (cmd.tier !== 'deprecated') return description;
   const base = description ?? '';
-  return `${DEPRECATION_PREFIX} ${base}`.trim();
+  return `${deprecationBanner(cmd.deprecationReason)} ${base}`.trim();
 }

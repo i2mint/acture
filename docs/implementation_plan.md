@@ -267,6 +267,8 @@ Phase 3 is done when these are in `phase-3-reflection.md`.
 
 ## Phase 4 — Stability, tier system, devtools
 
+**Status:** ✅ DONE — 2026-05-13
+
 **Goal:** Move from "works" to "production-ready" and ship v1.0.
 
 ### Scope

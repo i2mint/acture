@@ -87,6 +87,9 @@ importers:
       '@acture/ai-vercel':
         specifier: workspace:*
         version: link:../../../packages/ai-vercel
+      '@acture/devtools':
+        specifier: workspace:*
+        version: link:../../../packages/devtools
       '@acture/forms-autoform':
         specifier: workspace:*
         version: link:../../../packages/forms-autoform
@@ -283,11 +286,95 @@ importers:
         specifier: ^4.0.0
         version: 4.4.3
 
+  packages/build-tier:
+    devDependencies:
+      '@acture/mcp':
+        specifier: workspace:*
+        version: link:../mcp
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.19
+      acture:
+        specifier: workspace:*
+        version: link:../core
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(postcss@8.5.14)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
+
+  packages/cli:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.19
+      acture:
+        specifier: workspace:*
+        version: link:../core
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(postcss@8.5.14)(tsx@4.21.0)(typescript@5.9.3)
+      tsx:
+        specifier: ^4.19.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
+
   packages/core:
     devDependencies:
       fast-check:
         specifier: ^4.0.0
         version: 4.8.0
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(postcss@8.5.14)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.19)(jsdom@25.0.1)
+      zod:
+        specifier: ^4.0.0
+        version: 4.4.3
+
+  packages/devtools:
+    devDependencies:
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      '@vitejs/plugin-react':
+        specifier: ^4.3.4
+        version: 4.7.0(vite@6.4.2(@types/node@22.19.19)(tsx@4.21.0))
+      acture:
+        specifier: workspace:*
+        version: link:../core
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      react:
+        specifier: ^19.0.0
+        version: 19.2.6
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.6(react@19.2.6)
       tsup:
         specifier: ^8.3.0
         version: 8.5.1(postcss@8.5.14)(tsx@4.21.0)(typescript@5.9.3)
