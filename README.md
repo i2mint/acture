@@ -6,7 +6,7 @@ Acture is a typed, schema-driven command dispatch library for TypeScript/React a
 
 ## Status
 
-**v0.1.0-dev (Phase 2 DONE, 2026-05-13).** Nine packages ship in the workspace:
+**v0.1.0-dev (Phase 3 DONE, 2026-05-13).** Ten packages ship in the workspace:
 
 | Package | Role |
 | --- | --- |
@@ -19,10 +19,17 @@ Acture is a typed, schema-driven command dispatch library for TypeScript/React a
 | [`@acture/forms-rjsf`](packages/forms-rjsf) | JSON-Schema form adapter (rjsf) |
 | [`@acture/mcp`](packages/mcp) | MCP server projection |
 | [`@acture/ai-vercel`](packages/ai-vercel) | Vercel AI SDK tool definitions |
+| [`@acture/migration`](packages/migration) | strangler-fig primitives: `wrapMutation`, `actureMiddleware`, `chooseImplementation`, `shadowCompare` |
 
-Plus two worked examples: [`examples/greenfield/graph-editor/`](examples/greenfield/graph-editor) and [`examples/drop-in/`](examples/drop-in).
+Worked examples:
 
-Phase 3 (migration package + skills) is next — see [`docs/next_session.md`](docs/next_session.md).
+- [`examples/greenfield/graph-editor/`](examples/greenfield/graph-editor) — greenfield path.
+- [`examples/drop-in/`](examples/drop-in) — 5-minute bolt-on path.
+- [`examples/migration/zustand-wrap/`](examples/migration/zustand-wrap) — strangler-fig path with side-by-side [`before/`](examples/migration/zustand-wrap/before) and [`after/`](examples/migration/zustand-wrap/after) apps. 6 wrapped commands + 2 graduated.
+
+Five migration-track agent skills live under [`.claude/skills/`](.claude/skills/): `migration-diagnose`, `migration-plan`, `migration-scaffold`, `migration-wrap`, `migration-graduate`.
+
+Phase 4 (tier-system enforcement, `acture compare-schemas` CLI, devtools, hardening) is next — see [`docs/next_session.md`](docs/next_session.md).
 
 ## Three paths
 

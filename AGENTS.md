@@ -50,6 +50,11 @@ Skills are how you load focused context. Each is a self-contained primer for one
 | `acture-migration-package` | When working on `acture/migration` (wrapMutation, actureMiddleware, chooseImplementation, shadowCompare) or the migration-track skills. |
 | `acture-tier-system` | When working on the @stable / @experimental / @internal / @deprecated tier system or `acture compare-schemas`. |
 | `acture-hard-donts` | Read before every non-trivial PR. The merge checklist of anti-patterns. |
+| `migration-diagnose` | First step in adopting acture in an existing codebase: scan source for command candidates. |
+| `migration-plan` | Second step: turn the diagnosis into a phased adoption backlog with explicit decisions. |
+| `migration-scaffold` | Third step: install acture into the host app and wire the registry + state adapter. |
+| `migration-wrap` | Fourth step: wrap existing handlers / store actions using `wrapMutation`. |
+| `migration-graduate` | Final step: retire `wrapMutation` calls once the legacy handler is no longer needed. |
 
 ## The hard don'ts (merge checklist)
 
@@ -72,9 +77,9 @@ Full discussion is in `docs/redesign_takeaways.md` §3 and the `acture-hard-dont
 - Generalizing beyond what `v1_plan.md` commits to. Rule of three.
 - Modifying the central paper (`docs/command_dispatch_journal_article.md`). It is canonical.
 
-## Current state (Phase 2 DONE, 2026-05-13)
+## Current state (Phase 3 DONE, 2026-05-13)
 
-Nine packages ship in the workspace: `acture`, `@acture/state-zustand`, `@acture/state-redux`, `@acture/palette-react` (with parameterized-command UX), `@acture/hotkeys`, `@acture/forms-autoform`, `@acture/forms-rjsf`, `@acture/mcp`, `@acture/ai-vercel`. Two worked examples: `examples/greenfield/graph-editor/` and `examples/drop-in/`. **Phase 3 is next** — see `docs/next_session.md`.
+Ten packages ship in the workspace: `acture`, `@acture/state-zustand`, `@acture/state-redux`, `@acture/palette-react` (with parameterized-command UX), `@acture/hotkeys`, `@acture/forms-autoform`, `@acture/forms-rjsf`, `@acture/mcp`, `@acture/ai-vercel`, `@acture/migration`. Three worked examples: `examples/greenfield/graph-editor/`, `examples/drop-in/`, and `examples/migration/zustand-wrap/{before,after}/`. **Phase 4 is next** (tier-system enforcement, `acture compare-schemas` CLI, devtools, hardening) — see `docs/next_session.md`.
 
 ## Phase progression
 
