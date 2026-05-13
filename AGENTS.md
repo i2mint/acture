@@ -68,10 +68,13 @@ Full discussion is in `docs/redesign_takeaways.md` §3 and the `acture-hard-dont
 
 ## What you are *not* doing in this session unless asked
 
-- Writing library code is for Phase 1+. If you are in Phase 0, scaffold only — no `defineCommand` implementation beyond a smoke test.
 - Shipping undo, macros, telemetry, sandboxing, the Python companion, or codemods in v1. These are post-v1 or v1.1.
 - Generalizing beyond what `v1_plan.md` commits to. Rule of three.
 - Modifying the central paper (`docs/command_dispatch_journal_article.md`). It is canonical.
+
+## Current state (Phase 2 DONE, 2026-05-13)
+
+Nine packages ship in the workspace: `acture`, `@acture/state-zustand`, `@acture/state-redux`, `@acture/palette-react` (with parameterized-command UX), `@acture/hotkeys`, `@acture/forms-autoform`, `@acture/forms-rjsf`, `@acture/mcp`, `@acture/ai-vercel`. Two worked examples: `examples/greenfield/graph-editor/` and `examples/drop-in/`. **Phase 3 is next** — see `docs/next_session.md`.
 
 ## Phase progression
 

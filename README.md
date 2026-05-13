@@ -6,7 +6,23 @@ Acture is a typed, schema-driven command dispatch library for TypeScript/React a
 
 ## Status
 
-**v0.0.0 — name reserved on [npm](https://www.npmjs.com/package/acture) and [PyPI](https://pypi.org/project/acture/), no functionality yet.** First functional release ships in v0.1 after Phase 1 of the implementation plan. See [`docs/v1_plan.md`](docs/v1_plan.md) and [`docs/implementation_plan.md`](docs/implementation_plan.md) for the roadmap.
+**v0.1.0-dev (Phase 2 DONE, 2026-05-13).** Nine packages ship in the workspace:
+
+| Package | Role |
+| --- | --- |
+| [`acture`](packages/core) | core registry, dispatcher, when-clause DSL, schema bridge |
+| [`@acture/state-zustand`](packages/state-zustand) | StateAdapter for zustand+immer |
+| [`@acture/state-redux`](packages/state-redux) | StateAdapter for Redux Toolkit |
+| [`@acture/palette-react`](packages/palette-react) | command palette with parameterized-command UX |
+| [`@acture/hotkeys`](packages/hotkeys) | tinykeys-backed keyboard bindings |
+| [`@acture/forms-autoform`](packages/forms-autoform) | Zod-native form adapter |
+| [`@acture/forms-rjsf`](packages/forms-rjsf) | JSON-Schema form adapter (rjsf) |
+| [`@acture/mcp`](packages/mcp) | MCP server projection |
+| [`@acture/ai-vercel`](packages/ai-vercel) | Vercel AI SDK tool definitions |
+
+Plus two worked examples: [`examples/greenfield/graph-editor/`](examples/greenfield/graph-editor) and [`examples/drop-in/`](examples/drop-in).
+
+Phase 3 (migration package + skills) is next — see [`docs/next_session.md`](docs/next_session.md).
 
 ## Three paths
 

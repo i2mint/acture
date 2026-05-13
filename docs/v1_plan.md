@@ -185,6 +185,8 @@ Scope:
 
 ### Phase 2 — Adapter buildout (consumer surfaces)
 
+**Status:** ✅ DONE — 2026-05-13. Reflection: [`docs/phase-2-reflection.md`](phase-2-reflection.md).
+
 **Goal:** Ship the adapters that make acture useful across all three positioning paths.
 
 Scope:

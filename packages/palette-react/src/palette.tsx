@@ -1,17 +1,29 @@
 /**
- * `<CommandPalette />` — Phase 1 implementation.
+ * `<CommandPalette />` — Phase 2 implementation.
  *
- * Wraps cmdk's `<Command>` primitive. The host app supplies the modal
- * shell (cmdk's `<Command.Dialog>` or the host's own overlay); this
- * component renders the input + list + items.
+ * Adds parameterized-command support per research-2 §9 (and the
+ * `acture-palette-design` skill):
+ *
+ *   - `deriveKind(command)` returns 'atomic' | 'handoff'. Authors may
+ *     override via `record.kind`.
+ *   - 'atomic' commands render an inline picker chain INSIDE the
+ *     palette (Linear / Discord chip-style).
+ *   - 'handoff' commands either render a host-supplied form inline
+ *     (when `formAdapter` is provided) or fall back to firing
+ *     `onParameterizedSelect` for the host to open its own form view.
+ *
+ * Phase 1 behavior is preserved for parameter-free commands and for
+ * hosts that supply neither a form adapter nor a parameterized-select
+ * callback — the palette just closes the picker view.
  *
  * Per `acture-hard-donts` skill: no bundled UI kit. All elements use
  * cmdk's built-in classes plus consumer-supplied className overrides.
- * The host adds styles via CSS.
  */
 
+/// <reference lib="dom" />
+
 import { Command } from 'cmdk';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type {
   AnyCommandRecord,
   Context,
@@ -20,40 +32,54 @@ import type {
   Tier,
 } from 'acture';
 import { useCommandsChanged } from './use-commands-changed.js';
+import { deriveKind } from './derive-kind.js';
+import { PickerChain } from './picker-chain.js';
 
 export type PaletteItemRenderer = (cmd: AnyCommandRecord) => React.ReactNode;
+
+/** Props the palette passes to a host-supplied form adapter. The host
+ *  renders a form derived from `command.params` and calls `onSubmit`
+ *  with the validated params (or `onCancel`). */
+export interface PaletteFormAdapterProps {
+  command: AnyCommandRecord;
+  defaults?: Record<string, unknown>;
+  onSubmit: (params: unknown) => void;
+  onCancel: () => void;
+}
+
+export type PaletteFormAdapter = React.ComponentType<PaletteFormAdapterProps>;
 
 export interface CommandPaletteProps {
   /** The acture registry. */
   registry: Registry;
-  /** Optional context for when-clause filtering. If omitted, all
-   *  commands pass (when-clauses are evaluated as always-true). */
+  /** Optional context for when-clause filtering and dispatch. */
   context?: Context;
   /** Tier filter. Default: `['stable']`. */
   tiers?: readonly Tier[] | 'all';
-  /** Called when the user picks a command. After a successful
-   *  parameter-free dispatch, the palette host typically closes the
-   *  palette here. */
+  /** Called when a dispatch (parameter-free OR parameterized) finishes. */
   onDispatched?: (cmd: AnyCommandRecord, result: Result<unknown>) => void;
-  /** Called instead of dispatching when the user selects a command
-   *  with a `params` schema. Phase 1 cannot collect params, so the
-   *  host can show a "coming in Phase 2" notice or open its own form. */
+  /** Fired when the user picks a `handoff` command and no `formAdapter`
+   *  is configured. Hosts that want to open their own form view should
+   *  handle this. */
   onParameterizedSelect?: (cmd: AnyCommandRecord) => void;
-  /** Placeholder for the search input. */
+  /** Optional form adapter for `handoff` commands. When present, the
+   *  palette switches its inner view to this component instead of
+   *  closing. Plug in `@acture/forms-autoform` or `@acture/forms-rjsf`. */
+  formAdapter?: PaletteFormAdapter;
+  /** Per-field defaults injected into the picker chain / form. Useful
+   *  for context-aware prefill (Things-style — research-2 §9.4). */
+  paramDefaults?: (cmd: AnyCommandRecord) => Record<string, unknown> | undefined;
   placeholder?: string;
-  /** Optional className for the root `<Command>` container. */
   className?: string;
-  /** Optional custom item renderer (right-aligned text, etc.). The
-   *  default renders the title, keybinding hint, and a "Phase 2" badge
-   *  on parameterized commands. */
+  /** Custom item renderer for the list view. */
   renderItem?: PaletteItemRenderer;
 }
 
-/**
- * Phase 1 command palette. Renders a cmdk `<Command>` listing
- * registry contents, grouped by category, sorted by `defaultScore`
- * (numbers only — function-form `defaultScore` is treated as 0).
- */
+type View =
+  | { kind: 'list' }
+  | { kind: 'pickerChain'; cmd: AnyCommandRecord; defaults?: Record<string, unknown> }
+  | { kind: 'form'; cmd: AnyCommandRecord; defaults?: Record<string, unknown> };
+
 export function CommandPalette(props: CommandPaletteProps): React.ReactElement {
   const {
     registry,
@@ -61,39 +87,102 @@ export function CommandPalette(props: CommandPaletteProps): React.ReactElement {
     tiers,
     onDispatched,
     onParameterizedSelect,
+    formAdapter,
+    paramDefaults,
     placeholder = 'Type a command…',
     className,
     renderItem,
   } = props;
 
-  // Re-render whenever the registry's command set changes.
   const revision = useCommandsChanged(registry);
+  const [view, setView] = useState<View>({ kind: 'list' });
 
-  // Resolve the visible command list. Memoized on revision/context/tiers.
   const groups = useMemo(() => {
     const list = registry.list({
       tiers: tiers ?? ['stable'],
       ...(context !== undefined ? { context } : {}),
     });
     return groupByCategory(list);
-    // `revision` is the registry-change cache key.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registry, revision, tiers, context]);
 
-  async function dispatchById(id: string): Promise<void> {
+  async function dispatchCommand(cmd: AnyCommandRecord, params?: unknown): Promise<void> {
+    const result = await registry.dispatch(cmd.id, params, context);
+    onDispatched?.(cmd, result);
+    setView({ kind: 'list' });
+  }
+
+  function selectFromList(id: string): void {
     const cmd = registry.get(id);
     if (!cmd) return;
-    if (cmd.params !== undefined) {
-      onParameterizedSelect?.(cmd);
+    if (cmd.params === undefined) {
+      void dispatchCommand(cmd);
       return;
     }
-    const result = await registry.dispatch(id, undefined, context);
-    onDispatched?.(cmd, result);
+    const defaults = paramDefaults?.(cmd);
+    const kind = deriveKind(cmd);
+    if (kind === 'atomic') {
+      const next: View = defaults !== undefined
+        ? { kind: 'pickerChain', cmd, defaults }
+        : { kind: 'pickerChain', cmd };
+      setView(next);
+      return;
+    }
+    // handoff
+    if (formAdapter) {
+      const next: View = defaults !== undefined
+        ? { kind: 'form', cmd, defaults }
+        : { kind: 'form', cmd };
+      setView(next);
+      return;
+    }
+    onParameterizedSelect?.(cmd);
+  }
+
+  if (view.kind === 'pickerChain') {
+    const chainProps: Parameters<typeof PickerChain>[0] = view.defaults !== undefined
+      ? {
+          command: view.cmd,
+          defaults: view.defaults,
+          onSubmit: (params) => { void dispatchCommand(view.cmd, params); },
+          onCancel: () => setView({ kind: 'list' }),
+        }
+      : {
+          command: view.cmd,
+          onSubmit: (params) => { void dispatchCommand(view.cmd, params); },
+          onCancel: () => setView({ kind: 'list' }),
+        };
+    return (
+      <div className={className} data-acture-palette-view="picker-chain">
+        <PickerChain {...chainProps} />
+      </div>
+    );
+  }
+
+  if (view.kind === 'form' && formAdapter) {
+    const FormAdapter = formAdapter;
+    const formProps: PaletteFormAdapterProps = view.defaults !== undefined
+      ? {
+          command: view.cmd,
+          defaults: view.defaults,
+          onSubmit: (params) => { void dispatchCommand(view.cmd, params); },
+          onCancel: () => setView({ kind: 'list' }),
+        }
+      : {
+          command: view.cmd,
+          onSubmit: (params) => { void dispatchCommand(view.cmd, params); },
+          onCancel: () => setView({ kind: 'list' }),
+        };
+    return (
+      <div className={className} data-acture-palette-view="form">
+        <FormAdapter {...formProps} />
+      </div>
+    );
   }
 
   return (
-    <Command className={className} label="Command palette">
-      <Command.Input placeholder={placeholder} />
+    <Command className={className} label="Command palette" data-acture-palette-view="list">
+      <Command.Input placeholder={placeholder} autoFocus />
       <Command.List>
         <Command.Empty>No matching commands.</Command.Empty>
         {groups.map(([category, items]) => (
@@ -103,9 +192,7 @@ export function CommandPalette(props: CommandPaletteProps): React.ReactElement {
                 key={cmd.id}
                 value={paletteValue(cmd)}
                 keywords={cmd.aliases ? [...cmd.aliases] : undefined}
-                onSelect={() => {
-                  void dispatchById(cmd.id);
-                }}
+                onSelect={() => selectFromList(cmd.id)}
               >
                 {renderItem ? renderItem(cmd) : <DefaultItem cmd={cmd} />}
               </Command.Item>
@@ -121,11 +208,13 @@ export function CommandPalette(props: CommandPaletteProps): React.ReactElement {
 
 function DefaultItem({ cmd }: { cmd: AnyCommandRecord }): React.ReactElement {
   const isParameterized = cmd.params !== undefined;
+  const kind = isParameterized ? deriveKind(cmd) : null;
   const keybinding = formatKeybinding(cmd.keybinding);
   return (
     <span
       data-acture-palette-item
       data-acture-parameterized={isParameterized ? '' : undefined}
+      data-acture-kind={kind ?? undefined}
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flex: 1 }}
     >
       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -133,16 +222,16 @@ function DefaultItem({ cmd }: { cmd: AnyCommandRecord }): React.ReactElement {
         <span>{cmd.title}</span>
         {isParameterized ? (
           <span
-            data-acture-phase2-badge
+            data-acture-kind-badge
             style={{
-              fontSize: '0.75em',
-              opacity: 0.7,
+              fontSize: '0.7em',
+              opacity: 0.6,
               padding: '0 4px',
               border: '1px solid currentColor',
               borderRadius: 4,
             }}
           >
-            Phase&nbsp;2
+            {kind === 'atomic' ? '⇥' : '…'}
           </span>
         ) : null}
       </span>
@@ -156,8 +245,6 @@ function DefaultItem({ cmd }: { cmd: AnyCommandRecord }): React.ReactElement {
 /* ─────────────────────────── helpers ──────────────────────────────── */
 
 function paletteValue(cmd: AnyCommandRecord): string {
-  // cmdk filters by `value`; we concatenate title + id + aliases so
-  // both natural-language search and id search work.
   const parts = [cmd.title, cmd.id];
   if (cmd.aliases) parts.push(...cmd.aliases);
   if (cmd.category) parts.push(cmd.category);
@@ -184,7 +271,6 @@ function groupByCategory(
     }
     groups.get(category)!.push(cmd);
   }
-  // Sort each group by defaultScore (descending), then by title.
   for (const items of groups.values()) {
     items.sort((a, b) => {
       const sa = scoreOf(a);

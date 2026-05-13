@@ -1,0 +1,72 @@
+{
+  "name": "@acture/hotkeys",
+  "version": "0.1.0-dev",
+  "description": "acture keyboard-shortcut adapter. Reads `keybinding` off every CommandRecord; dispatches via the registry. tinykeys under the hood.",
+  "license": "Apache-2.0",
+  "author": "Thor Whalen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorwhalen/acture.git",
+    "directory": "packages/hotkeys"
+  },
+  "homepage": "https://github.com/thorwhalen/acture#readme",
+  "bugs": "https://github.com/thorwhalen/acture/issues",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "acture": "workspace:*",
+    "react": "^18.0.0 || ^19.0.0",
+    "tinykeys": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "acture": "workspace:*",
+    "jsdom": "^25.0.0",
+    "react": "^19.0.0",
+    "tinykeys": "^3.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "zod": "^4.0.0"
+  },
+  "keywords": [
+    "acture",
+    "hotkeys",
+    "keyboard-shortcuts",
+    "tinykeys",
+    "command-dispatch"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

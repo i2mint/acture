@@ -1,0 +1,55 @@
+{
+  "name": "@acture/ai-vercel",
+  "version": "0.1.0-dev",
+  "description": "Project an acture registry as Vercel AI SDK tool definitions. Tier-filtered; errors-as-data; passes Zod schemas through directly.",
+  "license": "Apache-2.0",
+  "author": "Thor Whalen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorwhalen/acture.git",
+    "directory": "packages/ai-vercel"
+  },
+  "homepage": "https://github.com/thorwhalen/acture#readme",
+  "bugs": "https://github.com/thorwhalen/acture/issues",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "acture": "workspace:*",
+    "ai": "^4.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "acture": "workspace:*",
+    "ai": "^4.0.40",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "zod": "^4.0.0"
+  },
+  "keywords": ["acture", "vercel-ai-sdk", "ai-tools", "llm", "command-dispatch"],
+  "publishConfig": {
+    "access": "public"
+  }
+}

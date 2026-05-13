@@ -1,0 +1,55 @@
+{
+  "name": "@acture/state-redux",
+  "version": "0.1.0-dev",
+  "description": "acture StateAdapter for Redux Toolkit (RTK). Wraps an RTK store as a PatchCapableAdapter via RTK's bundled Immer.",
+  "license": "Apache-2.0",
+  "author": "Thor Whalen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorwhalen/acture.git",
+    "directory": "packages/state-redux"
+  },
+  "homepage": "https://github.com/thorwhalen/acture#readme",
+  "bugs": "https://github.com/thorwhalen/acture/issues",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "@reduxjs/toolkit": "^2.0.0",
+    "acture": "workspace:*",
+    "immer": "^10.0.0 || ^11.0.0"
+  },
+  "devDependencies": {
+    "@reduxjs/toolkit": "^2.5.0",
+    "acture": "workspace:*",
+    "immer": "^11.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "keywords": ["acture", "redux", "redux-toolkit", "rtk", "state", "command-dispatch"],
+  "publishConfig": {
+    "access": "public"
+  }
+}

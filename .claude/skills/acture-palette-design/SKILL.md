@@ -71,7 +71,7 @@ function deriveKind(record: CommandRecord): "atomic" | "handoff" {
 
 ## Form adapters
 
-`@acture/forms-autoform` and `@acture/forms-rjsf` ship as separate packages. Both implement a `paramCollector(schema): React.ComponentType<{onSubmit, onCancel}>` interface. The palette adapter consumes whichever one the host app installs.
+`@acture/forms-autoform` and `@acture/forms-rjsf` shipped as separate packages in Phase 2. Both implement the same `PaletteFormAdapterProps` interface (`{ command, defaults?, onSubmit, onCancel }`) consumed by `<CommandPalette formAdapter={...} />`. The palette switches to the supplied form for `kind: 'handoff'` commands.
 
 - **autoform** — Zod-native; lighter; fits the recommended Zod-first authoring path.
 - **rjsf** — JSON-Schema-native; battle-tested; larger bundle but more themes.
@@ -93,9 +93,9 @@ Power users and casual users want *opposite things* from the parameter collector
 
 The right design lets the *same schema* render both: terse one-line autocomplete for power users, full chip-by-chip pickers for novices. Discord and Linear achieve this. Raycast bifurcates with `Arguments` vs. `Form`. Acture mirrors with `kind`-based routing.
 
-## Per-command paletteHint (deferred to Phase 2 if needed)
+## Per-command paletteHint (still deferred post-Phase 2)
 
-The original wrapex `paletteHint` for delegating to a UI panel (Pattern D in `parameterized_command_palette_guide.md`) is *deferred* unless three real callers ask. Auto-derived `kind` covers 95% of cases without it.
+The original wrapex `paletteHint` for delegating to a UI panel (Pattern D in `parameterized_command_palette_guide.md`) is *deferred* unless three real callers ask. Phase 2 shipped without it; auto-derived `kind` covered every case in both worked examples (override rate 0%). Reconsider for Phase 4 if usage data warrants.
 
 ## See also
 

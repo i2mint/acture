@@ -1,59 +1,93 @@
 # @acture/palette-react
 
-Phase 1 command palette for [acture](https://npm.im/acture). Wraps [cmdk](https://cmdk.paco.me) and exposes commands from an acture `Registry`.
+Command palette for [acture](https://npm.im/acture). Wraps [cmdk](https://cmdk.paco.me) and reads commands directly off the registry.
 
-**Phase 1 scope:** parameter-free commands only. Parameterized commands appear with a "Phase 2" badge and are not dispatched — Phase 2 ships the picker chain (`kind: "atomic"`) and form hand-off (`kind: "handoff"`) per research-2.
+## Phase 2 surface
+
+- **Parameter-free commands** dispatch on selection.
+- **Parameterized commands** route through `deriveKind`:
+  - `kind: 'atomic'` → inline **picker chain** (Linear / Discord-style) inside the palette.
+  - `kind: 'handoff'` → renders a host-supplied **form adapter** inline; if none, fires `onParameterizedSelect` and the host opens its own form view.
+- **`commandsChanged`** events drive incremental re-renders.
+
+The `kind` is auto-derived from the schema unless `record.kind` is set explicitly. Per research-2 §9.3:
+
+| Param shape | Auto `kind` |
+| --- | --- |
+| 0 params | `atomic` |
+| 1–2 params, all picker-typed (enum, boolean) | `atomic` |
+| 3 params, all picker-typed + all with defaults | `atomic` |
+| Anything else | `handoff` |
+
+## Install
+
+```sh
+pnpm add @acture/palette-react cmdk react
+# pick a form adapter for handoff commands:
+pnpm add @acture/forms-autoform   # Zod-native (recommended)
+# or
+pnpm add @acture/forms-rjsf       # JSON-Schema-native
+```
+
+## Usage
 
 ```tsx
 import { CommandPalette } from '@acture/palette-react';
-import { createRegistry, defineCommand, ok } from 'acture';
+import { AutoForm } from '@acture/forms-autoform';
+import { registry } from './registry';
 
-const registry = createRegistry();
-registry.register(
-  defineCommand({
-    id: 'app.view.zoomToFit',
-    title: 'Zoom to fit',
-    category: 'View',
-    keybinding: '$mod+0',
-    execute: () => ok(undefined),
-  }),
-);
-
-export function App() {
-  const [open, setOpen] = useState(false);
-
-  // Ctrl/Cmd+K opens the palette
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setOpen((o) => !o);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
-  if (!open) return null;
+function PaletteOverlay({ context, onClose }) {
   return (
-    <div role="dialog" aria-modal="true" onClick={() => setOpen(false)}>
-      <div onClick={(e) => e.stopPropagation()}>
-        <CommandPalette
-          registry={registry}
-          onDispatched={() => setOpen(false)}
-        />
-      </div>
+    <div className="palette-overlay">
+      <CommandPalette
+        registry={registry}
+        context={context}
+        formAdapter={AutoForm}
+        onDispatched={() => onClose()}
+      />
     </div>
   );
 }
 ```
 
-Pair with `[acture]` styles for cmdk:
+## Picker-typed schemas
 
-```css
-[cmdk-root] { /* … */ }
-[cmdk-input] { /* … */ }
-[cmdk-item][aria-selected='true'] { /* … */ }
+The atomic picker chain renders for `z.enum`, `z.boolean`, and `z.nativeEnum` schemas out of the box. To mark a custom string field as picker-typed, attach an explicit hint:
+
+```ts
+import { z } from 'zod';
+
+params: z.object({
+  channel: z.string().meta({ paramKind: 'picker' }),  // treated as picker
+});
 ```
 
-See the `examples/greenfield/graph-editor` worked example for a full setup.
+## Context prefill
+
+Use `paramDefaults` to inject context-aware defaults (Things-style — research-2 L2):
+
+```tsx
+<CommandPalette
+  registry={registry}
+  context={ctx}
+  paramDefaults={(cmd) => {
+    if (cmd.id === 'app.task.assign') return { assignee: ctx.user.id };
+    return undefined;
+  }}
+/>
+```
+
+## Styling
+
+Every meaningful node carries a `data-acture-*` attribute. Style with CSS — the package does not ship a stylesheet.
+
+- `[data-acture-palette-view="list" | "picker-chain" | "form"]`
+- `[data-acture-palette-item]`
+- `[data-acture-kind="atomic" | "handoff"]`
+- `[data-acture-picker-chain]`
+
+## See also
+
+- [acture-palette-design](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-palette-design/SKILL.md) — the design rationale
+- [@acture/forms-autoform](../forms-autoform) — Zod-native form adapter
+- [@acture/forms-rjsf](../forms-rjsf) — JSON-Schema-native form adapter

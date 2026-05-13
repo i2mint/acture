@@ -1,0 +1,21 @@
+body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f8f9fb; }
+.app { max-width: 640px; margin: 32px auto; padding: 16px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+h1 { margin: 0 0 8px; font-size: 20px; }
+header p { margin: 0 0 16px; color: #555; font-size: 14px; }
+header kbd { background: #eee; border-radius: 3px; padding: 1px 5px; font-family: monospace; font-size: 0.85em; }
+.new-todo { display: flex; gap: 8px; margin-bottom: 16px; }
+.new-todo input { flex: 1; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; }
+.new-todo button { padding: 6px 14px; }
+.todos { list-style: none; padding: 0; margin: 0; }
+.todos li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #eee; }
+.todos li.done span { text-decoration: line-through; opacity: 0.6; }
+.todos button { margin-left: auto; background: transparent; border: none; cursor: pointer; opacity: 0.5; }
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh; z-index: 100; }
+.modal-card { background: white; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: min(540px, 90vw); overflow: hidden; }
+
+[cmdk-input] { width: 100%; box-sizing: border-box; border: none; padding: 12px; font-size: 16px; outline: none; border-bottom: 1px solid #eee; }
+[cmdk-group-heading] { padding: 6px 12px 2px; font-size: 11px; color: #999; text-transform: uppercase; }
+[cmdk-item] { padding: 8px 12px; cursor: pointer; display: flex; }
+[cmdk-item][data-selected='true'] { background: #f0f4ff; }
+[cmdk-empty] { padding: 12px; color: #999; text-align: center; }

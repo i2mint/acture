@@ -11,7 +11,7 @@ You are working on **acture**, a TypeScript library implementing the command-dis
 
 Acture is built on three interlocking primitives. They are not optional layers — they are the minimal framework.
 
-1. **State model** — a typed schema over application state. Defines *what exists*. Acture is agnostic about the state library; an adapter interface (`StateAdapter<S>`) lets zustand, Redux Toolkit, Jotai, etc. plug in cleanly. Phase 1 ships zustand only; Phase 2 adds Redux Toolkit.
+1. **State model** — a typed schema over application state. Defines *what exists*. Acture is agnostic about the state library; an adapter interface (`StateAdapter<S>`) lets zustand, Redux Toolkit, Jotai, etc. plug in cleanly. Reference adapters: `@acture/state-zustand` (Phase 1) and `@acture/state-redux` (Phase 2).
 
 2. **Command registry** — a centralized map from a string `id` to a `CommandRecord`. Defines *what can be done*. Every user-facing operation flows through `registry.dispatch(id, params, ctx?)`. Carries the rest of the metadata: title, description, parameters, when-clauses, keybindings, tier marker, atomic-or-handoff flag.
 

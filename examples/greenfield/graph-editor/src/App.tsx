@@ -1,10 +1,27 @@
+import { useMemo } from 'react';
+import { useHotkeys } from '@acture/hotkeys/react';
 import { Canvas } from './Canvas.js';
 import { PaletteOverlay } from './Palette.js';
 import { clearSelection } from './select-node.js';
 import { useGraphState } from './use-state.js';
+import { registry } from './registry.js';
+import type { Context } from 'acture';
 
 export function App(): React.ReactElement {
-  const selectedCount = useGraphState((s) => s.selectedNodes.length);
+  const selectedNodes = useGraphState((s) => s.selectedNodes);
+  const selectedCount = selectedNodes.length;
+
+  // Build the when-clause context for hotkey availability filtering.
+  // The same selection.length / selection.ids that the palette uses.
+  const hotkeyContext = useMemo<Context>(
+    () => ({ selection: { length: selectedCount, ids: selectedNodes } }),
+    [selectedCount, selectedNodes],
+  );
+
+  // Bind every command's keybinding via the registry. First-registered-
+  // wins under matching context (per @acture/hotkeys spec).
+  useHotkeys(registry, { context: hotkeyContext });
+
   return (
     <div className="ge-app">
       <header className="ge-header">
@@ -18,10 +35,7 @@ export function App(): React.ReactElement {
             : `${selectedCount} node${selectedCount === 1 ? '' : 's'} selected`}
         </span>
       </header>
-      <main
-        className="ge-canvas-wrap"
-        onClick={() => clearSelection()}
-      >
+      <main className="ge-canvas-wrap" onClick={() => clearSelection()}>
         <Canvas />
       </main>
       <PaletteOverlay />

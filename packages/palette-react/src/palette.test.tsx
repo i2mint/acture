@@ -4,6 +4,7 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { z } from 'zod';
 import { createRegistry, defineCommand, ok } from 'acture';
 import { CommandPalette } from './palette.js';
+import type { PaletteFormAdapter } from './palette.js';
 
 afterEach(() => cleanup());
 
@@ -29,7 +30,7 @@ function setup() {
       title: 'Add node',
       category: 'Graph',
       params: z.object({ label: z.string() }),
-      execute: () => ok('added'),
+      execute: (p) => ok(p),
     }),
     defineCommand({
       id: 'app.x.exp',
@@ -48,7 +49,6 @@ describe('<CommandPalette />', () => {
     expect(screen.getByText('Zoom to fit')).toBeTruthy();
     expect(screen.getByText('Select all')).toBeTruthy();
     expect(screen.getByText('Add node')).toBeTruthy();
-    // experimental is filtered out at default tier
     expect(screen.queryByText('Experimental thing')).toBeNull();
   });
 
@@ -59,10 +59,13 @@ describe('<CommandPalette />', () => {
     expect(screen.getByText('$mod+a')).toBeTruthy();
   });
 
-  it('marks parameterized commands with a Phase 2 badge', () => {
+  it('renders parameterized commands with a kind badge', () => {
     const { registry } = setup();
     const { container } = render(<CommandPalette registry={registry} />);
-    expect(container.querySelector('[data-acture-phase2-badge]')).toBeTruthy();
+    // addNode has 1 z.string() param → handoff
+    const items = container.querySelectorAll('[data-acture-kind]');
+    const handoff = Array.from(items).find((el) => el.getAttribute('data-acture-kind') === 'handoff');
+    expect(handoff).toBeTruthy();
   });
 
   it('dispatches parameter-free commands on select', async () => {
@@ -79,7 +82,7 @@ describe('<CommandPalette />', () => {
     expect((result as { ok: boolean }).ok).toBe(true);
   });
 
-  it('routes parameterized commands to onParameterizedSelect (not dispatch)', async () => {
+  it('routes handoff commands to onParameterizedSelect when no form adapter is supplied', async () => {
     const { registry } = setup();
     const onParameterized = vi.fn();
     const onDispatched = vi.fn();
@@ -96,6 +99,63 @@ describe('<CommandPalette />', () => {
     });
     expect(onParameterized).toHaveBeenCalledOnce();
     expect(onDispatched).not.toHaveBeenCalled();
+  });
+
+  it('renders host-supplied formAdapter inline for handoff commands', async () => {
+    const { registry } = setup();
+    const onDispatched = vi.fn();
+    const FormAdapter: PaletteFormAdapter = ({ command, onSubmit }) => (
+      <div data-testid="form-adapter">
+        <span>Form for {command.title}</span>
+        <button onClick={() => onSubmit({ label: 'Z' })}>submit</button>
+      </div>
+    );
+    render(
+      <CommandPalette registry={registry} onDispatched={onDispatched} formAdapter={FormAdapter} />,
+    );
+    const item = screen.getByText('Add node').closest('[cmdk-item]')!;
+    await act(async () => {
+      fireEvent.click(item);
+    });
+    // Palette switched to form view.
+    expect(screen.getByTestId('form-adapter')).toBeTruthy();
+    // Submit dispatches.
+    await act(async () => {
+      fireEvent.click(screen.getByText('submit'));
+    });
+    expect(onDispatched).toHaveBeenCalledOnce();
+    const [, result] = onDispatched.mock.calls[0]!;
+    expect((result as { ok: boolean; value: { label: string } }).value.label).toBe('Z');
+  });
+
+  it('renders an inline picker chain for atomic parameterized commands', async () => {
+    const registry = createRegistry();
+    registry.register(
+      defineCommand({
+        id: 'app.style.set',
+        title: 'Set style',
+        category: 'Style',
+        params: z.object({ variant: z.enum(['solid', 'dashed', 'dotted']) }),
+        execute: (p) => ok(p),
+      }),
+    );
+    const onDispatched = vi.fn();
+    const { container } = render(
+      <CommandPalette registry={registry} onDispatched={onDispatched} />,
+    );
+    const item = screen.getByText('Set style').closest('[cmdk-item]')!;
+    await act(async () => {
+      fireEvent.click(item);
+    });
+    expect(container.querySelector('[data-acture-picker-chain]')).toBeTruthy();
+    // Pick an option.
+    const option = screen.getByText('dashed').closest('[cmdk-item]')!;
+    await act(async () => {
+      fireEvent.click(option);
+    });
+    expect(onDispatched).toHaveBeenCalledOnce();
+    const [, result] = onDispatched.mock.calls[0]!;
+    expect((result as { value: { variant: string } }).value.variant).toBe('dashed');
   });
 
   it('re-renders when commandsChanged fires', async () => {

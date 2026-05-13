@@ -156,6 +156,8 @@ Phase 1 is done when the acceptance test passes AND `phase-1-reflection.md` is c
 
 ## Phase 2 — Adapter buildout
 
+**Status:** ✅ DONE — 2026-05-13. Reflection: [`docs/phase-2-reflection.md`](phase-2-reflection.md). All 159 tests pass across 9 packages + 2 worked examples.
+
 **Goal:** acture is useful across all three positioning paths. Hotkeys, parameterized palette, two state adapters, AI/MCP adapters, two form adapters.
 
 ### Scope
