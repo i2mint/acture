@@ -14,6 +14,10 @@
  *   - `@acture/build-tier/esbuild` → an esbuild plugin (also works with
  *     tsup, which is esbuild under the hood).
  *   - `@acture/build-tier/vite` → a Vite plugin.
+ *   - `@acture/build-tier/ast` → AST-mode polish using `ts-morph`. Same
+ *     contract as the regex transform, but handles 5000-char spec
+ *     bodies and template-substitution edge cases the regex caps out
+ *     on. Optional peer; only loaded if you import it. (v1.2.)
  *
  * The pure transform is exported here for users who want to wire it
  * into another bundler. See `acture-tier-system` skill §7.

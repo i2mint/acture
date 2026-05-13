@@ -2,12 +2,13 @@
 
 Strangler-fig adoption primitives for bringing acture into an existing app without a rewrite.
 
-Four functions, all with sensible defaults:
+Five functions, all with sensible defaults:
 
 | Function | Purpose |
 | --- | --- |
 | `wrapMutation(handler, opts?)` | Wrap an existing function as a command without changing call sites. |
 | `actureMiddleware(registry, opts?)` | Redux/RTK middleware: observe dispatched actions and emit matching command events. |
+| `createDomInterceptor(registry, opts?)` | DOM-event interception: delegated listener routes `data-acture-command` events through the registry. |
 | `chooseImplementation(pick, impls)` | 5-line legacy/modern router. Composes with any feature-flag SDK. |
 | `shadowCompare(modern, legacy, opts?)` | Scientist-style A/B with a "modern wins" default. |
 
@@ -66,7 +67,38 @@ export const store = configureStore({
 });
 ```
 
-Watches dispatched actions; when `action.type` matches a registered command id, fires `onDispatch`. The store action itself is NOT re-dispatched. This is store-event interception; DOM-event interception is deferred to v1.1.
+Watches dispatched actions; when `action.type` matches a registered command id, fires `onDispatch`. The store action itself is NOT re-dispatched. This is store-event interception; DOM-event interception is `createDomInterceptor` (below).
+
+See `examples/migration/redux-wrap/` for a worked example exercising both paths against the same RTK store.
+
+## `createDomInterceptor` — DOM-event interception
+
+```ts
+import { createDomInterceptor } from '@acture/migration';
+import { registry } from './acture/registry';
+
+const mount = createDomInterceptor(registry, {
+  onDispatch: (id, params) => console.log('dispatched', id, params),
+});
+
+// Attach to a root and call the returned function to detach.
+const unmount = mount(document.body);
+```
+
+```html
+<!-- Anywhere in the subtree -->
+<button data-acture-command="app.note.add"
+        data-acture-params='{"title":"Read research-4"}'>
+  Add note
+</button>
+
+<form data-acture-command="app.contact.save">
+  <input name="email" />
+  <button type="submit">Save</button>
+</form>
+```
+
+A single delegated listener per event type (default: `click`, `submit`, `change`) watches the root and routes matching events through `registry.dispatch`. Plain TS — works with React, Solid, Svelte, vanilla. `submit` events `preventDefault()` by default; other event types don't. Provide `paramsFrom(event, el)` for custom param extraction (e.g. building params from a `FormData`).
 
 ## `chooseImplementation` — feature-flag bridge
 
@@ -108,6 +140,6 @@ Earlier sketches included a `divertHandler(commandId, { legacy, modern, predicat
 
 ## Codemods
 
-Deferred to v1.1 per research-4 §B.1 — runtime first, codemods later, matches the proven RTK / react-codemod sequencing.
+See [`@acture/codemods`](../codemods/README.md). The runtime-first principle of research-4 §B.1 still holds — start by wrapping handlers manually, lift to codemods only when scale demands it.
 
 See [`.claude/skills/acture-migration-package/SKILL.md`](../../.claude/skills/acture-migration-package/SKILL.md) for the architectural rationale.

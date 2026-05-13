@@ -209,3 +209,255 @@ describe('classifyChanges', () => {
     expect(result.changes).toHaveLength(0);
   });
 });
+
+describe('classifyChanges — deep nested object diffs (v1.2)', () => {
+  it('detects a removed nested object field', () => {
+    const baseSchema = {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            email: { type: 'string' },
+          },
+        },
+      },
+    };
+    const headSchema = {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+          },
+        },
+      },
+    };
+    const result = classifyChanges(
+      snap(tool('app.a', { inputSchema: baseSchema })),
+      snap(tool('app.a', { inputSchema: headSchema })),
+    );
+    expect(result.maxSeverity).toBe('major');
+    const removed = result.changes.find((c) => c.kind === 'input-field-removed');
+    expect(removed?.path).toBe('inputSchema.properties.user.properties.email');
+  });
+
+  it('detects a new required nested field as MAJOR', () => {
+    const baseSchema = {
+      type: 'object',
+      properties: {
+        user: { type: 'object', properties: { name: { type: 'string' } } },
+      },
+    };
+    const headSchema = {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            id: { type: 'string' },
+          },
+          required: ['id'],
+        },
+      },
+    };
+    const result = classifyChanges(
+      snap(tool('app.a', { inputSchema: baseSchema })),
+      snap(tool('app.a', { inputSchema: headSchema })),
+    );
+    expect(result.maxSeverity).toBe('major');
+    const added = result.changes.find((c) => c.kind === 'input-field-added-required');
+    expect(added?.path).toBe('inputSchema.properties.user.properties.id');
+  });
+
+  it('detects nested type narrowing as MAJOR', () => {
+    const baseSchema = {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: { age: { type: 'number' } },
+        },
+      },
+    };
+    const headSchema = {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: { age: { type: 'string' } },
+        },
+      },
+    };
+    const result = classifyChanges(
+      snap(tool('app.a', { inputSchema: baseSchema })),
+      snap(tool('app.a', { inputSchema: headSchema })),
+    );
+    const narrowed = result.changes.find(
+      (c) => c.kind === 'input-field-type-narrowed',
+    );
+    expect(narrowed?.path).toBe('inputSchema.properties.user.properties.age.type');
+    expect(result.maxSeverity).toBe('major');
+  });
+
+  it('detects nested enum value removal as MAJOR', () => {
+    const baseSchema = {
+      type: 'object',
+      properties: {
+        prefs: {
+          type: 'object',
+          properties: { theme: { type: 'string', enum: ['light', 'dark', 'auto'] } },
+        },
+      },
+    };
+    const headSchema = {
+      type: 'object',
+      properties: {
+        prefs: {
+          type: 'object',
+          properties: { theme: { type: 'string', enum: ['light', 'dark'] } },
+        },
+      },
+    };
+    const result = classifyChanges(
+      snap(tool('app.a', { inputSchema: baseSchema })),
+      snap(tool('app.a', { inputSchema: headSchema })),
+    );
+    const removed = result.changes.find((c) => c.kind === 'enum-value-removed');
+    expect(removed?.path).toBe(
+      'inputSchema.properties.prefs.properties.theme.enum',
+    );
+    expect(removed?.summary).toContain('"auto"');
+  });
+
+  it('does NOT recurse when the property type changes (avoids double-counting)', () => {
+    const baseSchema = {
+      type: 'object',
+      properties: {
+        x: { type: 'object', properties: { inner: { type: 'string' } } },
+      },
+    };
+    const headSchema = {
+      type: 'object',
+      properties: {
+        x: { type: 'string' },
+      },
+    };
+    const result = classifyChanges(
+      snap(tool('app.a', { inputSchema: baseSchema })),
+      snap(tool('app.a', { inputSchema: headSchema })),
+    );
+    // Single change: type narrowed at the property. No
+    // "inner removed" event (we did not recurse across the type swap).
+    const kinds = result.changes.map((c) => c.kind);
+    expect(kinds).toEqual(['input-field-type-narrowed']);
+  });
+
+  it('recurses into array items when items is an object schema', () => {
+    const baseSchema = {
+      type: 'object',
+      properties: {
+        tags: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string' },
+              color: { type: 'string' },
+            },
+          },
+        },
+      },
+    };
+    const headSchema = {
+      type: 'object',
+      properties: {
+        tags: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string' },
+            },
+          },
+        },
+      },
+    };
+    const result = classifyChanges(
+      snap(tool('app.a', { inputSchema: baseSchema })),
+      snap(tool('app.a', { inputSchema: headSchema })),
+    );
+    const removed = result.changes.find((c) => c.kind === 'input-field-removed');
+    expect(removed?.path).toBe(
+      'inputSchema.properties.tags.items.properties.color',
+    );
+    expect(result.maxSeverity).toBe('major');
+  });
+
+  it('detects narrowed type inside array of primitives', () => {
+    const baseSchema = {
+      type: 'object',
+      properties: {
+        ids: { type: 'array', items: { type: 'string' } },
+      },
+    };
+    const headSchema = {
+      type: 'object',
+      properties: {
+        ids: { type: 'array', items: { type: 'number' } },
+      },
+    };
+    const result = classifyChanges(
+      snap(tool('app.a', { inputSchema: baseSchema })),
+      snap(tool('app.a', { inputSchema: headSchema })),
+    );
+    const narrowed = result.changes.find(
+      (c) => c.kind === 'input-field-type-narrowed',
+    );
+    expect(narrowed?.path).toBe('inputSchema.properties.ids.items.type');
+  });
+
+  it('handles three-deep nesting', () => {
+    const baseSchema = {
+      type: 'object',
+      properties: {
+        a: {
+          type: 'object',
+          properties: {
+            b: {
+              type: 'object',
+              properties: {
+                c: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    };
+    const headSchema = {
+      type: 'object',
+      properties: {
+        a: {
+          type: 'object',
+          properties: {
+            b: {
+              type: 'object',
+              properties: {},
+            },
+          },
+        },
+      },
+    };
+    const result = classifyChanges(
+      snap(tool('app.a', { inputSchema: baseSchema })),
+      snap(tool('app.a', { inputSchema: headSchema })),
+    );
+    const removed = result.changes.find((c) => c.kind === 'input-field-removed');
+    expect(removed?.path).toBe(
+      'inputSchema.properties.a.properties.b.properties.c',
+    );
+  });
+});

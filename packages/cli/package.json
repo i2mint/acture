@@ -1,6 +1,6 @@
 {
   "name": "@acture/cli",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Acture CLI. Includes `compare-schemas` — diff two registry snapshots (per research-5 §6) with classifications, CI gating, and JSON/text output.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",

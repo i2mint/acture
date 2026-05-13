@@ -26,7 +26,7 @@ pnpm add -D @acture/devtools      # embeddable <Inspector /> for dev builds
 
 ## Status
 
-**v1.1.0 (Phase 4 DONE + v1.1 increment, 2026-05-13).** Thirteen packages ship in the workspace:
+**v1.2.0 (Phase 4 DONE + v1.1 + v1.2 increments, 2026-05-13).** Fourteen packages ship in the workspace:
 
 | Package | Role |
 | --- | --- |
@@ -39,20 +39,30 @@ pnpm add -D @acture/devtools      # embeddable <Inspector /> for dev builds
 | [`@acture/forms-rjsf`](packages/forms-rjsf) | JSON-Schema form adapter (rjsf) |
 | [`@acture/mcp`](packages/mcp) | MCP server projection |
 | [`@acture/ai-vercel`](packages/ai-vercel) | Vercel AI SDK tool definitions |
-| [`@acture/migration`](packages/migration) | strangler-fig primitives: `wrapMutation`, `actureMiddleware`, `chooseImplementation`, `shadowCompare` |
-| [`@acture/build-tier`](packages/build-tier) | build-step plugin that mirrors `@stable`/`@experimental`/`@internal`/`@deprecated` JSDoc into runtime `tier` |
-| [`@acture/cli`](packages/cli) | `acture compare-schemas` (CI gating) + `acture snapshot` (registry → JSON) |
+| [`@acture/migration`](packages/migration) | strangler-fig primitives: `wrapMutation`, `actureMiddleware`, `createDomInterceptor`, `chooseImplementation`, `shadowCompare` |
+| [`@acture/build-tier`](packages/build-tier) | build-step plugin that mirrors `@stable`/`@experimental`/`@internal`/`@deprecated` JSDoc into runtime `tier`; regex default + AST mode polish |
+| [`@acture/cli`](packages/cli) | `acture compare-schemas` (CI gating, deep nested diffs) + `acture snapshot` (registry → JSON) |
 | [`@acture/devtools`](packages/devtools) | embeddable `<Inspector />` and `instrumentRegistry` dispatch log |
+| [`@acture/codemods`](packages/codemods) | **new in v1.2.** Codemod CLI for adoption: `wrap-handler-with-mutation`, `extract-onclick-to-command`, `--dry-run` + `--json` for agents |
 
 Worked examples:
 
 - [`examples/greenfield/graph-editor/`](examples/greenfield/graph-editor) — greenfield path. Now wires `@acture/devtools`.
 - [`examples/drop-in/`](examples/drop-in) — 5-minute bolt-on path.
 - [`examples/migration/zustand-wrap/`](examples/migration/zustand-wrap) — strangler-fig path with side-by-side [`before/`](examples/migration/zustand-wrap/before) and [`after/`](examples/migration/zustand-wrap/after) apps. 6 wrapped commands + 2 graduated.
+- [`examples/migration/redux-wrap/`](examples/migration/redux-wrap) — **new in v1.2.** Redux Toolkit cart with `actureMiddleware` end-to-end. UI dispatch and palette dispatch converge on the same store, observed as one stream.
 
 Agent skills live under [`.claude/skills/`](.claude/skills/): five migration-track skills (`migration-diagnose`, `migration-plan`, `migration-scaffold`, `migration-wrap`, `migration-graduate`) plus the architecture / tier / schema / hard-don'ts primer skills.
 
-What's new in this version:
+What's new in v1.2:
+
+- **`@acture/codemods` package.** `npx @acture/codemods <name>` with two shipped transforms (`wrap-handler-with-mutation`, `extract-onclick-to-command`), a manifest of planned ones, and `--dry-run` + `--json` so agents can preview before applying.
+- **`createDomInterceptor`.** Companion to `actureMiddleware` — a delegated DOM listener routes `data-acture-command` events through the registry. Plain TS, works in any framework, opt-in scoping per root.
+- **RTK worked example.** `examples/migration/redux-wrap/` closes the documentation gap for `actureMiddleware`. UI dispatch + palette dispatch converge on the same store, observed as one event stream.
+- **AST mode for `@acture/build-tier`.** Second entry point at `@acture/build-tier/ast` uses ts-morph for projects where the regex's 4000-char lookahead is insufficient. ts-morph is an optional peer dep.
+- **Deep nested diffs in `compare-schemas`.** The classifier now recurses through nested object properties and array `items`. Change paths read `inputSchema.properties.user.properties.email` instead of stopping at the top level.
+
+Previously in v1.0 / v1.1:
 
 - **Tier system enforced.** Mark a command `@experimental`, `@internal`, or `@deprecated <reason>` in JSDoc; the build step mirrors the tag into runtime metadata. `registry.list({ tiers })` and the MCP / AI / palette projections filter accordingly. `@internal` commands carry a module-scoped Symbol token and reject cross-module `dispatch`.
 - **`acture compare-schemas`.** Diff two registry snapshots, classify per research-5 §6.1, gate CI with `--fail-on major`. Description changes are MAJOR by default; downgradable per-invocation via `--allow-description-edits`.
@@ -60,7 +70,7 @@ What's new in this version:
 - **`<Inspector registry={...} />`.** Embeddable React dev-tool with a command list (tier-filterable), dispatch log, and live when-clause evaluator. Mount it behind a toggle in any greenfield app.
 - **`enableTierWarnings(registry)`.** Once-per-process `console.warn` on first dispatch of each `@experimental` command. Suppress with `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1`.
 
-What's next: see [`docs/next_session.md`](docs/next_session.md) for the v1.2 plan.
+What's next: see [`docs/next_session.md`](docs/next_session.md) for the v1.3 backlog.
 
 ## Three paths
 

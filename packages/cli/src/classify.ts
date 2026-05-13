@@ -212,26 +212,41 @@ function diffCommand(
     });
   }
 
-  // Input schema field-level diff.
-  diffInputSchema(head.name, base.inputSchema, head.inputSchema, out);
+  // Input schema field-level diff — recurses through nested object
+  // properties and array `items` per research-5 §6.1.
+  diffSchemaObject(head.name, 'inputSchema', base.inputSchema, head.inputSchema, out);
 }
 
-/** Walk `properties` at the top level of each schema and classify
- *  added / removed / required-tightened. We deliberately keep this
- *  shallow for v1 — deeply nested object diffs are a v1.1 polish. */
-function diffInputSchema(
+/**
+ * Walk an object schema's `properties` map and classify per-field
+ * changes. Recurses into:
+ *   - Nested object schemas (`type: 'object'` with a `properties` map)
+ *   - Array item schemas (`type: 'array'` with `items`)
+ *
+ * `path` is the dotted path *to this schema object*, e.g.
+ * `inputSchema.properties.user`. Nested calls extend it.
+ *
+ * @param toolName  Command name for the change record's `tool` field.
+ * @param path      Dotted path to the schema being diffed (used to
+ *                  build child paths like `<path>.properties.<key>`).
+ * @param base      Base schema object (may be empty).
+ * @param head      Head schema object (may be empty).
+ * @param out       Collector for emitted changes.
+ */
+function diffSchemaObject(
   toolName: string,
-  baseSchema: Record<string, unknown>,
-  headSchema: Record<string, unknown>,
+  path: string,
+  base: Record<string, unknown>,
+  head: Record<string, unknown>,
   out: Change[],
 ): void {
-  const baseProps = ((baseSchema['properties'] ?? {}) as Record<string, unknown>);
-  const headProps = ((headSchema['properties'] ?? {}) as Record<string, unknown>);
+  const baseProps = ((base['properties'] ?? {}) as Record<string, unknown>);
+  const headProps = ((head['properties'] ?? {}) as Record<string, unknown>);
   const baseRequired = new Set(
-    Array.isArray(baseSchema['required']) ? baseSchema['required'] as string[] : [],
+    Array.isArray(base['required']) ? base['required'] as string[] : [],
   );
   const headRequired = new Set(
-    Array.isArray(headSchema['required']) ? headSchema['required'] as string[] : [],
+    Array.isArray(head['required']) ? head['required'] as string[] : [],
   );
 
   const allKeys = new Set([
@@ -241,13 +256,15 @@ function diffInputSchema(
   for (const key of allKeys) {
     const b = baseProps[key];
     const h = headProps[key];
+    const childPath = `${path}.properties.${key}`;
+
     if (b !== undefined && h === undefined) {
       out.push({
         tool: toolName,
-        path: `inputSchema.properties.${key}`,
+        path: childPath,
         kind: 'input-field-removed',
         severity: 'major',
-        summary: `Command "${toolName}" input field "${key}" removed`,
+        summary: `Command "${toolName}" input field "${childPath}" removed`,
       });
       continue;
     }
@@ -255,74 +272,153 @@ function diffInputSchema(
       const isRequired = headRequired.has(key);
       out.push({
         tool: toolName,
-        path: `inputSchema.properties.${key}`,
+        path: childPath,
         kind: isRequired
           ? 'input-field-added-required'
           : 'input-field-added-optional',
         severity: isRequired ? 'major' : 'minor',
-        summary: `Command "${toolName}" input field "${key}" added (${isRequired ? 'required' : 'optional'})`,
+        summary: `Command "${toolName}" input field "${childPath}" added (${isRequired ? 'required' : 'optional'})`,
       });
       continue;
     }
     if (b !== undefined && h !== undefined) {
-      // Required-tightened: was optional, now required.
-      const wasReq = baseRequired.has(key);
-      const isReq = headRequired.has(key);
-      if (!wasReq && isReq) {
+      diffSchemaProperty(toolName, childPath, key, baseRequired, headRequired, b, h, out);
+    }
+  }
+}
+
+/** Diff a single property: required-tightening, type narrowing, enums,
+ *  and recursion into nested objects / arrays. */
+function diffSchemaProperty(
+  toolName: string,
+  childPath: string,
+  key: string,
+  baseRequired: ReadonlySet<string>,
+  headRequired: ReadonlySet<string>,
+  b: unknown,
+  h: unknown,
+  out: Change[],
+): void {
+  // Required-tightened: was optional, now required.
+  const wasReq = baseRequired.has(key);
+  const isReq = headRequired.has(key);
+  if (!wasReq && isReq) {
+    out.push({
+      tool: toolName,
+      path: childPath,
+      kind: 'input-field-required-tightened',
+      severity: 'major',
+      summary: `Command "${toolName}" input field "${childPath}" was optional, now required`,
+    });
+  }
+  // Type narrowing — shallow on the `type` key. If it changed, treat
+  // ANY change as narrowing for v1 (set-theoretic widening is rare in
+  // practice and complex to detect).
+  const bType = (b as { type?: unknown }).type;
+  const hType = (h as { type?: unknown }).type;
+  if (
+    bType !== undefined &&
+    hType !== undefined &&
+    JSON.stringify(bType) !== JSON.stringify(hType)
+  ) {
+    out.push({
+      tool: toolName,
+      path: `${childPath}.type`,
+      kind: 'input-field-type-narrowed',
+      severity: 'major',
+      summary: `Command "${toolName}" input field "${childPath}" type changed: ${JSON.stringify(bType)} → ${JSON.stringify(hType)}`,
+    });
+  }
+  // Enum diff.
+  const bEnum = (b as { enum?: unknown }).enum;
+  const hEnum = (h as { enum?: unknown }).enum;
+  if (Array.isArray(bEnum) && Array.isArray(hEnum)) {
+    const bSet = new Set(bEnum.map((v) => JSON.stringify(v)));
+    const hSet = new Set(hEnum.map((v) => JSON.stringify(v)));
+    for (const v of bSet) {
+      if (!hSet.has(v)) {
         out.push({
           tool: toolName,
-          path: `inputSchema.properties.${key}`,
-          kind: 'input-field-required-tightened',
+          path: `${childPath}.enum`,
+          kind: 'enum-value-removed',
           severity: 'major',
-          summary: `Command "${toolName}" input field "${key}" was optional, now required`,
+          summary: `Command "${toolName}" enum value ${v} removed from "${childPath}"`,
         });
       }
-      // Type narrowing — shallow. Compare the `type` key. If it changed
-      // from one primitive to another, count as a narrow. Set-theoretic
-      // type widening is rare in practice; treat ANY type change as
-      // narrowing for v1.
-      const bType = (b as { type?: unknown }).type;
-      const hType = (h as { type?: unknown }).type;
-      if (bType !== undefined && hType !== undefined && JSON.stringify(bType) !== JSON.stringify(hType)) {
+    }
+    for (const v of hSet) {
+      if (!bSet.has(v)) {
         out.push({
           tool: toolName,
-          path: `inputSchema.properties.${key}.type`,
-          kind: 'input-field-type-narrowed',
-          severity: 'major',
-          summary: `Command "${toolName}" input field "${key}" type changed: ${JSON.stringify(bType)} → ${JSON.stringify(hType)}`,
+          path: `${childPath}.enum`,
+          kind: 'enum-value-added',
+          severity: 'minor',
+          summary: `Command "${toolName}" enum value ${v} added to "${childPath}"`,
         });
-      }
-      // Enum diff.
-      const bEnum = (b as { enum?: unknown }).enum;
-      const hEnum = (h as { enum?: unknown }).enum;
-      if (Array.isArray(bEnum) && Array.isArray(hEnum)) {
-        const bSet = new Set(bEnum.map((v) => JSON.stringify(v)));
-        const hSet = new Set(hEnum.map((v) => JSON.stringify(v)));
-        for (const v of bSet) {
-          if (!hSet.has(v)) {
-            out.push({
-              tool: toolName,
-              path: `inputSchema.properties.${key}.enum`,
-              kind: 'enum-value-removed',
-              severity: 'major',
-              summary: `Command "${toolName}" enum value ${v} removed from "${key}"`,
-            });
-          }
-        }
-        for (const v of hSet) {
-          if (!bSet.has(v)) {
-            out.push({
-              tool: toolName,
-              path: `inputSchema.properties.${key}.enum`,
-              kind: 'enum-value-added',
-              severity: 'minor',
-              summary: `Command "${toolName}" enum value ${v} added to "${key}"`,
-            });
-          }
-        }
       }
     }
   }
+  // Recurse into nested object schemas. We recurse only when BOTH
+  // sides agree the property is an object — a type change is already
+  // reported above as a narrow, and recursing across a type swap would
+  // double-count its consequences.
+  if (
+    typeof b === 'object' && b !== null &&
+    typeof h === 'object' && h !== null &&
+    isObjectSchema(b as Record<string, unknown>) &&
+    isObjectSchema(h as Record<string, unknown>)
+  ) {
+    diffSchemaObject(toolName, childPath, b as Record<string, unknown>, h as Record<string, unknown>, out);
+  }
+  // Recurse into array item schemas. `items` may itself be an object
+  // schema with `properties`, or a plain schema with `type`/`enum`.
+  if (
+    typeof b === 'object' && b !== null &&
+    typeof h === 'object' && h !== null &&
+    isArraySchema(b as Record<string, unknown>) &&
+    isArraySchema(h as Record<string, unknown>)
+  ) {
+    const bItems = (b as { items?: unknown }).items;
+    const hItems = (h as { items?: unknown }).items;
+    if (
+      bItems !== undefined && hItems !== undefined &&
+      typeof bItems === 'object' && bItems !== null &&
+      typeof hItems === 'object' && hItems !== null
+    ) {
+      const itemsPath = `${childPath}.items`;
+      const bRec = bItems as Record<string, unknown>;
+      const hRec = hItems as Record<string, unknown>;
+      if (isObjectSchema(bRec) && isObjectSchema(hRec)) {
+        diffSchemaObject(toolName, itemsPath, bRec, hRec, out);
+      } else {
+        // Apply the property-level diff to the items schema itself,
+        // since arrays of primitives still have `type` / `enum` worth
+        // tracking. The `key` here is `items` for required-set lookup
+        // (it's never in `required`, but the helper handles that
+        // uniformly).
+        diffSchemaProperty(
+          toolName,
+          itemsPath,
+          'items',
+          EMPTY_SET,
+          EMPTY_SET,
+          bRec,
+          hRec,
+          out,
+        );
+      }
+    }
+  }
+}
+
+const EMPTY_SET: ReadonlySet<string> = new Set<string>();
+
+function isObjectSchema(s: Record<string, unknown>): boolean {
+  return s['type'] === 'object' || s['properties'] !== undefined;
+}
+
+function isArraySchema(s: Record<string, unknown>): boolean {
+  return s['type'] === 'array' && s['items'] !== undefined;
 }
 
 const TIER_RANK: Record<SnapshotTool['tier'], number> = {

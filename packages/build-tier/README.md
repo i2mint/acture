@@ -79,8 +79,32 @@ const __actureInternalToken__ = /* @__PURE__ */ Symbol('acture.internal');
 
 Each `@internal` command's `internalToken` field references this Symbol. The runtime registry rejects `dispatch` calls from outside the module (i.e., from any caller that didn't capture the Symbol at module load). See [`acture-tier-system`](../../.claude/skills/acture-tier-system/SKILL.md) §7.5.
 
+## AST mode (v1.2)
+
+The default transform is regex-based and intentionally conservative: when the surrounding source is exotic enough to outrun the regex's 4000-char lookahead, the spec falls through and keeps its hand-written `tier` (defaulting to `'stable'`).
+
+For projects where AST-level certainty matters more than a fast regex pass, an AST mode is available behind the `/ast` entry point:
+
+```ts
+// custom bundler plugin
+import { transformSourceAst } from '@acture/build-tier/ast';
+
+export function actureTierAstPlugin() {
+  return {
+    name: 'acture-tier-ast',
+    transform(code: string, id: string) {
+      if (!id.endsWith('.ts') && !id.endsWith('.tsx')) return null;
+      const { code: out, changed } = transformSourceAst(code);
+      return changed ? { code: out, map: null } : null;
+    },
+  };
+}
+```
+
+`ts-morph` is an **optional peer dependency** — pulled in only if you import the AST entry point. The output is interchangeable with the regex mode on every case the regex handles correctly; AST mode also handles 5000-char spec bodies and template-literal `${...}` substitutions the regex skips.
+
 ## Caveats
 
-- Regex-based, not AST. The common case is recognized; exotic JSDoc-or-call shapes are silently ignored (the user's spec keeps its hand-written `tier`, defaulting to `'stable'`).
-- 4000-char per-call lookahead window for the matching-brace scan. Real specs are O(20 lines); this is comfortably generous.
+- Default mode is regex-based, not AST. The common case is recognized; exotic JSDoc-or-call shapes are silently ignored (the user's spec keeps its hand-written `tier`, defaulting to `'stable'`). Use `/ast` if your codebase trips this.
+- 4000-char per-call lookahead window for the matching-brace scan (regex mode). Real specs are O(20 lines); this is comfortably generous.
 - No `.d.ts` mirror — the JSDoc tag survives into `.d.ts` natively (IDE hover shows it), but the resolved `tier` value lives in the JS runtime output only.

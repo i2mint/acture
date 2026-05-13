@@ -1,6 +1,6 @@
 {
   "name": "@acture/build-tier",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Build-time tier mirror. Scans .ts source for @stable / @experimental / @internal / @deprecated JSDoc tags on defineCommand calls and mirrors them into the runtime command's tier metadata. Ships an esbuild plugin and a Vite plugin.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",
@@ -36,6 +36,11 @@
       "import": "./dist/vite.js",
       "require": "./dist/vite.cjs"
     },
+    "./ast": {
+      "types": "./dist/ast.d.ts",
+      "import": "./dist/ast.js",
+      "require": "./dist/ast.cjs"
+    },
     "./package.json": "./package.json"
   },
   "sideEffects": false,
@@ -45,10 +50,19 @@
     "test": "vitest run",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
+  "peerDependencies": {
+    "ts-morph": "^25.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ts-morph": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@acture/mcp": "workspace:*",
     "@types/node": "^22.10.0",
     "acture": "workspace:*",
+    "ts-morph": "^25.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0",
