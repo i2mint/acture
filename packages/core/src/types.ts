@@ -85,6 +85,19 @@ export interface CommandRecord<P = unknown, R = unknown> {
   readonly aliases?: readonly string[];
   readonly kind?: CommandKind;
   readonly tier?: Tier;
+  /** Free-text reason populated from `@deprecated <reason text>` JSDoc by
+   *  the build-step tier mirror. Adapter packages (`@acture/mcp`,
+   *  `@acture/ai-vercel`) prepend `[DEPRECATED — <reason>]` to the
+   *  description when projecting. `@acture/devtools` surfaces it in the
+   *  inspector. (Three callers; closed-surface addition approved.) */
+  readonly deprecationReason?: string;
+  /** Opt-in token for `@internal` dispatch. The tier-mirror build step
+   *  attaches a module-scoped `Symbol('acture.internal')` token when it
+   *  marks a command `tier: 'internal'`. Cross-package callers cannot
+   *  observe the token (it lives in the registering module's closure),
+   *  so `registry.dispatch(id, params, ctx, { internalToken })` throws
+   *  when the caller's token does not match. */
+  readonly internalToken?: symbol;
   readonly defaultScore?: DefaultScore;
   readonly follow?: readonly string[];
   readonly execute: (params: P, ctx: Context) => Result<R> | Promise<Result<R>>;

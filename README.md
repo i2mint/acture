@@ -15,17 +15,22 @@ pnpm add @acture/mcp              # MCP server projection
 pnpm add @acture/ai-vercel        # Vercel AI tool definitions
 pnpm add @acture/migration        # strangler-fig adoption primitives
 # …plus @acture/forms-autoform and @acture/forms-rjsf for parameterized commands.
+
+# Dev / CI tooling (post-v1.0):
+pnpm add -D @acture/build-tier    # build-step @stable/@experimental/@internal/@deprecated mirror
+pnpm add -D @acture/cli           # `acture compare-schemas` / `acture snapshot` CLI
+pnpm add -D @acture/devtools      # embeddable <Inspector /> for dev builds
 ```
 
 > The `acture` name is also reserved on PyPI as a placeholder; a real Python companion is post-v1. `pip install acture` gives you a no-op package whose only purpose is to keep the name ours.
 
 ## Status
 
-**v0.2.0 (Phase 3 DONE, 2026-05-13).** Ten packages ship in the workspace:
+**v1.1.0 (Phase 4 DONE + v1.1 increment, 2026-05-13).** Thirteen packages ship in the workspace:
 
 | Package | Role |
 | --- | --- |
-| [`acture`](packages/core) | core registry, dispatcher, when-clause DSL, schema bridge |
+| [`acture`](packages/core) | core registry, dispatcher, when-clause DSL, schema bridge, `enableTierWarnings` |
 | [`@acture/state-zustand`](packages/state-zustand) | StateAdapter for zustand+immer |
 | [`@acture/state-redux`](packages/state-redux) | StateAdapter for Redux Toolkit |
 | [`@acture/palette-react`](packages/palette-react) | command palette with parameterized-command UX |
@@ -35,16 +40,27 @@ pnpm add @acture/migration        # strangler-fig adoption primitives
 | [`@acture/mcp`](packages/mcp) | MCP server projection |
 | [`@acture/ai-vercel`](packages/ai-vercel) | Vercel AI SDK tool definitions |
 | [`@acture/migration`](packages/migration) | strangler-fig primitives: `wrapMutation`, `actureMiddleware`, `chooseImplementation`, `shadowCompare` |
+| [`@acture/build-tier`](packages/build-tier) | build-step plugin that mirrors `@stable`/`@experimental`/`@internal`/`@deprecated` JSDoc into runtime `tier` |
+| [`@acture/cli`](packages/cli) | `acture compare-schemas` (CI gating) + `acture snapshot` (registry → JSON) |
+| [`@acture/devtools`](packages/devtools) | embeddable `<Inspector />` and `instrumentRegistry` dispatch log |
 
 Worked examples:
 
-- [`examples/greenfield/graph-editor/`](examples/greenfield/graph-editor) — greenfield path.
+- [`examples/greenfield/graph-editor/`](examples/greenfield/graph-editor) — greenfield path. Now wires `@acture/devtools`.
 - [`examples/drop-in/`](examples/drop-in) — 5-minute bolt-on path.
 - [`examples/migration/zustand-wrap/`](examples/migration/zustand-wrap) — strangler-fig path with side-by-side [`before/`](examples/migration/zustand-wrap/before) and [`after/`](examples/migration/zustand-wrap/after) apps. 6 wrapped commands + 2 graduated.
 
-Five migration-track agent skills live under [`.claude/skills/`](.claude/skills/): `migration-diagnose`, `migration-plan`, `migration-scaffold`, `migration-wrap`, `migration-graduate`.
+Agent skills live under [`.claude/skills/`](.claude/skills/): five migration-track skills (`migration-diagnose`, `migration-plan`, `migration-scaffold`, `migration-wrap`, `migration-graduate`) plus the architecture / tier / schema / hard-don'ts primer skills.
 
-Phase 4 (tier-system enforcement, `acture compare-schemas` CLI, devtools, hardening) is next — see [`docs/next_session.md`](docs/next_session.md).
+What's new in this version:
+
+- **Tier system enforced.** Mark a command `@experimental`, `@internal`, or `@deprecated <reason>` in JSDoc; the build step mirrors the tag into runtime metadata. `registry.list({ tiers })` and the MCP / AI / palette projections filter accordingly. `@internal` commands carry a module-scoped Symbol token and reject cross-module `dispatch`.
+- **`acture compare-schemas`.** Diff two registry snapshots, classify per research-5 §6.1, gate CI with `--fail-on major`. Description changes are MAJOR by default; downgradable per-invocation via `--allow-description-edits`.
+- **`acture snapshot`.** Load a registry config (`./registry.mjs` default-exporting the registry) and emit a JSON snapshot suitable for `compare-schemas`.
+- **`<Inspector registry={...} />`.** Embeddable React dev-tool with a command list (tier-filterable), dispatch log, and live when-clause evaluator. Mount it behind a toggle in any greenfield app.
+- **`enableTierWarnings(registry)`.** Once-per-process `console.warn` on first dispatch of each `@experimental` command. Suppress with `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1`.
+
+What's next: see [`docs/next_session.md`](docs/next_session.md) for the v1.2 plan.
 
 ## Three paths
 

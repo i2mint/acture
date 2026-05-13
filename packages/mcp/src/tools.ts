@@ -32,7 +32,15 @@ export interface BuildToolsListOptions {
   excludeFunctionWhen?: boolean;
 }
 
-const DEPRECATION_PREFIX = '[DEPRECATED]';
+/** Banner format `[DEPRECATED — <reason>]` is deterministic so downstream
+ *  diffs detect deprecation-banner-only changes and skip flagging them as
+ *  breaking. Per `acture-tier-system` skill §"What @deprecated does". */
+const DEPRECATION_PREFIX_BARE = '[DEPRECATED]';
+function deprecationBanner(reason?: string): string {
+  return reason && reason.length > 0
+    ? `[DEPRECATED — ${reason}]`
+    : DEPRECATION_PREFIX_BARE;
+}
 
 export function buildToolsList(
   registry: Registry,
@@ -72,7 +80,7 @@ function applyDeprecationPrefix(
 ): string | undefined {
   if (cmd.tier !== 'deprecated') return description;
   const base = description ?? '';
-  return `${DEPRECATION_PREFIX} ${base}`.trim();
+  return `${deprecationBanner(cmd.deprecationReason)} ${base}`.trim();
 }
 
 /* ───────────────────────── dispatch ────────────────────────────────── */

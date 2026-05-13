@@ -1,6 +1,6 @@
 {
   "name": "@acture/forms-autoform",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Zod-native form adapter for @acture/palette-react. Renders a CommandRecord's params schema as a small form with per-field validation.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",

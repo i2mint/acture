@@ -1,114 +1,100 @@
-# Next Session — Phase 4
+# Next Session — v1.2 Planning
 
-**Your role:** You are the Phase 4 implementing agent. Phase 3 (migration package, five migration-track skills, zustand-wrap before/after worked example, kind-heuristic stress) is **DONE** as of 2026-05-13. Your job is to ship the v1.0 stability surface: the build-step tier-system enforcement, the `acture compare-schemas` CLI, a devtools inspector, and the hardening pass that earns the v1.0 tag.
+**Your role:** You are the v1.2 planning / implementing agent. **v1.1 is DONE as of 2026-05-13.** The Phase 4 v1.0 deliverables plus two v1.1 increments (`enableTierWarnings` and the `acture snapshot` CLI subcommand) have all landed. Your job is to commit to v1.2 scope and ship it.
 
-**Phase 3 finished 2026-05-13.** Repo state at handoff:
+**v1.1 finished 2026-05-13.** Repo state at handoff:
 
-- **10 packages publishable:** `acture`, `@acture/state-zustand`, `@acture/state-redux`, `@acture/palette-react`, `@acture/hotkeys`, `@acture/forms-autoform`, `@acture/forms-rjsf`, `@acture/mcp`, `@acture/ai-vercel`, **`@acture/migration`** (new).
-- **3 worked examples:** `examples/greenfield/graph-editor/`, `examples/drop-in/`, `examples/migration/zustand-wrap/{before,after}/`.
-- **185 package tests** + **36 example tests** all green.
-- **5 migration-track skills:** `migration-diagnose`, `migration-plan`, `migration-scaffold`, `migration-wrap`, `migration-graduate`.
-- All packages typecheck and build via tsup; all examples typecheck and build via vite.
-- Phase 3 reflection: [`docs/phase-3-reflection.md`](phase-3-reflection.md). No escalations outstanding.
+- **13 packages publishable.** `acture` and `@acture/cli` at **1.1.0**; the other 11 packages at **1.0.0** (untouched in the v1.1 increment).
+- **288 package tests** + **36 example tests** all green. Was 270 at Phase 4 end; +18 from the v1.1 work (8 `tier-warnings` tests in core, 6 `snapshot-cmd` tests in cli, 4 new cli integration tests).
+- **3 worked examples** unchanged.
+- All packages typecheck and build via tsup / vite; the greenfield example builds clean.
+- Phase 4 reflection: [`docs/phase-4-reflection.md`](phase-4-reflection.md). It covered v1.0 plus called out v1.1 deferrals; this session shipped two of those (#3 and #4 in the original handoff).
+
+What v1.1 actually shipped on top of v1.0:
+
+1. **`enableTierWarnings(registry, options?)` in core** (`packages/core/src/tier-warnings.ts`). Wraps `dispatch` so the first dispatch of each `@experimental` command emits `console.warn` once-per-process per command. Suppressible via `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1` or `enabled: false`. Idempotent (WeakMap-keyed) with a disposer for test isolation.
+2. **`acture snapshot` subcommand** (`packages/cli/src/snapshot-cmd.ts` + `cli.ts`). Loads a registry config (`./registry.mjs` default-exporting the `Registry`, awaits Promise<Registry> if returned) and emits the same JSON envelope `compare-schemas` reads. Supports `--out`, `--tiers stable,experimental`, helpful errors with a `tsx` hint for `.ts` configs.
+
+What v1.1 did **not** ship (still in the v1.2 backlog):
+
+- `acture/codemods` (research-4 §B.5).
+- DOM-event interception middleware (research-4 §A.5).
+- An RTK worked example exercising `actureMiddleware` end-to-end.
+- AST-mode for `@acture/build-tier` (regex fallback is the documented behavior; AST would be a polish).
+- Deep nested object diffs in `compare-schemas` (shallow `properties` diff is what shipped).
+- `.d.ts` mirror of resolved tier values (the JSDoc tag survives natively; a transformer-plugin polish remains optional).
 
 ---
 
 ## Step 1 — Orient
 
-Read in this order (~45 minutes total):
+Read in this order (~30 minutes total):
 
-1. `docs/phase-3-reflection.md` — what Phase 3 found. Specifically:
-   - §1–2: `chooseImplementation` and `shadowCompare` were not exercised in the worked migration (correct outcome for a 1–2K LoC fixture). The drop-candidate trigger is "no use within four weeks of public release" — we're not there.
-   - §3: `actureMiddleware` ships as one standard Redux middleware (works with plain Redux and RTK). The RTK-specific listener-middleware split was deferred until three callers demand it.
-   - §4: `migration-wrap` could benefit from a 3-rule params-vs-positional cheat sheet — not blocking, fold in if a second agent stumbles.
-   - §7 observations 1–3 (no RTK example, `wrapMutation` bound-method quirk, kind heuristic at 0% override against the 8 tested shapes).
-2. `.claude/skills/acture-tier-system/SKILL.md` — the canonical tier-system spec. Build-step mirror, runtime gating, `@deprecated` banner prefixing, `@internal` symbol-token enforcement. **§7 is your primary spec.**
-3. `.claude/skills/acture-schema-bridge/SKILL.md` — needed for the schema-diff classifier in `acture compare-schemas`.
-4. `.claude/skills/acture-hard-donts/SKILL.md` — re-read before every commit.
-5. `docs/implementation_plan.md` §"Phase 4 — Stability, tier system, devtools" — your exact scope and acceptance criteria.
-6. `docs/research/acture_research_5 ...md` — the tier system + schema diff research. **§6 (compare-schemas) and §7 (tier system) are canonical.**
+1. `docs/phase-4-reflection.md` — what Phase 4 found, especially §3 (deferred items) and §5 (release-gate item).
+2. `.claude/skills/acture-hard-donts/SKILL.md` — re-read before merging anything. The closed CommandRecord surface and the rule-of-three are the load-bearing rails.
+3. `docs/v1_plan.md` §"Post-v1 (deferred, not committed)" — the long-term backlog. None of these promote to v1.2 without explicit user direction.
+4. The relevant research file for whatever v1.2 scope the user picks. Most likely candidates:
+   - Codemods: `docs/research/acture_research_4 -- Transitional APIs and Codemod Tooling ...md` §B.5, §A.7.
+   - DOM interception: `docs/research/acture_research_4 ...md` §A.5.
 
-**Do NOT read in this session unless directly relevant:** the migration package, codemod design, Python companion — all Phase 3 / post-v1.
+**Do NOT re-read** research files 1, 2, 3, or 5 unless they directly inform v1.2 scope.
 
-## Step 2 — Phase 4 scope
+## Step 2 — Pick v1.2 scope
 
-Per `docs/implementation_plan.md` §"Phase 4 — Stability, tier system, devtools":
+The candidates below are the v1.1 backlog leftover plus two new ones that surfaced during Phase 4 / v1.1. Rule of three — pick at most TWO. Do not start any without confirming three concrete callers want it.
 
-**Tier-system enforcement (per research-5 §7):**
-- Build step (tsup plugin or esbuild plugin) that scans `.ts` source for `@stable` / `@experimental` / `@internal` / `@deprecated` JSDoc tags on `defineCommand` calls and mirrors them into the command's `tier` metadata field at build time.
-- Runtime gating: `registry.toMCPServer({ tiers })`, `registry.toAITools({ tiers })`, `registry.toPaletteCommands({ tiers })`. Defaults: `['stable']`.
-- `@deprecated` banner prepending in `description` for MCP / AI surfaces.
-- `@internal` symbol-token enforcement: runtime throws if dispatched from outside the registering module (research-5 §7.5).
+**Strong candidates (v1.2):**
 
-**`acture compare-schemas` CLI (per research-5 §6):**
-- New `packages/cli/` package with bin `acture`.
-- `acture compare-schemas <base> [<head>]` walks the registry in both refs, projects through the schema bridge, diffs tool envelopes (not just inputSchema).
-- `--fail-on <severity>` for CI gating.
-- `--allow-description-edits` (per-invocation, NOT a config setting) to downgrade description-only diffs to MINOR.
-- `--format json|text` output. Text default colored, JSON for machines.
-- Classifications per research-5 §6.1.
+1. **`acture/codemods`** (research-4 §B.5).
+   - State today: deferred from Phase 3, reaffirmed deferred in Phase 4 §3.
+   - Scope: an `ast-grep` or `ts-morph`-based transformer that converts hand-applied `wrapMutation` calls to direct `defineCommand`, automating what `migration-graduate` does manually.
+   - Three-callers check: ask the user. Codemods are heavy lift; only commit if there are 3+ real migrations in flight.
 
-**`packages/devtools/`:**
-- Inspector React component: registry contents, dispatch log, when-clause evaluator state, tier filter preview.
-- Embeddable in dev builds; the greenfield example is the smoke-test surface.
+2. **DOM-event interception middleware** (research-4 §A.5).
+   - State today: `actureMiddleware` covers Redux/RTK; DOM-event interception is the React + vanilla equivalent.
+   - Scope: a small adapter that intercepts `onClick` / form `onSubmit` handlers in a tree and routes through `registry.dispatch`, with opt-in scoping.
+   - Three-callers check: ask the user.
 
-**Hardening:**
-- Audit error messages for actionability.
-- JSDoc on every public export (the build step needs it anyway for tier mirroring).
-- Each `core` public function: at least one happy-path test + one error-path test.
-- Bump all packages to v1.0.0.
+**Medium candidates (could ship as quick polish):**
 
-## Step 3 — Acceptance criteria
+3. **RTK worked example.** `actureMiddleware` is unit-tested but has no fixture. A `examples/migration/redux-wrap/` would close the gap. Small lift, demonstrative value.
 
-Per `docs/implementation_plan.md` §"Phase 4 → Acceptance test":
+4. **AST-mode for `@acture/build-tier`.** A second entry point that uses `ts-morph` for the regex's exotic-input edge cases. Strictly a polish — the regex handles the common case.
 
-1. A command tagged `@experimental` in source is auto-mirrored to `tier: 'experimental'` at build time (verified by reading the dist `.d.ts`).
-2. `registry.toMCPServer()` excludes the experimental command from `tools/list`.
-3. `registry.toMCPServer({ tiers: ['stable', 'experimental'] })` includes it.
-4. A `@deprecated` command's MCP description starts with `[DEPRECATED — use X instead]`.
-5. An `@internal` command throws if dispatched from outside its module.
-6. `acture compare-schemas v0.9.0 HEAD` correctly classifies a removed command as MAJOR.
-7. `acture compare-schemas v0.9.0 HEAD --allow-description-edits` downgrades description-only changes to MINOR while still flagging structural changes as MAJOR.
-8. `acture compare-schemas --fail-on major` exits non-zero when MAJOR changes are present (CI gate works).
-9. Devtools inspector renders in the greenfield example.
-10. v1.0.0 published to npm (dry-run with `npm pack` first).
+5. **Deep nested object diffs in `compare-schemas`.** Today the diff walks the top-level `properties` and one level of `enum`/`type`. A research-5 §6.1-faithful classifier would recurse. Important once real users have nested input schemas; not blocking until then.
 
-## Step 4 — Phase 3 findings you should pre-load
+**My recommendation if asked:** ship **#3 (RTK example)** plus one of #1 or #2 depending on user appetite for migration tooling vs. drop-in surface area. #4 and #5 are post-v1.2 polish.
 
-From `docs/phase-3-reflection.md`:
+## Step 3 — Things that are still post-v1.2 (not v1.2 scope)
 
-1. **`@internal` enforcement needs a symbol token** that the registering module captures at module load and presents on dispatch (research-5 §7.5). The token cannot be a string — strings can be reverse-engineered from the bundle. A `Symbol()` per call site is the recommended technique.
-2. **`acture compare-schemas` reads the registry, not the source.** It registers commands from the `<base>` ref by importing the built dist, then does the same for `<head>`, then diffs the two `registry.list()` outputs after projecting through `toJsonSchema`. This means the CLI requires both refs to be built; document this clearly.
-3. **The tier mirror only runs at build time.** If a user writes `@experimental` on a `defineCommand` and ships it without running the build, the runtime `tier` field stays at the default. This is acceptable for v1.0 because the build step is documented as required. Don't add a runtime fallback "scan the .ts source for tags" — that path is too leaky.
-4. **Per-package `vitest.config.ts` is the convention.** All new packages should follow.
-5. **Workspace root has 10 packages + 4 examples now.** `pnpm-workspace.yaml` still globs `packages/*` and `examples/**` — no manual addition needed.
-6. **Manual browser smoke tests are still owed for Phase 2 and Phase 3.** Open `examples/greenfield/graph-editor/` and `examples/migration/zustand-wrap/after/` in a browser, exercise the palette, verify forms render. The CI bundle build is not a substitute.
+These remain `docs/v1_plan.md` §"Post-v1 (deferred, not committed)":
 
-## Step 5 — Decisions you may need to escalate
+- `acture/undo` (hooks reserved in Phase 1 — patches/effects on Result).
+- `acture/macros`, `acture/telemetry`, `acture/sandbox`, `acture/test-property`.
+- `acture/state-jotai`, `acture/state-valtio`.
+- Python companion (research-6 not executed).
 
-1. **CLI distribution.** `acture compare-schemas` lives in `packages/cli/`. Does the `acture` package re-export the CLI bin (so users only `pnpm add acture`), or is `@acture/cli` a separate install? Research-5 doesn't take a side. Default if unclear: keep the bin in `acture` itself so `npx acture compare-schemas` works without a second package.
-2. **Tier symbol token API.** Should `@internal` enforcement be opt-in (commands tagged `@internal` plus a dispatcher check) or automatic at registration time (the build step injects the symbol)? Lean automatic — fewer footguns. Confirm before locking.
-3. **Devtools shape.** A single embeddable React component, or a route-mountable mini-app (with its own state)? Lean component — fits the "host owns rendering" pattern from `acture-hard-donts` §8.
+Do NOT promote any of these without explicit user direction AND three concrete callers.
 
-## Step 6 — Phase 4 reflection (gates v1.0)
+## Step 4 — Hard-don'ts: still in force
 
-When acceptance passes:
+Re-read `.claude/skills/acture-hard-donts/SKILL.md`. Phase 4 added two CommandRecord fields (`deprecationReason`, `internalToken`); v1.1 added zero. The closed-surface principle is what kept Phase 4 from spiraling into Inner-Platform-Effect territory and v1.1 from sneaking a third addition through. Hold the line.
 
-1. Write `docs/phase-4-reflection.md` answering the five questions in `docs/implementation_plan.md` §"Phase 4 → Pre-next-phase reflection checklist".
-2. Update `docs/implementation_plan.md` Phase 4 with `**Status:** ✅ DONE — <date>`.
-3. Update `docs/v1_plan.md` Phase 4 with the same status marker.
-4. Replace this file (`docs/next_session.md`) with a v1.0 release / v1.1 planning prompt.
+Specifically: when a v1.2 contributor proposes a new CommandRecord field, ask "is this composable into the handler?" before approving. The answer is almost always yes; the field is almost never needed.
 
-## Step 7 — What you are NOT doing in Phase 4
+## Step 5 — Release ceremony for whatever v1.2 ships
 
-- Codemods (v1.1).
-- Python companion (post-v1).
-- DOM-event interception (v1.1).
-- `@acture/sync` for cross-process state mirroring (post-v1).
-- `@acture/undo` (post-v1; hooks reserved since Phase 1).
+When v1.2 deliverables are merged and tests are green:
+
+1. Bump the affected packages (only the ones that changed).
+2. `pnpm -r --filter "./packages/*" build && pnpm test` — green.
+3. `npm pack --dry-run` clean for each bumped package.
+4. Tag and publish (owner discretion).
+5. Update `.acture/snapshot.json` baseline on the new tag for future `compare-schemas` runs.
+6. Replace this file with a v1.3 / post-v1 planning prompt.
 
 ## When unsure
 
-Re-read this file, the linked skills, and `docs/implementation_plan.md` §"Phase 4". If still unsure, append a note to `docs/escalations.md` (create if missing) and ask the user before locking in an irreversible decision.
+Re-read this file, `docs/phase-4-reflection.md`, `docs/v1_plan.md` §"Post-v1", and `.claude/skills/acture-hard-donts/SKILL.md`. If still unsure, append a note to `docs/escalations.md` (create if missing) and ask the user before locking in any irreversible decision.
 
-**Good luck. Phase 4 is the phase where acture becomes a v1.0 library — once the tier system enforces API stability and `compare-schemas` gates CI, every consumer of acture has a contract they can rely on.**
+**Good luck.** v1.1 was a small targeted increment; v1.2 can be either similarly small or genuinely strategic (codemods, DOM interception). Don't over-commit. Three concrete callers per addition. Reflection note at `docs/v1_2-reflection.md` (or its rename if scope formalizes) when v1.2 ships.

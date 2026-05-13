@@ -61,9 +61,21 @@ type CommandRecord<P = unknown, R = unknown> = {
 
   /** Tier (research-5). Authoritative source is the JSDoc tag on the defineCommand
    *  call site (@stable / @experimental / @internal / @deprecated). The build step
-   *  mirrors the tag into this field. Authors normally do NOT write this field
-   *  manually — they write the JSDoc tag. */
+   *  (@acture/build-tier) mirrors the tag into this field. Authors normally do NOT
+   *  write this field manually — they write the JSDoc tag. */
   tier?: "stable" | "experimental" | "internal" | "deprecated";
+
+  /** Free-text reason injected by the build step from @deprecated <reason>.
+   *  Adapter packages (@acture/mcp, @acture/ai-vercel) prepend
+   *  `[DEPRECATED — <reason>]` to the description; @acture/devtools surfaces
+   *  it in the inspector. Added in v1.0 (Phase 4) under the rule of three. */
+  deprecationReason?: string;
+
+  /** Module-scoped Symbol attached by the build step when a command is tagged
+   *  @internal. The runtime checks identity at dispatch — cross-module callers
+   *  cannot see the token because it lives in the registering module's closure.
+   *  Authors do NOT write this manually. Added in v1.0 (Phase 4). */
+  internalToken?: symbol;
 
   /** Default ranking score in palette (optional). */
   defaultScore?: number | ((ctx: Context) => number);

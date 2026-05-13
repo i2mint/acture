@@ -42,6 +42,16 @@ export interface ListOptions {
   context?: Context;
 }
 
+/** Options accepted by `dispatch`. */
+export interface DispatchOptions {
+  /** Required to dispatch an `@internal` command. The build-step mirror
+   *  attaches a module-scoped Symbol to every `tier: 'internal'` command;
+   *  the registering module re-exports a `dispatch` wrapper that closes
+   *  over this token, so cross-module callers never see it. See
+   *  `acture-tier-system` skill §"What @internal does (three layers)". */
+  internalToken?: symbol;
+}
+
 export interface Registry {
   register<P, R>(cmd: CommandRecord<P, R>): () => void;
   registerAll(cmds: readonly AnyCommandRecord[]): () => void;
@@ -54,6 +64,7 @@ export interface Registry {
     id: string,
     params?: unknown,
     ctx?: Context,
+    options?: DispatchOptions,
   ): Promise<Result<R>>;
   onCommandsChanged(listener: CommandsChangedListener): () => void;
 }
@@ -191,10 +202,24 @@ export function createRegistry(options?: CreateRegistryOptions): Registry {
     id: string,
     params?: unknown,
     ctx?: Context,
+    options?: DispatchOptions,
   ): Promise<Result<R>> {
     const cmd = commands.get(id);
     if (!cmd) {
       return err('unknown_command', `No command registered with id "${id}"`);
+    }
+    // `@internal` enforcement (research-5 §7.5). Internal commands carry
+    // a Symbol token attached by the registering module. Callers from
+    // outside the module never see it; the dispatch fails closed.
+    if (cmd.tier === 'internal') {
+      const expected = cmd.internalToken;
+      if (expected !== undefined && options?.internalToken !== expected) {
+        return err(
+          'internal_dispatch_denied',
+          `Command "${id}" is @internal and may only be dispatched from the registering module`,
+          { tier: 'internal' },
+        );
+      }
     }
     const context: Context = ctx ?? {};
     if (cmd.when !== undefined && !evaluateWhen(cmd.when, context)) {

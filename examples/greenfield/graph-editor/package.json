@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@acture/ai-vercel": "workspace:*",
+    "@acture/devtools": "workspace:*",
     "@acture/forms-autoform": "workspace:*",
     "@acture/hotkeys": "workspace:*",
     "@acture/mcp": "workspace:*",

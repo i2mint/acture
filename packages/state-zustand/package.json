@@ -1,6 +1,6 @@
 {
   "name": "@acture/state-zustand",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "acture StateAdapter for zustand + zustand/middleware/immer. Phase 1's documented happy path.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",

@@ -58,7 +58,7 @@ registry.toPaletteCommands({ tiers: ['stable', 'experimental'] });        // dev
 
 - NOT in `tools/list` by default.
 - Appears only when server constructed with `tiers: ['stable', 'experimental']`. Opt-in is a server-construction option, NOT a per-request header (the MCP spec does not yet support per-request tier negotiation).
-- On first dispatch in production: `console.warn(...)` once per process. Suppressible via `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1`.
+- On first dispatch when `enableTierWarnings(registry)` is wired up: `console.warn(...)` once per command per process. Suppressible via `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1` env var, or by passing `enabled: false` to `enableTierWarnings`. Implemented in `packages/core/src/tier-warnings.ts`. Not automatic — the host must opt in by calling `enableTierWarnings(registry)` once at app boot.
 - Graduation: removing `@experimental` + adding `@stable` is a **MINOR** change (pure expansion of the default surface).
 
 ## What `@deprecated` does at runtime
@@ -80,14 +80,22 @@ Module-level closure plus symbol-keyed access is the closest TypeScript gets to 
 ## `acture compare-schemas` CLI (research-5 §6)
 
 ```bash
-acture compare-schemas <base> [<head>]    # default head = working tree
-acture compare-schemas --against main     # buf-style ref syntax
+acture compare-schemas <base> [<head>]    # base/head are paths to snapshot JSON files OR git refs
 acture compare-schemas --fail-on major    # CI gate
-acture compare-schemas --tier stable      # only check stable-tier commands
+acture compare-schemas --format json      # machine output
 acture compare-schemas --allow-description-edits  # per-invocation, NOT a config setting
+acture compare-schemas --snapshot-path .acture/snapshot.json  # when args are git refs
 ```
 
-Walks registry in both refs, projects every command through the schema bridge, compares **tool envelopes** (not just inputSchema).
+Lives in `packages/cli/` (`@acture/cli`). Reads two pre-rendered snapshots and diffs them. The snapshot is produced by `snapshotRegistry(registry)` (programmatic) or by `acture snapshot <config>` (CLI subcommand, v1.1+):
+
+```bash
+acture snapshot ./registry.mjs --out .acture/snapshot.json    # write to file
+acture snapshot ./registry.mjs                                # write to stdout
+acture snapshot ./registry.mjs --tiers stable,experimental    # filter tiers
+```
+
+For `.ts` configs the user runs Node ≥22.6 with `--experimental-strip-types`, or uses `tsx node_modules/.bin/acture snapshot ./registry.ts`. Field-level diff is shallow (top-level `properties` and one level of `enum`/`type`); deep-object diff is a v1.2 polish.
 
 ## Change classifications (research-5 §6.1)
 

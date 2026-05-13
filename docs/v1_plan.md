@@ -220,12 +220,14 @@ Scope:
 
 ### Phase 4 — Stability, tier system, devtools
 
+**Status:** ✅ DONE — 2026-05-13
+
 **Goal:** Move from "works" to "production-ready."
 
 Scope per research-5:
-- API tier system: JSDoc tags + build-step metadata mirror; runtime gating with `tiers: [...]` opt-in.
-- `acture compare-schemas` CLI per research-5 §6: full-surface diff (descriptions MAJOR by default with `--allow-description-edits` per-invocation), tier-aware, JSON output for machines, colored text for humans.
-- `acture/devtools`: inspector UI for the registry, dispatch log, when-clause evaluator state.
+- API tier system: JSDoc tags + build-step metadata mirror (`@acture/build-tier`); runtime gating with `tiers: [...]` opt-in (already in core; deprecation banner reads `deprecationReason` from build-step mirror).
+- `acture compare-schemas` CLI per research-5 §6: full-surface diff (descriptions MAJOR by default with `--allow-description-edits` per-invocation), tier-aware, JSON output for machines, colored text for humans. (`@acture/cli` package.)
+- `@acture/devtools`: inspector UI for the registry, dispatch log, when-clause evaluator state.
 - Hardening: error messages, edge cases, JSDoc.
 - v1.0 release.
 

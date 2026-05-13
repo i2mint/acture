@@ -24,6 +24,7 @@ export {
 export type {
   Registry,
   CreateRegistryOptions,
+  DispatchOptions,
   ListOptions,
   CommandsChangedEvent,
   CommandsChangedListener,
@@ -61,6 +62,9 @@ export {
   isErr,
 } from './result.js';
 
+export { enableTierWarnings } from './tier-warnings.js';
+export type { EnableTierWarningsOptions } from './tier-warnings.js';
+
 export type {
   // Core data shapes
   CommandRecord,
@@ -79,5 +83,5 @@ export type {
   DefaultScore,
 } from './types.js';
 
-/** Package version. Updated by build step at Phase 4. */
-export const __version = '0.1.0-dev' as const;
+/** Package version. */
+export const __version = '1.1.0' as const;

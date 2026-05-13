@@ -1,0 +1,71 @@
+{
+  "name": "@acture/build-tier",
+  "version": "1.0.0",
+  "description": "Build-time tier mirror. Scans .ts source for @stable / @experimental / @internal / @deprecated JSDoc tags on defineCommand calls and mirrors them into the runtime command's tier metadata. Ships an esbuild plugin and a Vite plugin.",
+  "license": "Apache-2.0",
+  "author": "Thor Whalen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorwhalen/acture.git",
+    "directory": "packages/build-tier"
+  },
+  "homepage": "https://github.com/thorwhalen/acture#readme",
+  "bugs": "https://github.com/thorwhalen/acture/issues",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./esbuild": {
+      "types": "./dist/esbuild.d.ts",
+      "import": "./dist/esbuild.js",
+      "require": "./dist/esbuild.cjs"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js",
+      "require": "./dist/vite.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@acture/mcp": "workspace:*",
+    "@types/node": "^22.10.0",
+    "acture": "workspace:*",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "zod": "^4.0.0"
+  },
+  "keywords": [
+    "acture",
+    "tier-system",
+    "jsdoc",
+    "esbuild-plugin",
+    "vite-plugin",
+    "stable",
+    "experimental",
+    "deprecated",
+    "internal"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

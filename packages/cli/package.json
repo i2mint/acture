@@ -1,0 +1,64 @@
+{
+  "name": "@acture/cli",
+  "version": "1.1.0",
+  "description": "Acture CLI. Includes `compare-schemas` — diff two registry snapshots (per research-5 §6) with classifications, CI gating, and JSON/text output.",
+  "license": "Apache-2.0",
+  "author": "Thor Whalen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorwhalen/acture.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/thorwhalen/acture#readme",
+  "bugs": "https://github.com/thorwhalen/acture/issues",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "acture": "./dist/cli.js"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "acture": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "acture": "workspace:*",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "zod": "^4.0.0"
+  },
+  "keywords": [
+    "acture",
+    "cli",
+    "compare-schemas",
+    "schema-diff",
+    "mcp",
+    "ci"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
