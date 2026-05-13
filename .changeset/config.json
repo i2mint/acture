@@ -1,0 +1,29 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.4/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [
+    [
+      "acture",
+      "@acture/state-zustand",
+      "@acture/state-redux",
+      "@acture/palette-react",
+      "@acture/hotkeys",
+      "@acture/forms-autoform",
+      "@acture/forms-rjsf",
+      "@acture/mcp",
+      "@acture/ai-vercel",
+      "@acture/migration"
+    ]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@acture/example-graph-editor",
+    "@acture/example-drop-in",
+    "@acture/example-zustand-wrap-before",
+    "@acture/example-zustand-wrap-after"
+  ]
+}

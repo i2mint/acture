@@ -1,6 +1,6 @@
 {
   "name": "@acture/migration",
-  "version": "0.1.0-dev",
+  "version": "0.2.0",
   "description": "Strangler-fig migration primitives for adopting acture in an existing codebase. Four functions: wrapMutation, actureMiddleware, chooseImplementation, shadowCompare.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",

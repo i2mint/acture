@@ -1,0 +1,120 @@
+name: Release
+
+# Triggered on every push to main. Behavior depends on changeset state:
+#
+#   - Pending changesets present → opens (or updates) a "Version Packages"
+#     PR that bumps versions and writes CHANGELOGs. No publish.
+#   - No pending changesets AND versions in repo are ahead of the
+#     registries → publishes the 10 npm packages and the Python stub.
+#   - No pending changesets AND versions match the registries → no-op.
+#
+# Secrets consumed (already configured on the repo):
+#   - NPM_TOKEN        — npm publish auth (set with `npm config set //…/token`).
+#   - PYPI_PASSWORD    — PyPI token (used as TWINE_PASSWORD; username "__token__").
+#   - GITHUB_TOKEN     — auto-provided; used to open the Version Packages PR.
+
+on:
+  push:
+    branches: [main]
+
+# Avoid two release runs racing on consecutive merges.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write  # reserved for PyPI Trusted Publishers if we adopt it later
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    # Avoid running on the merge commit that the changesets action itself
+    # creates (it would be a noisy no-op).
+    if: github.event.head_commit.message != 'chore(release): bump versions'
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      published-packages: ${{ steps.changesets.outputs.publishedPackages }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Build BEFORE publish — tsup produces dist/ which packages reference
+      # in their `files` field. Without this, published tarballs would be
+      # empty. Build first so subsequent typecheck can resolve workspace
+      # types out of dist/.
+      - name: Build
+        run: pnpm -r --filter "./packages/*" build
+
+      # Gate the release on the same checks ci.yml runs. If they fail we
+      # never publish, even when changesets thinks a publish is queued.
+      - name: Typecheck
+        run: pnpm -r --filter "./packages/*" typecheck
+
+      - name: Test
+        run: pnpm -r --filter "./packages/*" test
+
+      # changesets/action does one of:
+      #   - opens/updates a "Version Packages" PR if changesets/*.md exist,
+      #   - runs the `publish` script otherwise (which publishes to npm).
+      - name: Changesets — version PR or publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm version-packages
+          publish: pnpm release
+          commit: "chore(release): bump versions"
+          title: "chore(release): version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  pypi:
+    name: Publish Python stub to PyPI
+    runs-on: ubuntu-latest
+    needs: release
+    # Only run when the upstream npm publish succeeded.
+    if: needs.release.outputs.published == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade build twine
+
+      - name: Build sdist + wheel
+        working-directory: python
+        run: python -m build
+
+      - name: Check distribution
+        working-directory: python
+        run: python -m twine check dist/*
+
+      # If the version on PyPI already matches what's in this commit
+      # (e.g. PyPI was published earlier but the npm half re-ran),
+      # `--skip-existing` keeps the workflow green.
+      - name: Upload to PyPI
+        working-directory: python
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: python -m twine upload --skip-existing dist/*

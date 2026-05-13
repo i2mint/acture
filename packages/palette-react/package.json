@@ -1,6 +1,6 @@
 {
   "name": "@acture/palette-react",
-  "version": "0.1.0-dev",
+  "version": "0.2.0",
   "description": "acture command palette for React — minimal Phase 1 version. Parameter-free commands only.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",

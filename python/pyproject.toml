@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "acture"
+dynamic = ["version"]
+description = "Typed schema-driven command dispatch — placeholder Python distribution. The library itself lives on npm (https://www.npmjs.com/package/acture)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Thor Whalen" }]
+keywords = ["acture", "command-dispatch", "placeholder"]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Libraries",
+]
+
+[project.urls]
+Homepage = "https://github.com/thorwhalen/acture"
+Repository = "https://github.com/thorwhalen/acture"
+Issues = "https://github.com/thorwhalen/acture/issues"
+
+[tool.hatch.version]
+path = "acture/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["acture"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/acture", "/README.md"]

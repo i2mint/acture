@@ -4,9 +4,24 @@
 
 Acture is a typed, schema-driven command dispatch library for TypeScript/React applications. Define an operation once; it becomes available as a command palette entry, a keyboard shortcut, an AI tool call, an MCP server tool, a test action, and (post-v1) a macro step.
 
+## Install
+
+```bash
+pnpm add acture                   # core
+pnpm add @acture/state-zustand    # state adapter (or @acture/state-redux)
+pnpm add @acture/palette-react    # command palette UI
+pnpm add @acture/hotkeys          # keyboard shortcuts
+pnpm add @acture/mcp              # MCP server projection
+pnpm add @acture/ai-vercel        # Vercel AI tool definitions
+pnpm add @acture/migration        # strangler-fig adoption primitives
+# …plus @acture/forms-autoform and @acture/forms-rjsf for parameterized commands.
+```
+
+> The `acture` name is also reserved on PyPI as a placeholder; a real Python companion is post-v1. `pip install acture` gives you a no-op package whose only purpose is to keep the name ours.
+
 ## Status
 
-**v0.1.0-dev (Phase 3 DONE, 2026-05-13).** Ten packages ship in the workspace:
+**v0.2.0 (Phase 3 DONE, 2026-05-13).** Ten packages ship in the workspace:
 
 | Package | Role |
 | --- | --- |

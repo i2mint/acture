@@ -3,6 +3,12 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Python build artifacts (python/ stub)
+__pycache__/
+*.egg-info/
+build/
+*.whl
+
 # Build/test outputs
 coverage/
 *.log
