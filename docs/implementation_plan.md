@@ -79,6 +79,8 @@ When this reflection note is committed, Phase 0 is done.
 
 ## Phase 1 — Minimal v0 core
 
+**Status:** ✅ DONE — 2026-05-13. Reflection: [`docs/phase-1-reflection.md`](phase-1-reflection.md). Acceptance: [`docs/phase-1-acceptance.md`](phase-1-acceptance.md).
+
 **Goal:** A working `acture/core` validated end-to-end against a worked example with one consumer adapter. The command record shape, dispatcher signature, when-clause DSL, and state adapter interface are committed.
 
 ### Scope

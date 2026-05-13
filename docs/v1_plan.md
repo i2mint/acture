@@ -168,6 +168,8 @@ This section names the phases. **Each phase is a gate, not a waypoint.** [`imple
 
 ### Phase 1 — Minimal v0 core (research-independent)
 
+**Status:** ✅ DONE — 2026-05-13. See [`phase-1-reflection.md`](phase-1-reflection.md) and [`phase-1-acceptance.md`](phase-1-acceptance.md).
+
 **Goal:** A working `acture/core` validated end-to-end against a worked example with one consumer adapter.
 
 Scope:

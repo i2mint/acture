@@ -1,122 +1,111 @@
-# Next Session — Phase 1
+# Next Session — Phase 2
 
-**Your role:** You are the Phase 1 implementing agent. Phase 0 (scaffold + name reservation + CI) is done. Your job is to ship a working `acture/core` validated end-to-end against a worked example with one consumer adapter. **Treat this as a real implementation phase, not a scaffold.**
+**Your role:** You are the Phase 2 implementing agent. Phase 1 (core + state-zustand + minimal palette-react + graph-editor example) is **DONE** as of 2026-05-13. Your job is to ship the consumer-adapter buildout that makes acture useful across all three positioning paths (greenfield, strangler-fig, drop-in).
 
-**Phase 0 finished 2026-05-13.** Repo state at handoff:
+**Phase 1 finished 2026-05-13.** Repo state at handoff:
 
-- `acture` is published at v0.0.0 on both npm and PyPI (name-reservation stubs).
-- pnpm workspace monorepo at `/Users/thorwhalen/Dropbox/py/proj/tt/acture/`.
-- One package: `packages/core/` (npm name: `acture`). Exports only `defineCommand` (freeze-only smoke stub) and `__version`.
-- CI at `.github/workflows/ci.yml` runs typecheck + test + build + pack on push/PR. **Not yet pushed — the first push to `main` is what verifies CI green.**
-- Smoke test at `packages/core/src/index.test.ts` (3 tests, all pass).
+- `acture` v0.1.0-dev published to the workspace with the closed-surface `CommandRecord`, `createRegistry`, `defineCommand`, when-clause DSL, `StateAdapter<S>` types, `toJsonSchema`, `Result<R>`.
+- `@acture/state-zustand` v0.1.0-dev wraps zustand+immer as a `PatchCapableAdapter<S>`.
+- `@acture/palette-react` v0.1.0-dev ships a minimal cmdk-based palette. Parameterized commands show a "Phase 2" badge and are NOT dispatchable from the palette yet — that is YOUR job.
+- `examples/greenfield/graph-editor/` worked example: 8 commands (7 user-facing + 1 internal reset for tests), Vite dev server, all mutations flow through `registry.dispatch`.
+- 94 tests pass (72 core + 7 state-zustand + 8 palette-react + 7 example).
+- Phase 0 CI verified green on `main`.
 
 ---
 
 ## Step 1 — Orient
 
-Read in this order (~60 minutes total reading):
+Read in this order (~60 minutes total):
 
-1. `AGENTS.md` — orientation.
-2. `docs/phase-0-reflection.md` — what Phase 0 found and the three doc-hidden-assumption notes (read carefully; they save you time).
-3. `.claude/skills/acture-architecture-primer/SKILL.md` — the three primitives.
-4. `.claude/skills/acture-command-record-shape/SKILL.md` — the canonical `CommandRecord` shape (this is your contract).
-5. `.claude/skills/acture-state-adapter/SKILL.md` — the `StateAdapter<S>` interface.
-6. `.claude/skills/acture-schema-bridge/SKILL.md` — Zod → JSON Schema, MCP emission.
-7. `.claude/skills/acture-hard-donts/SKILL.md` — merge checklist (re-read before every commit).
-8. `docs/v1_plan.md` §4 — `CommandRecord` shape (closed surface).
-9. `docs/implementation_plan.md` §"Phase 1" — your exact scope and acceptance criteria.
-10. `docs/research/acture_research_1 ...md` and `acture_research_3 ...md` — research-1 informs the CommandRecord shape, research-3 informs the StateAdapter. **Skip research-2, 4, 5** unless your work touches palette parameters, migration, or the tier system — those are Phase 2/3/4 concerns.
+1. `docs/phase-1-reflection.md` — what Phase 1 found. Specifically:
+   - §1 on the `AnyCommandRecord = CommandRecord<any, any>` variance concession.
+   - §2 on the `previous` parameter quirk that will surface again with RTK.
+   - §3 on the 503-LOC when-clause parser; **don't grow it** without considering a parser combinator.
+   - §4 on the four docs gaps surfaced by the second-agent test.
+   - §6 observations on `Patch.op` enum (don't grow it) and Phase 1's reserved-hooks status.
+2. `docs/phase-1-acceptance.md` — what passed, what was flagged.
+3. `.claude/skills/acture-palette-design/SKILL.md` — parameterized-palette UX. The auto-derived `kind` heuristic per research-2 §9.3 is YOUR primary deliverable.
+4. `.claude/skills/acture-schema-bridge/SKILL.md` — for the MCP and AI SDK projections.
+5. `.claude/skills/acture-tier-system/SKILL.md` — for tier-aware filtering in MCP / AI surfaces.
+6. `.claude/skills/acture-hard-donts/SKILL.md` — re-read before every commit.
+7. `docs/implementation_plan.md` §"Phase 2 — Adapter buildout" — your exact scope and acceptance criteria.
+8. `docs/research/acture_research_2 ...md` — the parameterized-command UX research. **Read this carefully**; it informs every palette + form decision.
+9. `docs/parameterized_command_palette_guide.md` — implementation patterns. Defer to research-2 §9 if there is a conflict.
 
-**Do NOT read in this session:** `parameterized_command_palette_guide.md` (Phase 2 territory); the migration skills (Phase 3 territory); research findings 2/4/5 unless directly relevant.
+**Do NOT read in this session unless directly relevant:** the migration package (`acture-migration-package` skill, research-4), the tier-system enforcement at build time (research-5 §7) — both are Phase 3 / 4 work.
 
-## Step 2 — Phase 1 scope (per `docs/implementation_plan.md`)
+## Step 2 — Phase 2 scope
 
-**Packages to build:**
+Per `docs/implementation_plan.md` §"Phase 2 — Adapter buildout":
 
-1. **`packages/core/`** — replace the smoke stub with the real implementation:
-   - Real `defineCommand<P, R>(spec): CommandRecord<P, R>` per `v1_plan.md` §4. Validate at registration that param schemas are in the JSON-Schema-representable subset.
-   - `createRegistry(options?): Registry` — owner-scoped disposables, `commandsChanged` event, `dispatch(id, params, ctx?)`, `get(id)`, `list()`, tier-aware `list({ tiers: [...] })`.
-   - `WhenClauseEvaluator` — DSL parser/evaluator for `!`, `&&`, `||`, `==`, `!=`, `>=`, `<=`, `=~`, `in`, `not in`, plus a function escape hatch `(ctx) => boolean`.
-   - `StateAdapter<S>` interface (per research-3 §5): `getState`, `setState(updater)`, `subscribe(listener)`. Plus `PatchCapableAdapter<S>` sub-interface and `isPatchCapable<S>` type guard.
-   - Schema bridge: `toJsonSchema(record, options?)` accepting an injected converter; default uses Zod v4's `z.toJSONSchema`.
-   - `Result<R>` discriminated union with **reserved** `patches?` and `effects?` hooks (Phase 1 ignores them; they exist so post-v1 undo is non-breaking).
+**Packages to add:**
 
-2. **`packages/state-zustand/`** (NEW) — ~50 LOC. `createZustandAdapter<S>(store): PatchCapableAdapter<S>` wrapping `zustand/vanilla` `createStore`, using `zustand/middleware/immer` with `produceWithPatches`. npm package name: confirm with the user (see Step 5 #1).
+1. **`packages/hotkeys/`** (`@acture/hotkeys`) — tinykeys integration. Plain DOM API + optional React hook.
+2. **`packages/palette-react/`** — EXTEND. Add parameterized-command support per research-2 §9.3:
+   - `kind` auto-derivation from the schema (0 params: atomic; 1-2 picker-typed: atomic; 3 picker-typed-with-defaults: atomic; else: handoff).
+   - For `kind: "atomic"`: render an in-palette picker chain.
+   - For `kind: "handoff"`: close the palette; open a form view via the host-supplied form adapter.
+3. **`packages/state-redux/`** (`@acture/state-redux`) — RTK reference adapter. Same `StateAdapter<S>` interface; verify `previous` quirk from Phase 1's reflection.
+4. **`packages/forms-autoform/`** (`@acture/forms-autoform`) — Zod-native form adapter implementing `paramCollector(schema): React.ComponentType<{onSubmit, onCancel}>`.
+5. **`packages/forms-rjsf/`** (`@acture/forms-rjsf`) — JSON-Schema-native form adapter (same interface).
+6. **`packages/mcp/`** (`@acture/mcp`) — MCP server adapter. `registry.toMCPServer({ tiers })` style. Errors-as-data. Deprecation banner prefixes per research-5 §7.4.
+7. **`packages/ai-vercel/`** (`@acture/ai-vercel`) — Vercel AI SDK adapter. Same tier rules.
 
-3. **`packages/palette-react/`** (NEW) — minimal Phase 1 version. **Parameter-free commands only.** Wraps cmdk's `<Command>`. Iterates `registry.list()`, filters by tier (default `['stable']`), groups by `category`, shows keybinding hints. Listens for `commandsChanged`. Parameterized command UX is **Phase 2**, not your problem.
+**Worked examples to extend:**
 
-**Worked example:** `examples/greenfield/graph-editor/` with 6–8 commands per the implementation plan. All state mutations go through `registry.dispatch` — no direct `setState` outside `execute` handlers.
+- `examples/greenfield/graph-editor/` — extend with hotkeys, parameterized palette (the `app.graph.addNode({x,y,label})` command should now be reachable from the palette), an MCP server demo, and a Vercel AI SDK demo.
+- `examples/drop-in/` — NEW. A small existing-app skeleton with a 5-minute "add a palette + MCP server" bolt-on.
 
-**Tests:**
-- Property-based (fast-check) registry invariants.
-- When-clause DSL parser/evaluator unit tests.
-- `toJsonSchema` snapshot tests.
-- Integration test: `JSON.stringify(adapter.getState())` round-trips through `JSON.parse`.
+## Step 3 — Acceptance criteria (per `docs/implementation_plan.md` §"Phase 2")
 
-## Step 3 — Acceptance test (from `docs/implementation_plan.md` §"Phase 1")
+1. Both worked examples (greenfield + drop-in) run.
+2. Parameterized commands in the graph editor's palette work as research-2 prescribes (atomic/handoff per the heuristic; explicit override demo).
+3. MCP client (`@modelcontextprotocol/inspector`) lists the graph editor's commands as tools, can call one, gets a valid `Result` response.
+4. Vercel AI SDK demo: Claude or GPT invokes the graph-editor commands and composes a multi-step action.
+5. Tier filtering: `@experimental` commands hidden by default in MCP `tools/list`; explicit `tiers: ['stable', 'experimental']` includes them.
+6. CI green across the new packages.
 
-1. Graph editor example runs (`pnpm dev` in `examples/greenfield/graph-editor/`).
-2. `rg "store.setState" packages/ examples/greenfield/graph-editor/src/ -t ts` finds zero matches outside `execute` handlers.
-3. Property tests pass.
-4. **Second-agent test:** a fresh agent, given only `packages/core/README.md`, writes a 7th command (`app.graph.renameNode`) and the example accepts it without changes to registry or palette. Document the dialogue in `docs/phase-1-acceptance.md`.
-5. State round-trips through JSON.
-6. CI green.
+## Step 4 — Phase 1 findings you should pre-load
 
-## Step 4 — What Phase 0 surfaced that you should know
+From `docs/phase-1-reflection.md`:
 
-Three findings from `docs/phase-0-reflection.md` you'll otherwise re-discover the hard way:
-
-1. **Per-package vitest config, not workspace-root.** The workspace-root `vitest.config.ts` is intentionally an inert `export default {}`. Vitest finds the per-package config first when run from inside a package directory. When you add `packages/state-zustand/` and `packages/palette-react/`, add their own `vitest.config.ts`. Do NOT try to centralize at root unless you also add `vitest` to root devDependencies (and even then, the per-package one wins for `pnpm -r test`).
-
-2. **`pnpm-workspace.yaml` build-script gating.** pnpm 10+ blocks install-time scripts by default. The current file already approves `esbuild`. Most Phase 1 deps (`zustand`, `cmdk`, `zod`, `immer`, `react`) have no postinstall. If install errors with `[ERR_PNPM_IGNORED_BUILDS]`, add the offender to both `allowBuilds:` and `onlyBuiltDependencies:`.
-
-3. **Sibling-package imports.** New packages MUST import from `acture` by name (`"acture": "workspace:*"` in package.json), not via relative path. The `exports` map only applies to package-name imports. Relative paths produce invalid emit and bypass the `exports` map.
-
-Also non-obvious from the docs:
-
-4. **`pnpm pack` auto-includes the workspace-root `LICENSE`** even when no per-package LICENSE exists. This is desirable. Don't be surprised when the tarball contains LICENSE.
-5. The root `tsconfig.json` is an inert stub (`include: []`). Each package has its own. Project references were deliberately deferred — add them only if you find IDE friction across packages.
+1. **Variance trap.** `AnyCommandRecord` is `CommandRecord<any, any>` (NOT `<unknown, unknown>`) for sound contravariance. Don't try to "fix" the `any`; it's intentional. See `packages/core/src/types.ts`.
+2. **`previous` in subscribe(listener).** zustand passes both `(next, prev)`; RTK doesn't. When you write `@acture/state-redux`, document the limitation: RTK adapters pass the current value as `previous` since RTK doesn't track it. Don't reshape the StateAdapter contract.
+3. **When-clause DSL is at ~500 LOC.** Don't grow it in Phase 2 unless you're consolidating multiple use cases. Specifically: do **not** add `>` / `<` bare-operators without a three-caller justification (the rejection is intentional — see `when.ts` and `phase-1-reflection.md` §3).
+4. **`Patch.op` enum is `'add' | 'remove' | 'replace'` only.** Don't grow it; Immer doesn't produce `'copy'` / `'move'`.
+5. **Docs gaps logged in `phase-1-acceptance.md` §4** (factory-pattern undocumented, state-shape undocumented, `noUncheckedIndexedAccess` undocumented, `getState()` not called out) — fix them as part of Phase 2's docs deliverable. The graph-editor README should grow a "How to add a command" section.
+6. **Per-package `vitest.config.ts` is the convention.** Workspace root has an inert `export default {}`.
 
 ## Step 5 — Decisions you may need to escalate
 
-These affect the public API surface. Stop and ask via `docs/escalations.md` if low confidence:
+1. **Hotkeys keybinding-conflict resolution.** Multiple commands with overlapping keybindings (e.g. one `when: 'editor.focused'` and one `when: '!editor.focused'`) need a tiebreaker. Research-1 surveyed Obsidian / Raycast / Linear; they all defer to a "first registered wins under matching context" rule. Confirm with the user before locking in.
+2. **Auto-derived `kind` heuristic edge cases.** Research-2 §9.3's heuristic is sharp at the cliffs (3 picker-typed-with-defaults: atomic; otherwise handoff). The override rate target is <30%; if your worked example hits >30% override, refine the heuristic before Phase 3.
+3. **`@acture/forms-autoform` vs `@acture/forms-rjsf` priority.** Both ship in Phase 2 per the plan. If timeboxing forces a choice, autoform first (Zod-native = matches the recommended authoring layer).
+4. **MCP transport.** Server-side `@modelcontextprotocol/sdk` (Node) vs the in-browser variant — confirm with the user which is the v1 default. Lean Node-side for greenfield, browser-side for drop-in.
 
-1. **Subpackage naming convention.** `docs/v1_plan.md` uses `acture/state-zustand` in some places and `@acture/state-zustand` in others — they mean different things on npm. `@acture/<name>` is the standard scoped pattern and supports independent versioning. **Ask the user before publishing the second package.** Lean toward `@acture/state-zustand`.
-
-2. **`CommandRecord.params` schema authoring layer.** `v1_plan.md` §4 says "Standard Schema accepted at boundary, Zod is the recommended authoring layer." Decide: Phase 1 ships strict Zod-only (smaller surface, faster) or Standard Schema (broader, slower). Lean Zod-only unless the user pushes back.
-
-3. **When-clause DSL parser depth.** The operator set is locked. Decide between hand-rolled (small, no deps) and parser combinator (clearer, ~one dep). Either is defensible; if you pick the combinator, justify the dep in the reflection.
-
-4. **Zustand version.** Pin to zustand v5 (current stable). Confirm with `npm view zustand version` at the start.
-
-## Step 6 — Phase 1 reflection (gates Phase 2)
+## Step 6 — Phase 2 reflection (gates Phase 3)
 
 When acceptance passes:
 
-1. Write `docs/phase-1-reflection.md` answering the six questions in `docs/implementation_plan.md` §"Phase 1 → Pre-next-phase reflection checklist".
-2. Update `docs/implementation_plan.md` Phase 1 with a `**Status:** ✅ DONE — <date>` marker (matching the Phase 0 marker convention).
-3. Update `docs/v1_plan.md` Phase 1 with the same status marker.
-4. Replace this file (`docs/next_session.md`) with a Phase 2 handoff prompt.
+1. Write `docs/phase-2-reflection.md` answering the six questions in `docs/implementation_plan.md` §"Phase 2 → Pre-next-phase reflection checklist".
+2. Update `docs/implementation_plan.md` Phase 2 with `**Status:** ✅ DONE — <date>`.
+3. Update `docs/v1_plan.md` Phase 2 with the same status marker.
+4. Replace this file (`docs/next_session.md`) with a Phase 3 handoff prompt.
 
-## Step 7 — What you are NOT doing in Phase 1
+## Step 7 — What you are NOT doing in Phase 2
 
-- Hotkeys integration (Phase 2).
-- Parameterized palette commands (Phase 2 — `kind` field is on the record, but the palette UX is Phase 2).
-- Forms adapters (Phase 2).
-- RTK adapter (Phase 2).
-- MCP / AI adapters (Phase 2).
 - Migration package (Phase 3).
-- Tier system enforcement / `acture compare-schemas` (Phase 4).
+- Tier-system enforcement at build time (Phase 4).
+- `acture compare-schemas` CLI (Phase 4).
 - Devtools UI (Phase 4).
+- The Python companion package (post-v1).
 
-If you find yourself implementing one of these, stop. Either it belongs in a later phase or your scope has crept.
+## Step 8 — A note on Phase 1's branch
 
-## Step 8 — Don't forget to push
-
-Phase 0 left CI unverified — the workflow exists but no commit has been pushed to `main`. **First action after the user gives go-ahead:** confirm with the user whether to commit Phase 0's scaffold first (clean commit) and push, then start Phase 1 implementation on a separate branch. Acceptance test #6 ("CI green") covers Phase 0's tail and Phase 1's head together.
+Phase 1 lives on the `phase-1` branch. By the time you start, it should be merged to `main` via PR. If you find unmerged Phase 1 work on `main` for any reason, talk to the user before proceeding.
 
 ## When unsure
 
-Re-read this file, the linked skills, and `docs/implementation_plan.md` §"Phase 1". If still unsure, append a note to `docs/escalations.md` and ask the user before locking in an irreversible decision (per `implementation_plan.md` §"Sequencing of irreversible architectural decisions").
+Re-read this file, the linked skills, and `docs/implementation_plan.md` §"Phase 2". If still unsure, append a note to `docs/escalations.md` and ask the user before locking in an irreversible decision.
 
-**Good luck. Phase 1 is the deepest commitment in the v1.0 timeline — the `CommandRecord` shape and the dispatcher signature are the things subsequent phases all build on. Be deliberate.**
+**Good luck. Phase 2 is the phase where acture earns its name — once parameterized palette, MCP, and AI adapters land, every primitive becomes consumable from every surface for the first time.**

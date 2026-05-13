@@ -1,13 +1,13 @@
 {
-  "name": "acture",
+  "name": "@acture/state-zustand",
   "version": "0.1.0-dev",
-  "description": "Typed schema-driven command dispatch library. Core: registry, dispatcher, when-clause DSL, state adapter interface, schema bridge.",
+  "description": "acture StateAdapter for zustand + zustand/middleware/immer. Phase 1's documented happy path.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thorwhalen/acture.git",
-    "directory": "packages/core"
+    "directory": "packages/state-zustand"
   },
   "homepage": "https://github.com/thorwhalen/acture#readme",
   "bugs": "https://github.com/thorwhalen/acture/issues",
@@ -36,24 +36,19 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "zod": "^4.0.0"
+    "acture": "workspace:*",
+    "immer": "^11.0.0 || ^10.0.0",
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
-    "fast-check": "^4.0.0",
+    "acture": "workspace:*",
+    "immer": "^11.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0",
-    "zod": "^4.0.0"
+    "zustand": "^5.0.0"
   },
-  "keywords": [
-    "command-dispatch",
-    "command-palette",
-    "schema",
-    "mcp",
-    "ai-tools",
-    "zod",
-    "typescript"
-  ],
+  "keywords": ["acture", "zustand", "immer", "state", "command-dispatch"],
   "publishConfig": {
     "access": "public"
   }

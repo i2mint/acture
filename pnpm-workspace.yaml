@@ -1,5 +1,6 @@
 packages:
   - 'packages/*'
+  - 'examples/**'
 
 # pnpm 10+ requires explicit approval for packages that run install-time scripts.
 # esbuild's postinstall installs its native binary (used by tsup/vitest).

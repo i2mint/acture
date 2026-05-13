@@ -1,13 +1,13 @@
 {
-  "name": "acture",
+  "name": "@acture/palette-react",
   "version": "0.1.0-dev",
-  "description": "Typed schema-driven command dispatch library. Core: registry, dispatcher, when-clause DSL, state adapter interface, schema bridge.",
+  "description": "acture command palette for React — minimal Phase 1 version. Parameter-free commands only.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thorwhalen/acture.git",
-    "directory": "packages/core"
+    "directory": "packages/palette-react"
   },
   "homepage": "https://github.com/thorwhalen/acture#readme",
   "bugs": "https://github.com/thorwhalen/acture/issues",
@@ -36,24 +36,25 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "zod": "^4.0.0"
+    "acture": "workspace:*",
+    "cmdk": "^1.0.0",
+    "react": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
-    "fast-check": "^4.0.0",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "acture": "workspace:*",
+    "cmdk": "^1.0.0",
+    "jsdom": "^25.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0",
     "zod": "^4.0.0"
   },
-  "keywords": [
-    "command-dispatch",
-    "command-palette",
-    "schema",
-    "mcp",
-    "ai-tools",
-    "zod",
-    "typescript"
-  ],
+  "keywords": ["acture", "command-palette", "cmdk", "react"],
   "publishConfig": {
     "access": "public"
   }
