@@ -16,6 +16,10 @@ name: Release
 on:
   push:
     branches: [main]
+  # Manual fire from the Actions tab — useful for re-running a failed
+  # publish (e.g. after rotating NPM_TOKEN or fixing PyPI credentials)
+  # without having to push a fresh commit to main.
+  workflow_dispatch:
 
 # Avoid two release runs racing on consecutive merges.
 concurrency:
