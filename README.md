@@ -26,7 +26,7 @@ pnpm add -D @acture/devtools      # embeddable <Inspector /> for dev builds
 
 ## Status
 
-**v1.2.0 (Phase 4 DONE + v1.1 + v1.2 increments, 2026-05-13).** Fourteen packages ship in the workspace:
+**v1.3.0 (Phase 4 DONE + v1.1 + v1.2 + v1.3 increments, 2026-05-13).** Fourteen packages ship in the workspace:
 
 | Package | Role |
 | --- | --- |
@@ -43,7 +43,7 @@ pnpm add -D @acture/devtools      # embeddable <Inspector /> for dev builds
 | [`@acture/build-tier`](packages/build-tier) | build-step plugin that mirrors `@stable`/`@experimental`/`@internal`/`@deprecated` JSDoc into runtime `tier`; regex default + AST mode polish |
 | [`@acture/cli`](packages/cli) | `acture compare-schemas` (CI gating, deep nested diffs) + `acture snapshot` (registry → JSON) |
 | [`@acture/devtools`](packages/devtools) | embeddable `<Inspector />` and `instrumentRegistry` dispatch log |
-| [`@acture/codemods`](packages/codemods) | **new in v1.2.** Codemod CLI for adoption: `wrap-handler-with-mutation`, `extract-onclick-to-command`, `--dry-run` + `--json` for agents |
+| [`@acture/codemods`](packages/codemods) | Codemod CLI: all five research-4 §B.5 codemods now shipped (`wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`). `--dry-run` + `--json` for agents |
 
 Worked examples:
 
@@ -53,6 +53,10 @@ Worked examples:
 - [`examples/migration/redux-wrap/`](examples/migration/redux-wrap) — **new in v1.2.** Redux Toolkit cart with `actureMiddleware` end-to-end. UI dispatch and palette dispatch converge on the same store, observed as one stream.
 
 Agent skills live under [`.claude/skills/`](.claude/skills/): five migration-track skills (`migration-diagnose`, `migration-plan`, `migration-scaffold`, `migration-wrap`, `migration-graduate`) plus the architecture / tier / schema / hard-don'ts primer skills.
+
+What's new in v1.3:
+
+- **Codemod set complete.** Three new codemods finish research-4 §B.5: `redux-action-to-command` (RTK action calls → registry.dispatch), `usestate-mutation-to-command` (setX-only handlers → wrapMutation), `rtk-thunk-to-command` (`createAsyncThunk` → `defineCommand`). +30 tests; manifest now has zero `status: 'planned'` entries.
 
 What's new in v1.2:
 
@@ -70,7 +74,7 @@ Previously in v1.0 / v1.1:
 - **`<Inspector registry={...} />`.** Embeddable React dev-tool with a command list (tier-filterable), dispatch log, and live when-clause evaluator. Mount it behind a toggle in any greenfield app.
 - **`enableTierWarnings(registry)`.** Once-per-process `console.warn` on first dispatch of each `@experimental` command. Suppress with `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1`.
 
-What's next: see [`docs/next_session.md`](docs/next_session.md) for the v1.3 backlog.
+What's next: see [`docs/next_session.md`](docs/next_session.md) for the v1.4 backlog.
 
 ## Three paths
 

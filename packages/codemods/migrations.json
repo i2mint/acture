@@ -14,6 +14,24 @@
       "since": "1.0.0",
       "description": "Lift inline arrow handlers into module-level defineCommand calls.",
       "version-boundary": "@acture/codemods@1.0.0"
+    },
+    {
+      "name": "redux-action-to-command",
+      "since": "1.1.0",
+      "description": "Convert dispatch({type, payload}) call sites to registry.dispatch(id, payload).",
+      "version-boundary": "@acture/codemods@1.1.0"
+    },
+    {
+      "name": "usestate-mutation-to-command",
+      "since": "1.1.0",
+      "description": "Wrap inline handlers whose body is composed of useState setter calls with wrapMutation.",
+      "version-boundary": "@acture/codemods@1.1.0"
+    },
+    {
+      "name": "rtk-thunk-to-command",
+      "since": "1.1.0",
+      "description": "Convert createAsyncThunk(id, payloadCreator) into defineCommand({id, title, execute}).",
+      "version-boundary": "@acture/codemods@1.1.0"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 Codemod CLI for adopting acture in an existing TypeScript/React codebase. Single `npx`-invokable runner with a manifest of shipped transforms.
 
-Research-4 §B.5 plans five codemods; v1.2 ships two of them with the manifest pattern in place. The other three are tracked under `--manifest` as `status: "planned"`.
+Research-4 §B.5 plans five codemods; v1.3 ships **all five**. v1.2 was the first two; v1.3 added the remaining three.
 
 ## Quick start
 
@@ -18,15 +18,15 @@ npx @acture/codemods wrap-handler-with-mutation \
 npx @acture/codemods wrap-handler-with-mutation --target src/
 ```
 
-## What's in v1.2
+## Shipped codemods
 
-| Codemod | Status | What it does |
+| Codemod | Since | What it does |
 | --- | --- | --- |
-| `wrap-handler-with-mutation` | shipped | Wraps `onClick` / `onChange` / `onSubmit` handler expressions with `wrapMutation(...)`. Adds the import if missing. Idempotent. |
-| `extract-onclick-to-command` | shipped | Lifts inline arrow handlers into module-level `defineCommand` calls. Replaces the JSX with a `registry.dispatch` reference. Conservative — skips handlers with parameters. |
-| `redux-action-to-command` | planned | RTK `dispatch({type, payload})` call sites → `acture.dispatch(commandId, payload)` + generated command registration. |
-| `usestate-mutation-to-command` | planned | Extract `setX` calls inside handlers into discrete commands. |
-| `rtk-thunk-to-command` | planned | `createAsyncThunk` → acture async command (type-aware, needs ts-morph type info). |
+| `wrap-handler-with-mutation` | 1.0.0 | Wraps `onClick` / `onChange` / `onSubmit` handler expressions with `wrapMutation(...)`. Adds the import if missing. Idempotent. |
+| `extract-onclick-to-command` | 1.0.0 | Lifts inline arrow handlers into module-level `defineCommand` calls. Replaces the JSX with a `registry.dispatch` reference. Conservative — skips handlers with parameters. |
+| `redux-action-to-command` | 1.1.0 | Convert `dispatch({type, payload})` call sites to `registry.dispatch(id, payload)`. Skips non-literal types and action objects with extra keys. Optional slash→dot id rewrite. |
+| `usestate-mutation-to-command` | 1.1.0 | Wraps inline handlers whose body is composed of `setX(...)` setter calls with `wrapMutation`, deriving a command id from the setter name. Configurable setter pattern. |
+| `rtk-thunk-to-command` | 1.1.0 | Convert `createAsyncThunk(id, payloadCreator)` into `defineCommand({id, title, execute})`. Rewrites `return X` to `return ok(X)`. Skips thunks with an options arg. |
 
 ## CLI
 

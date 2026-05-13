@@ -77,19 +77,19 @@ Full discussion is in `docs/redesign_takeaways.md` §3 and the `acture-hard-dont
 - Generalizing beyond what `v1_plan.md` commits to. Rule of three.
 - Modifying the central paper (`docs/command_dispatch_journal_article.md`). It is canonical.
 
-## Current state (v1.2, Phase 4 + v1.1 + v1.2 increments DONE, 2026-05-13)
+## Current state (v1.3, Phase 4 + v1.1 + v1.2 + v1.3 increments DONE, 2026-05-13)
 
-Fourteen packages ship in the workspace at versions ranging from v1.0.0 to v1.2.0 (depending on which increment touched them):
+Fourteen packages ship in the workspace at versions ranging from v1.0.0 to v1.2.0:
 
 - Core: `acture@1.1.0` — `enableTierWarnings`, `deprecationReason`, `internalToken`, `DispatchOptions`.
 - State: `@acture/state-zustand@1.0.0`, `@acture/state-redux@1.0.0`.
 - UI: `@acture/palette-react@1.0.0`, `@acture/hotkeys@1.0.0`, `@acture/forms-autoform@1.0.0`, `@acture/forms-rjsf@1.0.0`.
 - Surfaces: `@acture/mcp@1.0.0`, `@acture/ai-vercel@1.0.0` — honour the tier filter and prepend `[DEPRECATED — <reason>]`.
-- Migration: `@acture/migration@1.1.0` — adds `createDomInterceptor` for DOM-event interception.
+- Migration: `@acture/migration@1.1.0` — `createDomInterceptor` for DOM-event interception.
 - Tooling: `@acture/build-tier@1.1.0` (regex + AST mode), `@acture/cli@1.2.0` (deep nested compare-schemas diffs), `@acture/devtools@1.0.0`.
-- **New in v1.2:** `@acture/codemods@1.0.0` — single `npx`-invokable codemod CLI with manifest, `--dry-run`, `--json`.
+- Codemods: `@acture/codemods@1.1.0` — **research-4 §B.5 codemod set is complete in v1.3** (5 codemods: `wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`).
 
-Four worked examples: `examples/greenfield/graph-editor/`, `examples/drop-in/`, `examples/migration/zustand-wrap/{before,after}/`, and **new in v1.2** `examples/migration/redux-wrap/` (RTK + `actureMiddleware` end-to-end). See `docs/next_session.md` for the v1.3 backlog.
+Four worked examples: `examples/greenfield/graph-editor/`, `examples/drop-in/`, `examples/migration/zustand-wrap/{before,after}/`, `examples/migration/redux-wrap/` (RTK + `actureMiddleware` end-to-end). See `docs/next_session.md` for the v1.4 backlog.
 
 ## Phase progression
 

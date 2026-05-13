@@ -16,6 +16,9 @@
 import type { Codemod } from './types.js';
 import { wrapHandlerWithMutation } from './codemods/wrap-handler-with-mutation.js';
 import { extractOnClickToCommand } from './codemods/extract-onclick-to-command.js';
+import { reduxActionToCommand } from './codemods/redux-action-to-command.js';
+import { useStateMutationToCommand } from './codemods/usestate-mutation-to-command.js';
+import { rtkThunkToCommand } from './codemods/rtk-thunk-to-command.js';
 
 export interface ManifestEntry {
   readonly name: string;
@@ -41,22 +44,25 @@ export const MANIFEST: readonly ManifestEntry[] = [
     codemod: extractOnClickToCommand,
   },
   {
-    name: 'redux-action-to-command',
-    description:
-      'Convert dispatch({ type, payload }) call sites to acture.dispatch(commandId, payload). Generates command registration alongside the slice.',
-    status: 'planned',
+    name: reduxActionToCommand.name,
+    description: reduxActionToCommand.description,
+    status: 'shipped',
+    since: '1.1.0',
+    codemod: reduxActionToCommand,
   },
   {
-    name: 'usestate-mutation-to-command',
-    description:
-      'Extract each setX call inside an event handler into a discrete command that mutates the same state.',
-    status: 'planned',
+    name: useStateMutationToCommand.name,
+    description: useStateMutationToCommand.description,
+    status: 'shipped',
+    since: '1.1.0',
+    codemod: useStateMutationToCommand,
   },
   {
-    name: 'rtk-thunk-to-command',
-    description:
-      'Convert createAsyncThunk into an acture async command. Requires type-aware analysis.',
-    status: 'planned',
+    name: rtkThunkToCommand.name,
+    description: rtkThunkToCommand.description,
+    status: 'shipped',
+    since: '1.1.0',
+    codemod: rtkThunkToCommand,
   },
 ];
 
