@@ -1,0 +1,38 @@
+{
+  "name": "@acture/example-zustand-wrap-after",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Migration example: the 'before' notes app with acture bolted on via the migration skills. Five wrapped commands + a palette + two graduated.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@acture/hotkeys": "workspace:*",
+    "@acture/migration": "workspace:*",
+    "@acture/palette-react": "workspace:*",
+    "@acture/state-zustand": "workspace:*",
+    "acture": "workspace:*",
+    "cmdk": "^1.0.0",
+    "immer": "^11.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tinykeys": "^3.0.0",
+    "zod": "^4.0.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.0"
+  }
+}

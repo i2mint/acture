@@ -201,6 +201,8 @@ Scope:
 
 ### Phase 3 — Migration package and skills
 
+**Status:** ✅ DONE — 2026-05-13. Reflection: [`docs/phase-3-reflection.md`](phase-3-reflection.md). `@acture/migration` ships with 36 unit tests; the `examples/migration/zustand-wrap/` before/after pair demonstrates the strangler-fig path end-to-end.
+
 **Goal:** Ship `acture/migration` plus the agent skills that use it.
 
 Scope:

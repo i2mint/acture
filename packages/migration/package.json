@@ -1,0 +1,61 @@
+{
+  "name": "@acture/migration",
+  "version": "0.1.0-dev",
+  "description": "Strangler-fig migration primitives for adopting acture in an existing codebase. Four functions: wrapMutation, actureMiddleware, chooseImplementation, shadowCompare.",
+  "license": "Apache-2.0",
+  "author": "Thor Whalen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorwhalen/acture.git",
+    "directory": "packages/migration"
+  },
+  "homepage": "https://github.com/thorwhalen/acture#readme",
+  "bugs": "https://github.com/thorwhalen/acture/issues",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "acture": "workspace:*",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "acture": "workspace:*",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "zod": "^4.0.0"
+  },
+  "keywords": [
+    "acture",
+    "migration",
+    "strangler-fig",
+    "wrap-mutation",
+    "feature-flags",
+    "shadow-compare",
+    "redux-middleware"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

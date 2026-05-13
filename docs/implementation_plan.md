@@ -212,6 +212,8 @@ Phase 2 is done when these are in `phase-2-reflection.md` and any escalations ar
 
 ## Phase 3 — Migration package and skills
 
+**Status:** ✅ DONE — 2026-05-13. Reflection: [`docs/phase-3-reflection.md`](phase-3-reflection.md). `@acture/migration` ships with 36 unit tests; the `examples/migration/zustand-wrap/` before/after pair demonstrates the strangler-fig path end-to-end (6 wraps + 2 graduations, palette overlay, kind-heuristic override rate 0/8 = 0%).
+
 **Goal:** Ship `acture/migration` per research-4 §A.6. Ship the migration-track skills. Demonstrate the end-to-end workflow against a small fixture app.
 
 ### Scope
