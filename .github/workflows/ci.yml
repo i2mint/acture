@@ -23,14 +23,17 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Build first: sibling packages depend on `acture` via `workspace:*`
+      # and consume its types from `dist/`. Typecheck would fail if dist
+      # is missing, so build must precede typecheck and test.
+      - name: Build
+        run: pnpm -r --filter "./packages/*" build
+
       - name: Typecheck
         run: pnpm -r --filter "./packages/*" typecheck
 
       - name: Test
         run: pnpm -r --filter "./packages/*" test
-
-      - name: Build
-        run: pnpm -r --filter "./packages/*" build
 
       - name: Pack
         run: pnpm --filter acture pack --pack-destination /tmp
