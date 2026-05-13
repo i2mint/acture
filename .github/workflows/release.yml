@@ -31,9 +31,11 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    # Avoid running on the merge commit that the changesets action itself
-    # creates (it would be a noisy no-op).
-    if: github.event.head_commit.message != 'chore(release): bump versions'
+    # Note: we deliberately do not gate on commit-message content. The
+    # workflow is idempotent — if there are no pending changesets and
+    # versions match the registries, it no-ops in a few seconds. Earlier
+    # versions of this file had `if: github.event.head_commit.message
+    # != ...` which the GitHub Actions parser rejected at workflow init.
     outputs:
       published: ${{ steps.changesets.outputs.published }}
       published-packages: ${{ steps.changesets.outputs.publishedPackages }}
