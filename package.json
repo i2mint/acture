@@ -1,0 +1,17 @@
+{
+  "name": "acture-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Acture monorepo root. The publishable package is in packages/core (npm: acture).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/*\" build",
+    "test": "pnpm -r --filter \"./packages/*\" test",
+    "typecheck": "pnpm -r --filter \"./packages/*\" typecheck",
+    "clean": "pnpm -r --filter \"./packages/*\" clean"
+  }
+}

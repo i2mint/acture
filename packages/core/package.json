@@ -1,0 +1,55 @@
+{
+  "name": "acture",
+  "version": "0.0.0",
+  "description": "Typed schema-driven command dispatch library. v0.0.0 is a name-reservation stub; functional v0.1 ships in Phase 1.",
+  "license": "Apache-2.0",
+  "author": "Thor Whalen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorwhalen/acture.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/thorwhalen/acture#readme",
+  "bugs": "https://github.com/thorwhalen/acture/issues",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "keywords": [
+    "command-dispatch",
+    "command-palette",
+    "schema",
+    "mcp",
+    "ai-tools",
+    "zod",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
