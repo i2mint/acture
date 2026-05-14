@@ -33,7 +33,7 @@ Every engagement sits on two independent dimensions; keep both open, never defau
 
 5. **`docs/redesign_takeaways.md`** — opinionated synthesis of design commitments. The "Hard don'ts" (§3) are the merge checklist.
 
-6. **`docs/research/`** — five research findings (1–5) that informed the v1 plan. Read the one(s) relevant to your current task; do not read all five every session.
+6. **`docs/research/`** — six research findings (1–6) that informed the plan; research-6 is the cross-language (TypeScript ↔ Python) story. Read the one(s) relevant to your current task; do not read all six every session.
 
 7. **`docs/v1_plan.md`** / **`docs/implementation_plan.md`** — the research-informed v1 plan and phase-by-phase guide. **Historical** — phases 0–4 are complete; forward work is tracked in `docs/roadmap.md`.
 

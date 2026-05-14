@@ -78,7 +78,12 @@ Per `docs/v1_plan.md` §"Post-v1" — none ship without explicit user direction 
 - **`acture-sandbox`** — membrane-pattern third-party extension sandboxing.
 - **`acture-test-property`** — fast-check arbitraries derived from command param schemas; random command sequences asserting state invariants. (Note: overlaps the macros/e2e "Next" item — revisit scope when that lands.)
 - **`acture-state-jotai`, `acture-state-valtio`** — additional reference `StateAdapter<S>` implementations.
-- **Python companion** (`acture` on PyPI) — research-6 was never executed. Re-run research-6 before considering it.
+- **Python companion** — **research-6 is done** (`docs/research/acture_research_6 …`) and gives this a tight, ready shape: a *thin MCP-client facade* package (`acture` on PyPI if available, else `acture-client`), ~300 LoC, dict-like in the `dol`/`py2mcp` idiom, zero hard Pydantic dependency. **The server side already ships** as `acture-mcp-server` — only the thin Python *client* remains. Explicitly **not** a Pydantic-codegen SDK or OpenAPI emitter in v1 (those are post-companion, for human — not agent — consumers). Still gated on the rule of three, but no longer blocked on research — pull forward whenever wanted. Note: research-6 was written against an assumed `StableCommand` name; map it to the real `CommandRecord` / `defineCommand`.
+
+### Smaller items surfaced by research-6 (backlog)
+
+- **`.describe()` discipline as a lint rule** — Zod→JSON-Schema is lossy (refinements, transforms, branded types are dropped), so a missing `.describe()` on a command param should be a lint error. Natural fit for a future `eslint-plugin-acture` schema-quality rule. Affects `acture-schema-bridge` quality and `acture-mcp-server` tool descriptions.
+- **Pin the MCP spec version in CI** for `acture-mcp-server` — the spec is date-versioned and the transport story churns (SSE → streamable HTTP); treat protocol upgrades as semver-major.
 
 ---
 
@@ -106,4 +111,6 @@ Explicit done/not-done for everything raised in conversation, so nothing is lost
 | Greenfield agent-track skills | ⏸️ Deferred — backlog |
 | `acture-test-property`, `state-jotai`, `state-valtio` | 🔒 Post-v1 |
 | `acture-undo`, `acture-telemetry`, `acture-sandbox` | 🔒 Post-v1 |
-| Python companion | 🔒 Post-v1 (research-6 not run) |
+| Research-6 (cross-language story) | ✅ Done — filed at `docs/research/acture_research_6 …` |
+| Python companion | 🔓 Post-v1 but **unblocked & specified** — thin MCP-client facade; server side (`acture-mcp-server`) already ships |
+| `.describe()` schema-lint rule, pin MCP spec version | ⏸️ Deferred — backlog (surfaced by research-6) |
