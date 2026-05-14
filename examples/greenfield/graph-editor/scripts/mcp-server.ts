@@ -3,7 +3,7 @@
  * MCP server entry point for the graph-editor example. Exposes every
  * stable graph-editor command as an MCP tool. Run via:
  *
- *     pnpm --filter @acture/example-graph-editor mcp
+ *     pnpm --filter acture-example-graph-editor mcp
  *
  * Inspect with:
  *
@@ -18,9 +18,9 @@
  * to a single source of truth via your existing API layer.
  */
 
-import { createZustandAdapter } from '@acture/state-zustand';
+import { createZustandAdapter } from 'acture-state-zustand';
 import { createRegistry } from 'acture';
-import { createMcpServer, connectStdio } from '@acture/mcp';
+import { createMcpServer, connectStdio } from 'acture-mcp';
 import { buildCommands } from '../src/commands/index.js';
 import { initialGraphState, type GraphState } from '../src/state.js';
 

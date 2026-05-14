@@ -1,7 +1,7 @@
 {
-  "name": "@acture/forms-rjsf",
+  "name": "acture-forms-rjsf",
   "version": "1.0.0",
-  "description": "JSON-Schema-native form adapter for @acture/palette-react built on react-jsonschema-form (@rjsf/core).",
+  "description": "JSON-Schema-native form adapter for acture-palette-react built on react-jsonschema-form (@rjsf/core).",
   "license": "Apache-2.0",
   "author": "Thor Whalen",
   "repository": {

@@ -1,5 +1,5 @@
 {
-  "name": "@acture/example-drop-in",
+  "name": "acture-example-drop-in",
   "version": "0.0.0",
   "private": true,
   "description": "Phase 2 worked example: an existing tiny app gets a palette + MCP bolt-on in 5 minutes. Demonstrates the drop-in / footprint-minimizer path.",
@@ -14,10 +14,10 @@
     "mcp": "tsx scripts/mcp-server.ts"
   },
   "dependencies": {
-    "@acture/hotkeys": "workspace:*",
-    "@acture/mcp": "workspace:*",
-    "@acture/palette-react": "workspace:*",
-    "@acture/state-zustand": "workspace:*",
+    "acture-hotkeys": "workspace:*",
+    "acture-mcp": "workspace:*",
+    "acture-palette-react": "workspace:*",
+    "acture-state-zustand": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "acture": "workspace:*",
     "cmdk": "^1.0.0",

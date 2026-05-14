@@ -1,5 +1,5 @@
 {
-  "name": "@acture/example-graph-editor",
+  "name": "acture-example-graph-editor",
   "version": "0.0.0",
   "private": true,
   "description": "Phase 1 worked example: a tiny graph editor whose mutations all go through registry.dispatch.",
@@ -15,13 +15,13 @@
     "ai-demo": "tsx scripts/ai-demo.ts"
   },
   "dependencies": {
-    "@acture/ai-vercel": "workspace:*",
-    "@acture/devtools": "workspace:*",
-    "@acture/forms-autoform": "workspace:*",
-    "@acture/hotkeys": "workspace:*",
-    "@acture/mcp": "workspace:*",
-    "@acture/palette-react": "workspace:*",
-    "@acture/state-zustand": "workspace:*",
+    "acture-ai-vercel": "workspace:*",
+    "acture-devtools": "workspace:*",
+    "acture-forms-autoform": "workspace:*",
+    "acture-hotkeys": "workspace:*",
+    "acture-mcp": "workspace:*",
+    "acture-palette-react": "workspace:*",
+    "acture-state-zustand": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "acture": "workspace:*",
     "ai": "^4.0.40",

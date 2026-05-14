@@ -1,4 +1,6 @@
-# @acture/codemods
+# acture-codemods
+
+> **acture is a development tool first.** This is dev/build-time tooling — it never becomes a runtime dependency of the apps it serves, and using it is entirely optional. See [`docs/positioning.md`](../../docs/positioning.md).
 
 Codemod CLI for adopting acture in an existing TypeScript/React codebase. Single `npx`-invokable runner with a manifest of shipped transforms.
 
@@ -8,14 +10,14 @@ Research-4 §B.5 plans five codemods; v1.3 ships **all five**. v1.2 was the firs
 
 ```bash
 # List shipped codemods
-npx @acture/codemods --list
+npx acture-codemods --list
 
 # Dry-run on a directory, emit JSON for an agent to read
-npx @acture/codemods wrap-handler-with-mutation \
+npx acture-codemods wrap-handler-with-mutation \
     --target src/ --dry-run --json
 
 # Apply for real
-npx @acture/codemods wrap-handler-with-mutation --target src/
+npx acture-codemods wrap-handler-with-mutation --target src/
 ```
 
 ## Shipped codemods
@@ -50,7 +52,7 @@ acture-codemods <name> --target <dir> --json
 ## Programmatic API
 
 ```ts
-import { runCodemod } from '@acture/codemods';
+import { runCodemod } from 'acture-codemods';
 
 const result = await runCodemod('wrap-handler-with-mutation', {
   files: ['src/Button.tsx', 'src/Form.tsx'],
@@ -74,10 +76,10 @@ for (const f of result.files) {
 
 - **No business logic.** Codemods translate code to code. They do not decide which commands are right, when to migrate, or how to author the spec — those are user decisions.
 - **No "smart" rewrites that need type info we can't get.** When the transform would need to read a generic parameter or infer a return type, we skip and emit a note. (Research-4 §B.2: ts-morph has type info, but every codemod we ship documents which path it uses — purely structural vs. type-aware.)
-- **No surprise installs.** The codemods write code that imports `acture` / `@acture/migration`. They do NOT run `npm install` or modify `package.json`. The user installs deps themselves.
+- **No surprise installs.** The codemods write code that imports `acture` / `acture-migration`. They do NOT run `npm install` or modify `package.json`. The user installs deps themselves.
 
 ## See also
 
 - `docs/research/acture_research_4 -- Transitional APIs and Codemod Tooling…` §B.5, §B.6
-- `@acture/migration` for the runtime-only adoption surface (`wrapMutation`, `actureMiddleware`, `createDomInterceptor`, …)
+- `acture-migration` for the runtime-only adoption surface (`wrapMutation`, `actureMiddleware`, `createDomInterceptor`, …)
 - `.claude/skills/migration-wrap/SKILL.md` for the agent workflow that drives these codemods

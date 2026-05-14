@@ -1,14 +1,14 @@
 # Fresh-agent release-gate test — results
 
 **Run:** 2026-05-14, as part of v1.4 (release-readiness theme).
-**Gate origin:** Phase-4 reflection §5 deferred this through v1.0 → v1.3. v1.3's reflection §"Pre-v1.4 reflection answers" §4 named the next session as the right place to run it, with the `@acture/codemods` README as the densest agent-facing surface in the repo.
+**Gate origin:** Phase-4 reflection §5 deferred this through v1.0 → v1.3. v1.3's reflection §"Pre-v1.4 reflection answers" §4 named the next session as the right place to run it, with the `acture-codemods` README as the densest agent-facing surface in the repo.
 
 ## What was tested
 
 A fresh agent — no prior context about acture — was given only:
 
 - the location of `packages/codemods/README.md`,
-- the fact that `@acture/codemods` is an unpublished workspace package whose CLI is built at `packages/codemods/dist/cli.js`.
+- the fact that `acture-codemods` is an unpublished workspace package whose CLI is built at `packages/codemods/dist/cli.js`.
 
 It was instructed to read **only the README** (not source, not other docs, not skills), pick one codemod, build a realistic sample file, drive the CLI end-to-end (`--list`, `--help`, `--dry-run --json`, real apply), and deliberately mis-use the CLI to test error messages. The deliverable was a written assessment of where the README + CLI fall short — **no code change in v1.4** (per `docs/next_session.md` §"Strong candidates" #2).
 
@@ -18,7 +18,7 @@ It was instructed to read **only the README** (not source, not other docs, not s
 
 ### Findings (verbatim priority order from the fresh agent)
 
-1. **The headline invocation does not work.** Every Quick-start and CLI example uses `npx @acture/codemods …` or the `acture-codemods` bin. The package is unpublished, so the *first command a copy-pasting user runs* fails with an npm 404. The README never mentions `node dist/cli.js`, a workspace bin alias, a build step, or publish status. Single biggest blocker.
+1. **The headline invocation does not work.** Every Quick-start and CLI example uses `npx acture-codemods …` or the `acture-codemods` bin. The package is unpublished, so the *first command a copy-pasting user runs* fails with an npm 404. The README never mentions `node dist/cli.js`, a workspace bin alias, a build step, or publish status. Single biggest blocker.
 
 2. **Per-codemod `--option` keys are undiscoverable.** The README mentions `--option key=value` generically and the codemod table alludes to "configurable setter pattern" / "optional slash→dot id rewrite", but no option *names* are listed anywhere a CLI user can see them. `--help` shows one example (`id-prefix=app.button`) but no enumeration. The programmatic example leaks `events: 'onClick,onSubmit'` — so the options exist, just unlisted.
 

@@ -1,11 +1,13 @@
-# @acture/ai-vercel
+# acture-ai-vercel
+
+> **acture is a development tool first.** This package is an *optional accelerator* — an agent can hand-write this integration into your project instead, with no `acture-*` dependency. Installing it is a deliberate, opt-in choice to reuse tested code rather than own it. See [`docs/positioning.md`](../../docs/positioning.md).
 
 Project an [acture](https://npm.im/acture) registry as [Vercel AI SDK](https://sdk.vercel.ai) tool definitions. Drop directly into `streamText({ tools })` / `generateText({ tools })`.
 
 ## Install
 
 ```sh
-pnpm add @acture/ai-vercel ai acture zod
+pnpm add acture-ai-vercel ai acture zod
 ```
 
 ## Use
@@ -13,7 +15,7 @@ pnpm add @acture/ai-vercel ai acture zod
 ```ts
 import { streamText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
-import { toAITools } from '@acture/ai-vercel';
+import { toAITools } from 'acture-ai-vercel';
 import { registry } from './registry';
 
 const result = streamText({
@@ -49,10 +51,10 @@ The model sees the same shape on every surface (palette, hotkeys, MCP, AI SDK). 
 
 ## Why pass Zod through (not JSON Schema)?
 
-The Vercel AI SDK accepts Zod schemas directly. Passing the original schema preserves validators (`z.refine`, `z.transform` constraints on output) that JSON Schema would silently drop. The same registry exposed via `@acture/mcp` projects through `toJsonSchema` because MCP wants JSON Schema on the wire.
+The Vercel AI SDK accepts Zod schemas directly. Passing the original schema preserves validators (`z.refine`, `z.transform` constraints on output) that JSON Schema would silently drop. The same registry exposed via `acture-mcp` projects through `toJsonSchema` because MCP wants JSON Schema on the wire.
 
 ## See also
 
 - [`acture-schema-bridge`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-schema-bridge/SKILL.md)
 - [`acture-tier-system`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-tier-system/SKILL.md)
-- [`@acture/mcp`](../mcp) — the MCP server counterpart
+- [`acture-mcp`](../mcp) — the MCP server counterpart

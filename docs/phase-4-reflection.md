@@ -18,7 +18,7 @@ This file answers the five questions from `docs/implementation_plan.md` §"Phase
 
 **The caveats I want to flag for v1.1:**
 
-1. **AST-based mode for safety-critical orgs.** A regex transform CAN, in principle, misfire on heavily macro'd source. `transform.test.ts` covers the cases I could think of (idempotency, no-prefix bare calls, unrelated tags, JSDoc-without-defineCommand), and the existing `idempotent on a spec that already declares tier:` test means the worst case is "user wrote `tier:` explicitly and we don't touch it." A v1.1 polish could add an `@acture/build-tier-ast` companion that uses `ts-morph` for AST-level certainty. Not blocking.
+1. **AST-based mode for safety-critical orgs.** A regex transform CAN, in principle, misfire on heavily macro'd source. `transform.test.ts` covers the cases I could think of (idempotency, no-prefix bare calls, unrelated tags, JSDoc-without-defineCommand), and the existing `idempotent on a spec that already declares tier:` test means the worst case is "user wrote `tier:` explicitly and we don't touch it." A v1.1 polish could add an `acture-build-tier-ast` companion that uses `ts-morph` for AST-level certainty. Not blocking.
 
 2. **The 4000-char lookahead window in `indexOfMatchingBrace`.** I cap the per-call scan at 4000 chars to keep the transform fast. A spec with a 4001-char body would fall through the idempotency check. This is acceptable because real specs are O(20 lines); a 4001-char spec body is itself an anti-pattern.
 
@@ -55,13 +55,13 @@ The schedule slip predicted in `docs/v1_plan.md` §7 ("Will `acture compare-sche
 Ran `.claude/skills/acture-hard-donts/SKILL.md` against all new Phase 4 packages.
 
 1. **No conditional logic in command metadata.** ✅ The new fields (`deprecationReason`, `internalToken`) are pure data. `internalToken` is a Symbol; equality-checking is identity, not logic.
-2. **No god-package.** ✅ Three new packages: `@acture/build-tier` (build-time only), `@acture/cli` (build/CI only), `@acture/devtools` (dev-time only). All single-purpose. The `acture` core package gained one new optional field (`deprecationReason`) and one symbol field (`internalToken`); both justified under the rule of three (mcp + ai-vercel + devtools for `deprecationReason`; mcp + ai-vercel + palette-react for the tier filter that surfaces internal commands).
-3. **No business logic in adapter packages.** ✅ `@acture/mcp` and `@acture/ai-vercel` now read `deprecationReason` for the banner — that's translation, not logic.
+2. **No god-package.** ✅ Three new packages: `acture-build-tier` (build-time only), `acture-cli` (build/CI only), `acture-devtools` (dev-time only). All single-purpose. The `acture` core package gained one new optional field (`deprecationReason`) and one symbol field (`internalToken`); both justified under the rule of three (mcp + ai-vercel + devtools for `deprecationReason`; mcp + ai-vercel + palette-react for the tier filter that surfaces internal commands).
+3. **No business logic in adapter packages.** ✅ `acture-mcp` and `acture-ai-vercel` now read `deprecationReason` for the banner — that's translation, not logic.
 4. **No `if (mode === ...)` in shared helpers.** ✅ The build-tier transform branches on tag value, not on mode.
 5. **No `eval()`-ing LLM-produced strings.** ✅ The `Function`-constructor evaluation in `build-tier/end-to-end.test.ts` is on a TEST-OWNED string, not LLM-produced input. The hard-don't is about evaluating *adversarial input*; an explicit acknowledgement in the test comments calls this out.
-6. **No coupling the registry to React.** ✅ Core has no new React import. `@acture/devtools` is the React adapter; `instrumentRegistry()` lives there. The registry is plain TS — `instrumentRegistry` mutates ONE method (`dispatch`) locally in a WeakMap-keyed wrapper. Dev-only mutation is the documented escape hatch.
+6. **No coupling the registry to React.** ✅ Core has no new React import. `acture-devtools` is the React adapter; `instrumentRegistry()` lives there. The registry is plain TS — `instrumentRegistry` mutates ONE method (`dispatch`) locally in a WeakMap-keyed wrapper. Dev-only mutation is the documented escape hatch.
 7. **No promoting `@experimental` to `@stable` without a migration story.** ✅ None of the new exports are `@experimental`.
-8. **No bundling a UI kit.** ✅ `@acture/devtools` uses inline styles only — no MUI, no shadcn, no Tailwind. Theming hooks: `data-acture-devtools-*` attributes.
+8. **No bundling a UI kit.** ✅ `acture-devtools` uses inline styles only — no MUI, no shadcn, no Tailwind. Theming hooks: `data-acture-devtools-*` attributes.
 9. **No marketing on category.** ✅ READMEs were not changed in Phase 4; the existing wording leads with concrete wins ("One schema. Palette, hotkeys, AI tools, MCP, and tests — for free.").
 10. **No assuming the LLM's chosen function is authorization.** ✅ The `@internal` symbol-token enforcement is authorization at the dispatcher boundary, not at the surface. Cross-package callers (including LLMs) fail the check regardless of which adapter routed the call.
 
@@ -103,7 +103,7 @@ Per `docs/next_session.md` Step 3:
 
 | Metric | Phase 3 end | Phase 4 end | Δ |
 | --- | --- | --- | --- |
-| Packages | 10 | 13 | +3 (`@acture/build-tier`, `@acture/cli`, `@acture/devtools`) |
+| Packages | 10 | 13 | +3 (`acture-build-tier`, `acture-cli`, `acture-devtools`) |
 | Worked examples | 3 | 3 | 0 |
 | Tests (packages) | 185 | 270 | +85 |
 | Tests (examples) | 36 | 36 | 0 |

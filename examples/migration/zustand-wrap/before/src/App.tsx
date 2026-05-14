@@ -2,7 +2,7 @@
  * The host UI. Renders notes, has a small form to add one, and a tiny
  * "settings" panel. Every mutation calls a store action directly.
  *
- * No imports from `acture` or `@acture/*` anywhere in this file (or in
+ * No imports from `acture` or `acture-*` anywhere in this file (or in
  * the whole `before/` app). This is the starting state of a strangler-
  * fig migration.
  */

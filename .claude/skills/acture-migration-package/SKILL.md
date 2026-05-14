@@ -1,6 +1,6 @@
 ---
 name: acture-migration-package
-description: Load context on `@acture/migration` (Phase 3) — its four-function API per research-4 §A.6 (wrapMutation, actureMiddleware, chooseImplementation, shadowCompare), why divertHandler was dropped, the codemod scope deferred to v1.1, and the migration-track skills (migration-diagnose, migration-plan, migration-scaffold, migration-wrap, migration-graduate). Use when working on the migration package, when writing or rewriting migration skills, when designing the strangler-fig adoption workflow, or when an existing-codebase agent is using acture for the first time. Triggers on "migration", "strangler fig", "wrapMutation", "divertHandler", "chooseImplementation", "shadowCompare", "actureMiddleware", "graduate", "codemods", "ast-grep", "jscodeshift", "ts-morph", "event interception", "legacy mimic".
+description: Load context on `acture-migration` (Phase 3) — its four-function API per research-4 §A.6 (wrapMutation, actureMiddleware, chooseImplementation, shadowCompare), why divertHandler was dropped, the codemod scope deferred to v1.1, and the migration-track skills (migration-diagnose, migration-plan, migration-scaffold, migration-wrap, migration-graduate). Use when working on the migration package, when writing or rewriting migration skills, when designing the strangler-fig adoption workflow, or when an existing-codebase agent is using acture for the first time. Triggers on "migration", "strangler fig", "wrapMutation", "divertHandler", "chooseImplementation", "shadowCompare", "actureMiddleware", "graduate", "codemods", "ast-grep", "jscodeshift", "ts-morph", "event interception", "legacy mimic".
 ---
 
 # acture migration package
@@ -10,7 +10,7 @@ Loads research-4's findings on transitional APIs and codemod tooling for strangl
 ## What ships in v1 — four functions (research-4 §A.6)
 
 ```ts
-// From @acture/migration
+// From acture-migration
 
 export function wrapMutation<H extends (...args: any[]) => any>(
   handler: H,
@@ -120,7 +120,7 @@ To be written in Phase 3 (NOT this preparation session) — they are rewrites of
 | --- | --- |
 | `migration-diagnose` | Scan codebase; identify command candidates (event handlers, store actions, async thunks); produce a diagnosis report. |
 | `migration-plan` | Prioritize candidates into a phased backlog. |
-| `migration-scaffold` | Set up `acture/core` and `@acture/state-zustand` (or redux) in the host app. |
+| `migration-scaffold` | Set up `acture/core` and `acture-state-zustand` (or redux) in the host app. |
 | `migration-wrap` | Use `wrapMutation` to introduce commands without modifying existing source. |
 | `migration-graduate` | Retire `wrapMutation` calls once the legacy handler is unused. |
 
@@ -129,7 +129,7 @@ To be written in Phase 3 (NOT this preparation session) — they are rewrites of
 For a typical migration like "adopt acture for the checkout flow":
 
 1. Claude Code reads target files; identifies handlers and store actions.
-2. Plans the migration: install `@acture/migration`, scaffold registry, wrap handlers, add `actureMiddleware` to store.
+2. Plans the migration: install `acture-migration`, scaffold registry, wrap handlers, add `actureMiddleware` to store.
 3. For each wrap step: invokes `wrapMutation` in-place; runs tsc + tests; iterates if failure.
 4. Final review: summary of which calls were wrapped vs. which require manual rewrite.
 

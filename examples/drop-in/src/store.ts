@@ -8,7 +8,7 @@
  * source of truth.
  */
 
-import { wrapZustandStore } from '@acture/state-zustand';
+import { wrapZustandStore } from 'acture-state-zustand';
 import { createExistingStore } from './existing-app.js';
 import type { TodoState } from './existing-app.js';
 

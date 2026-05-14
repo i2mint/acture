@@ -1,7 +1,7 @@
 /**
  * State adapter interface. Per research-3 §5, three methods plus an
  * optional patch-capable sub-interface. The core ships only the types;
- * concrete adapters live in `@acture/state-zustand`, `@acture/state-redux`,
+ * concrete adapters live in `acture-state-zustand`, `acture-state-redux`,
  * etc.
  *
  * Design constraints (research-3 §2):
@@ -34,7 +34,7 @@ export interface StateAdapter<S> {
 /**
  * Capability extension: adapters whose substrate produces Immer-shaped
  * patches natively (zustand+immer, RTK, MST). The future
- * `@acture/undo` subsystem will check for this capability and fall back
+ * `acture-undo` subsystem will check for this capability and fall back
  * to wrapping `produceWithPatches` inside the command's exec otherwise.
  */
 export interface PatchCapableAdapter<S> extends StateAdapter<S> {

@@ -1,13 +1,13 @@
 /**
- * `@acture/codemods` — codemod tooling for the strangler-fig adoption
- * path. Single `npx @acture/codemods <name>` CLI with a manifest of
+ * `acture-codemods` — codemod tooling for the strangler-fig adoption
+ * path. Single `npx acture-codemods <name>` CLI with a manifest of
  * shipped transforms. Research-4 §B.5.
  *
  * Programmatic API is also exported here for hosts that want to invoke
  * a codemod from their own tooling without spawning a child process.
  *
  * ```ts
- * import { runCodemod } from '@acture/codemods';
+ * import { runCodemod } from 'acture-codemods';
  *
  * const result = await runCodemod('wrap-handler-with-mutation', {
  *   files: ['src/Button.tsx'],

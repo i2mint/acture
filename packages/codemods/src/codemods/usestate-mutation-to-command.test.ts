@@ -28,7 +28,7 @@ describe('usestate-mutation-to-command', () => {
     expect(after).toContain(
       'wrapMutation(() => setCount(count + 1), { id: "app.state.setCount" })',
     );
-    expect(after).toMatch(/import \{ wrapMutation \} from ["']@acture\/migration["']/);
+    expect(after).toMatch(/import \{ wrapMutation \} from ["']acture-migration["']/);
     cleanup();
   });
 
@@ -75,7 +75,7 @@ describe('usestate-mutation-to-command', () => {
 
   it('is idempotent on already-wrapped handlers', async () => {
     const { path, cleanup } = withFile(
-      `import { wrapMutation } from '@acture/migration';
+      `import { wrapMutation } from 'acture-migration';
 export function C() {
   const setX = (n: number) => {};
   return <button onClick={wrapMutation(() => setX(1), { id: 'app.state.setX' })}>x</button>;

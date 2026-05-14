@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useHotkeys } from '@acture/hotkeys/react';
-import { Inspector, instrumentRegistry } from '@acture/devtools';
+import { useHotkeys } from 'acture-hotkeys/react';
+import { Inspector, instrumentRegistry } from 'acture-devtools';
 import { Canvas } from './Canvas.js';
 import { PaletteOverlay } from './Palette.js';
 import { clearSelection } from './select-node.js';
@@ -26,7 +26,7 @@ export function App(): React.ReactElement {
   );
 
   // Bind every command's keybinding via the registry. First-registered-
-  // wins under matching context (per @acture/hotkeys spec).
+  // wins under matching context (per acture-hotkeys spec).
   useHotkeys(registry, { context: hotkeyContext });
 
   return (

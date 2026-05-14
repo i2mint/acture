@@ -1,5 +1,5 @@
 {
-  "name": "@acture/state-redux",
+  "name": "acture-state-redux",
   "version": "1.0.0",
   "description": "acture StateAdapter for Redux Toolkit (RTK). Wraps an RTK store as a PatchCapableAdapter via RTK's bundled Immer.",
   "license": "Apache-2.0",

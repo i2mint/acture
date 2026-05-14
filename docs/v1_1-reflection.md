@@ -22,7 +22,7 @@ Deliberately deferred to v1.2:
 - `EnableTierWarningsOptions` type — public export.
 - No CommandRecord shape changes. The `tier` field added in Phase 4 is the load-bearing piece; v1.1 just observes it at dispatch time.
 
-### CLI (`@acture/cli`, bumped to 1.1.0)
+### CLI (`acture-cli`, bumped to 1.1.0)
 
 - New subcommand `acture snapshot <config> [--out <path>] [--tiers <comma-list>]`.
 - Programmatic helper `runSnapshotCmd(args, io?)` and type `SnapshotCmdArgs` — for hosts that want to invoke the same logic without spawning a child process.
@@ -48,7 +48,7 @@ Deliberately deferred to v1.2:
 Ran `.claude/skills/acture-hard-donts/SKILL.md` against the v1.1 increment.
 
 1. **No conditional logic in command metadata.** ✅ Zero CommandRecord shape changes.
-2. **No god-package.** ✅ `enableTierWarnings` lives in core (it observes the closed surface); the `snapshot` subcommand lives in the existing `@acture/cli` (no new package).
+2. **No god-package.** ✅ `enableTierWarnings` lives in core (it observes the closed surface); the `snapshot` subcommand lives in the existing `acture-cli` (no new package).
 3. **No business logic in adapter packages.** ✅ `enableTierWarnings` is a runtime helper; `snapshot` is a translation from registry → JSON. Neither makes domain decisions.
 4. **No `if (mode === ...)` in shared helpers.** ✅ Both new pieces branch only on data (tier value, config shape).
 5. **No `eval()`-ing LLM-produced strings.** ✅ `runSnapshotCmd` dynamically imports a user-supplied config — that's evaluating user-owned source, not adversarial input. The behavior matches what `tsx`, `ts-node`, `vite-node` already do for config files in every other ecosystem.
@@ -76,7 +76,7 @@ The +3 exports are deliberately small. v1.1 was a polish increment — the struc
 
 ## Pre-v1.2 reflection answers (mirroring the Phase 4 checklist style)
 
-1. **Did `enableTierWarnings` survive the design constraints?** Yes. Wrapping `dispatch` is the same idempotent-WeakMap technique `@acture/devtools` already used; the disposer pattern means tests can install and uninstall cleanly. The opt-in (host calls it once at boot) is the right ergonomics — research-5 §7.3 says first-dispatch warning, not "automatic on every registry."
+1. **Did `enableTierWarnings` survive the design constraints?** Yes. Wrapping `dispatch` is the same idempotent-WeakMap technique `acture-devtools` already used; the disposer pattern means tests can install and uninstall cleanly. The opt-in (host calls it once at boot) is the right ergonomics — research-5 §7.3 says first-dispatch warning, not "automatic on every registry."
 
 2. **Was the `acture snapshot` subcommand worth shipping in v1.1?** Yes — three-callers test passes trivially: anyone who uses `compare-schemas` needs to produce snapshots, and the programmatic `snapshotRegistry(registry)` helper was a partial answer. The CLI subcommand closes the CI integration story. **Cost was lower than predicted** — about half a session, not a full one.
 

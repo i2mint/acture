@@ -1,5 +1,5 @@
 {
-  "name": "@acture/devtools",
+  "name": "acture-devtools",
   "version": "1.0.0",
   "description": "Acture devtools inspector — registry contents, dispatch log, when-clause evaluator, tier filter preview. Embeddable React component for dev builds.",
   "license": "Apache-2.0",

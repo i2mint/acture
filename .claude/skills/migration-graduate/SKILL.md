@@ -67,7 +67,7 @@ If you find external callers, **stop**. The wrapper is still earning its keep. N
 Before (wrapped):
 
 ```ts
-import { wrapMutation } from '@acture/migration';
+import { wrapMutation } from 'acture-migration';
 import { registry } from '../../registry';
 import { useTodoStore } from '../../../store';
 
@@ -170,11 +170,11 @@ In those cases, document the decision in a comment on the wrapper file:
 
 ## Validation
 
-- [ ] Every graduated command file imports `defineCommand` from `acture`, not `wrapMutation` from `@acture/migration`.
+- [ ] Every graduated command file imports `defineCommand` from `acture`, not `wrapMutation` from `acture-migration`.
 - [ ] The legacy function has no remaining callers (verified by grep).
 - [ ] `pnpm test` and `pnpm typecheck` pass.
 - [ ] Any tests that previously called the legacy function now dispatch via the registry.
 
 ## Hand-off
 
-When Phase A graduations are complete, the `@acture/migration` import in the acture barrel is much thinner. Wrapped command counts drop; first-class `defineCommand` counts rise. Run `migration-diagnose` again periodically to find new candidates as the app grows.
+When Phase A graduations are complete, the `acture-migration` import in the acture barrel is much thinner. Wrapped command counts drop; first-class `defineCommand` counts rise. Run `migration-diagnose` again periodically to find new candidates as the app grows.

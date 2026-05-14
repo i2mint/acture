@@ -1,5 +1,5 @@
 {
-  "name": "@acture/mcp",
+  "name": "acture-mcp",
   "version": "1.0.0",
   "description": "Project an acture registry as an MCP server. Tier-filtered tools/list, deprecation-banner prefixes, errors-as-data Result responses.",
   "license": "Apache-2.0",

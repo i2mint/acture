@@ -1,5 +1,5 @@
 /**
- * `@acture/migration` — strangler-fig adoption primitives.
+ * `acture-migration` — strangler-fig adoption primitives.
  *
  * Four functions per research-4 §A.6:
  *   - `wrapMutation` — wrap an existing handler as a command without

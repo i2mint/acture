@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | Id prefix | `app` | `app` | Standard convention. |
 | Categories | `Notes`, `Settings` | `Notes`, `Settings` | Two natural domains. |
-| State adapter | `@acture/state-zustand` | `@acture/state-zustand` | Host uses zustand vanilla. |
+| State adapter | `acture-state-zustand` | `acture-state-zustand` | Host uses zustand vanilla. |
 | Phase A scope | moderate (8–12) | moderate | All 8 candidates fit in Phase A; the app is small. |
 | Surfaces in scope | palette only | palette only | MCP/AI deferred to a follow-on session. |
 

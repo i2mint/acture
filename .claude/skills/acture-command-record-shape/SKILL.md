@@ -61,13 +61,13 @@ type CommandRecord<P = unknown, R = unknown> = {
 
   /** Tier (research-5). Authoritative source is the JSDoc tag on the defineCommand
    *  call site (@stable / @experimental / @internal / @deprecated). The build step
-   *  (@acture/build-tier) mirrors the tag into this field. Authors normally do NOT
+   *  (acture-build-tier) mirrors the tag into this field. Authors normally do NOT
    *  write this field manually — they write the JSDoc tag. */
   tier?: "stable" | "experimental" | "internal" | "deprecated";
 
   /** Free-text reason injected by the build step from @deprecated <reason>.
-   *  Adapter packages (@acture/mcp, @acture/ai-vercel) prepend
-   *  `[DEPRECATED — <reason>]` to the description; @acture/devtools surfaces
+   *  Adapter packages (acture-mcp, acture-ai-vercel) prepend
+   *  `[DEPRECATED — <reason>]` to the description; acture-devtools surfaces
    *  it in the inspector. Added in v1.0 (Phase 4) under the rule of three. */
   deprecationReason?: string;
 
@@ -98,7 +98,7 @@ type Result<R> =
   | { ok: false; error: { code: string; message: string; details?: unknown } };
 ```
 
-The `patches?` and `effects?` fields are **reserved hooks** for `@acture/undo` (post-v1). v1 core ignores them. They exist so adding undo later is non-breaking.
+The `patches?` and `effects?` fields are **reserved hooks** for `acture-undo` (post-v1). v1 core ignores them. They exist so adding undo later is non-breaking.
 
 ## Fields that are deliberately NOT on this record
 

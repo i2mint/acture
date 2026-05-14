@@ -1,5 +1,5 @@
 {
-  "name": "@acture/example-zustand-wrap-before",
+  "name": "acture-example-zustand-wrap-before",
   "version": "0.0.0",
   "private": true,
   "description": "Migration example: a tiny notes app on zustand with no acture imports anywhere. The 'before' half of the strangler-fig demo.",

@@ -1,5 +1,5 @@
 {
-  "name": "@acture/palette-react",
+  "name": "acture-palette-react",
   "version": "1.0.0",
   "description": "acture command palette for React — minimal Phase 1 version. Parameter-free commands only.",
   "license": "Apache-2.0",

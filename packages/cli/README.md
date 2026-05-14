@@ -1,11 +1,13 @@
-# @acture/cli
+# acture-cli
+
+> **acture is a development tool first.** This is dev/build-time tooling — it never becomes a runtime dependency of the apps it serves, and using it is entirely optional. See [`docs/positioning.md`](../../docs/positioning.md).
 
 The `acture` binary. Two subcommands today; the package is intentionally small.
 
 ## Install
 
 ```bash
-pnpm add -D @acture/cli
+pnpm add -D acture-cli
 ```
 
 ## `acture compare-schemas`
@@ -101,7 +103,7 @@ import {
   classifyChanges,
   formatResult,
   runSnapshotCmd,
-} from '@acture/cli';
+} from 'acture-cli';
 ```
 
 See [`docs/research/acture_research_5 -- Schema Versioning ...md`](../../docs/research/) §6 for the canonical design.

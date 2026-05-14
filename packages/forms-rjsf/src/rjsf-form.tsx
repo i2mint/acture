@@ -1,7 +1,7 @@
 /**
  * `<RjsfForm />` — render a CommandRecord's params schema using
  * react-jsonschema-form. Matches the `PaletteFormAdapter` shape
- * expected by `@acture/palette-react`.
+ * expected by `acture-palette-react`.
  */
 
 /// <reference lib="dom" />

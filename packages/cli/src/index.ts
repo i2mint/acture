@@ -1,5 +1,5 @@
 /**
- * `@acture/cli` programmatic API.
+ * `acture-cli` programmatic API.
  *
  * Exports the building blocks of the CLI so consumers can:
  *

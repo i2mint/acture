@@ -23,7 +23,7 @@ function pressKey(target: Window | HTMLElement, key: string, modifiers: {
   (target as EventTarget).dispatchEvent(event);
 }
 
-describe('@acture/hotkeys', () => {
+describe('acture-hotkeys', () => {
   beforeEach(() => {
     // jsdom defaults to 'Linux' navigator.platform — tinykeys treats
     // non-Mac as Ctrl for $mod, which is what we want for these tests.

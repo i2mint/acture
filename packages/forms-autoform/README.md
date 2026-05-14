@@ -1,18 +1,20 @@
-# @acture/forms-autoform
+# acture-forms-autoform
 
-Zod-native form adapter for [`@acture/palette-react`](../palette-react). Renders a parameterized command's `params` schema as a small form with per-field validation against the schema.
+> **acture is a development tool first.** This package is an *optional accelerator* — an agent can hand-write this integration into your project instead, with no `acture-*` dependency. Installing it is a deliberate, opt-in choice to reuse tested code rather than own it. See [`docs/positioning.md`](../../docs/positioning.md).
+
+Zod-native form adapter for [`acture-palette-react`](../palette-react). Renders a parameterized command's `params` schema as a small form with per-field validation against the schema.
 
 ## Install
 
 ```sh
-pnpm add @acture/forms-autoform @acture/palette-react acture
+pnpm add acture-forms-autoform acture-palette-react acture
 ```
 
 ## Use as a palette form adapter
 
 ```tsx
-import { CommandPalette } from '@acture/palette-react';
-import { AutoForm } from '@acture/forms-autoform';
+import { CommandPalette } from 'acture-palette-react';
+import { AutoForm } from 'acture-forms-autoform';
 
 <CommandPalette
   registry={registry}
@@ -40,7 +42,7 @@ When a user picks a `kind: 'handoff'` command (e.g., `addNode({x, y, label})`), 
 | `z.enum([...])` / `z.nativeEnum(...)` | `<select>` |
 | Optional / default wrappers | unwrapped, defaults seeded |
 
-For richer schemas (nested objects, arrays, discriminated unions), use [`@acture/forms-rjsf`](../forms-rjsf) instead.
+For richer schemas (nested objects, arrays, discriminated unions), use [`acture-forms-rjsf`](../forms-rjsf) instead.
 
 ## Why "autoform"?
 

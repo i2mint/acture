@@ -12,7 +12,7 @@ One rule, `acture/no-stale-wrap-mutation`. It flags `wrapMutation(...)` calls wh
 
 Detection is single-file and conservative, by design (research-4's codemod principle: a high-confidence partial signal beats a noisy total one):
 
-- Tracks `wrapMutation` imported — named or aliased — from `@acture/migration` (configurable via the `module` option). Namespace imports are not tracked.
+- Tracks `wrapMutation` imported — named or aliased — from `acture-migration` (configurable via the `module` option). Namespace imports are not tracked.
 - Reports two shapes: a bare `ExpressionStatement`, and assignment to a non-exported local binding with zero references beyond its own initializer.
 - Stays silent on exported bindings, referenced bindings, returned results, and results passed as arguments — any of which may still be load-bearing.
 
@@ -20,7 +20,7 @@ Detection is single-file and conservative, by design (research-4's codemod princ
 
 ### 2. Fresh-agent release-gate test — `docs/fresh-agent-test-results.md`
 
-The Phase-4-reflection §5 gate, deferred through v1.0 → v1.3, finally ran. A fresh agent — no acture context — drove `@acture/codemods` from its README alone. Verdict: the **codemod engine + CLI passed** (the abstraction shape, the `--dry-run`/`--json` contract, `--list`/`--help`, the bad-codemod-name error all rated solid), but the **README did not** — its headline `npx @acture/codemods` invocation fails pre-publish, and per-codemod `--option` keys / `--manifest` / `--files-from` are undiscoverable from the docs. Per the next-session scope (#2 = no code change), the fixes are written up and carried to v1.5 as the top candidate.
+The Phase-4-reflection §5 gate, deferred through v1.0 → v1.3, finally ran. A fresh agent — no acture context — drove `acture-codemods` from its README alone. Verdict: the **codemod engine + CLI passed** (the abstraction shape, the `--dry-run`/`--json` contract, `--list`/`--help`, the bad-codemod-name error all rated solid), but the **README did not** — its headline `npx acture-codemods` invocation fails pre-publish, and per-codemod `--option` keys / `--manifest` / `--files-from` are undiscoverable from the docs. Per the next-session scope (#2 = no code change), the fixes are written up and carried to v1.5 as the top candidate.
 
 ## What v1.4 did NOT ship
 
@@ -36,7 +36,7 @@ Post-v1 items (`undo`, `macros`, `telemetry`, `sandbox`, `test-property`, `state
 Ran `.claude/skills/acture-hard-donts/SKILL.md` against the v1.4 increment.
 
 1. **No conditional logic in command metadata.** ✅ Zero `CommandRecord` shape changes (still 15 fields). The ESLint rule reads source AST; it never touches the record shape.
-2. **No god-package.** ✅ The ESLint plugin is its own package with one rule and zero runtime deps — the opposite of bloat. It does not re-export anything from `acture` or `@acture/migration`.
+2. **No god-package.** ✅ The ESLint plugin is its own package with one rule and zero runtime deps — the opposite of bloat. It does not re-export anything from `acture` or `acture-migration`.
 3. **No business logic in adapter packages.** ✅ The rule is a static analyzer: AST in, lint report out. It makes no domain decisions — it does not decide *whether* to graduate, only flags the structural signal. The cross-file verification and the actual rewrite stay with the human/agent (per the `migration-graduate` skill).
 4. **No `if (mode === ...)` in shared helpers.** ✅ The rule branches on AST shape (bare statement vs. unused binding) and on the user-supplied `module` option. No positioning-path awareness.
 5. **No `eval()`-ing LLM-produced strings.** ✅ N/A — a lint rule executes nothing.

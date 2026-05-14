@@ -4,7 +4,7 @@
  *
  * Usage in vite.config.ts:
  *
- *   import { actureBuildTierVite } from '@acture/build-tier/vite';
+ *   import { actureBuildTierVite } from 'acture-build-tier/vite';
  *   export default defineConfig({
  *     plugins: [actureBuildTierVite()],
  *   });

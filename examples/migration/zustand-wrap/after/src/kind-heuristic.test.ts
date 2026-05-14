@@ -1,6 +1,6 @@
 /**
  * Stress test for `deriveKind` (the auto-derived atomic-vs-handoff
- * heuristic in `@acture/palette-react`).
+ * heuristic in `acture-palette-react`).
  *
  * Per `next_session.md` Step 3 acceptance criteria §5: at least 5
  * parameterized commands of varying shapes; if the override rate
@@ -18,7 +18,7 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 import { defineCommand, ok } from 'acture';
-import { deriveKind } from '@acture/palette-react';
+import { deriveKind } from 'acture-palette-react';
 import { registry } from './acture/registry.js';
 import './acture/index.js';
 

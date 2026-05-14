@@ -87,8 +87,8 @@ When this reflection note is committed, Phase 0 is done.
 
 **Packages to ship:**
 - `packages/core/` (`acture` on npm) — the core. NO React, NO state library, NO UI deps.
-- `packages/state-zustand/` (`@acture/state-zustand` on npm; subject to scoping decision) — production reference adapter, ~50 LOC + tests.
-- `packages/palette-react/` (`@acture/palette-react`) — minimal version, parameter-free commands only.
+- `packages/state-zustand/` (`acture-state-zustand` on npm; subject to scoping decision) — production reference adapter, ~50 LOC + tests.
+- `packages/palette-react/` (`acture-palette-react`) — minimal version, parameter-free commands only.
 
 **`acture/core` surface (Phase 1):**
 - `defineCommand<P, R>(spec): CommandRecord<P, R>` — type-checked, frozen result. Validates at registration time that param schemas are in the JSON-Schema-representable subset.
@@ -98,10 +98,10 @@ When this reflection note is committed, Phase 0 is done.
 - Schema bridge: `toJsonSchema(record, options?)` — accepts injected converter; default uses Zod v4's `z.toJSONSchema`.
 - `Result<R>` type with **reserved** undo hooks (`patches?`, `effects?`). Phase 1 ignores them; they exist so Phase 4+ can add them non-breakingly.
 
-**`@acture/state-zustand` surface:**
+**`acture-state-zustand` surface:**
 - `createZustandAdapter<S>(store): PatchCapableAdapter<S>` — wraps `zustand/vanilla` `createStore`. Uses `zustand/middleware/immer` with `produceWithPatches` for `setStateWithPatches`.
 
-**`@acture/palette-react` surface (Phase 1, minimum):**
+**`acture-palette-react` surface (Phase 1, minimum):**
 - Wrap cmdk's `<Command>` primitive.
 - Iterate registry.list() filtering by tier.
 - Group by `category`.
@@ -113,7 +113,7 @@ When this reflection note is committed, Phase 0 is done.
 - 6–8 commands: `app.graph.addNode`, `app.graph.removeNode`, `app.graph.connectNodes`, `app.graph.deleteEdge`, `app.view.zoomToFit`, `app.selection.selectAll`, `app.view.toggleGrid` (param-free toggle).
 - All state mutations go through commands (no direct `setState`).
 - State held in a zustand store via the new adapter.
-- A `<CommandPalette>` (from `@acture/palette-react`) overlay opens on Ctrl+K and dispatches parameter-free commands.
+- A `<CommandPalette>` (from `acture-palette-react`) overlay opens on Ctrl+K and dispatches parameter-free commands.
 - One parameterized command (`addNode({x, y, label})`) is registered but **explicitly noted in the README as "Phase 2 will surface this in the palette"**.
 
 **Tests:**
@@ -212,7 +212,7 @@ Phase 2 is done when these are in `phase-2-reflection.md` and any escalations ar
 
 ## Phase 3 — Migration package and skills
 
-**Status:** ✅ DONE — 2026-05-13. Reflection: [`docs/phase-3-reflection.md`](phase-3-reflection.md). `@acture/migration` ships with 36 unit tests; the `examples/migration/zustand-wrap/` before/after pair demonstrates the strangler-fig path end-to-end (6 wraps + 2 graduations, palette overlay, kind-heuristic override rate 0/8 = 0%).
+**Status:** ✅ DONE — 2026-05-13. Reflection: [`docs/phase-3-reflection.md`](phase-3-reflection.md). `acture-migration` ships with 36 unit tests; the `examples/migration/zustand-wrap/` before/after pair demonstrates the strangler-fig path end-to-end (6 wraps + 2 graduations, palette overlay, kind-heuristic override rate 0/8 = 0%).
 
 **Goal:** Ship `acture/migration` per research-4 §A.6. Ship the migration-track skills. Demonstrate the end-to-end workflow against a small fixture app.
 

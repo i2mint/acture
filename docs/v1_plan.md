@@ -19,7 +19,7 @@ These are now-locked commitments from the user, the takeaways doc, and the five 
 | `when`-clauses: DSL or function? | **Both.** Small VS Code-style DSL primary; `(ctx) => boolean` allowed as escape hatch (flagged "not exposable to AI/MCP"). | User |
 | State management library | **Agnostic, with happy path.** Thin three-method `StateAdapter<S>` interface (`getState` / `setState(updater)` / `subscribe(listener)`) plus optional `PatchCapableAdapter<S>` sub-interface for the future undo subsystem. Ship **`acture/state-zustand`** in Phase 1 as the documented default. RTK adapter follows in Phase 2. | Research-3 + user |
 | Migration package | Real package (`acture/migration`), four functions: `wrapMutation`, `actureMiddleware`, `chooseImplementation`, `shadowCompare`. `divertHandler` from the original wrapex sketch is **dropped**. DOM-event interception deferred to v1.1. Codemods (`acture/codemods`) deferred to v1.1. | Research-4 + user |
-| Undo subsystem | **Post-v1.** Reserve `execute` return shape (`Result<R>` with optional `patches?` and `effects?`) so adding `@acture/undo` later is non-breaking. | User |
+| Undo subsystem | **Post-v1.** Reserve `execute` return shape (`Result<R>` with optional `patches?` and `effects?`) so adding `acture-undo` later is non-breaking. | User |
 | Schema as SSOT | JSON Schema as wire format; Zod is recommended authoring layer; Standard Schema accepted at boundary. Keep command param schemas in the JSON-Schema-representable subset (no `z.transform`, `z.date`, `z.bigint`, `z.set`, `z.map`, `z.custom` in params; validate at registration time). | Takeaways §1.3 + research-5 |
 | Single dispatch entry point | `dispatch(id, args, ctx?)` for all surfaces. Performance carve-out: render-frequency operations stay as direct function calls. | Takeaways §1.4 |
 | Owner-scoped lifecycle | **Disposable pattern.** Every `register*` returns a disposable. | Takeaways §1.5 |
@@ -134,7 +134,7 @@ type Result<R> =
   | { ok: false; error: { code: string; message: string; details?: unknown } };
 ```
 
-`patches?` and `effects?` are **reserved hooks for `@acture/undo`** (post-v1). v1 core ignores them. They are present so adding undo later is non-breaking.
+`patches?` and `effects?` are **reserved hooks for `acture-undo`** (post-v1). v1 core ignores them. They are present so adding undo later is non-breaking.
 
 **The metadata surface is closed.** No new fields without three real consumers asking. Compose new capabilities via wrapper functions (`palettable(cmd, ...)`, `toolCallable(cmd, ...)`).
 
@@ -201,7 +201,7 @@ Scope:
 
 ### Phase 3 — Migration package and skills
 
-**Status:** ✅ DONE — 2026-05-13. Reflection: [`docs/phase-3-reflection.md`](phase-3-reflection.md). `@acture/migration` ships with 36 unit tests; the `examples/migration/zustand-wrap/` before/after pair demonstrates the strangler-fig path end-to-end.
+**Status:** ✅ DONE — 2026-05-13. Reflection: [`docs/phase-3-reflection.md`](phase-3-reflection.md). `acture-migration` ships with 36 unit tests; the `examples/migration/zustand-wrap/` before/after pair demonstrates the strangler-fig path end-to-end.
 
 **Goal:** Ship `acture/migration` plus the agent skills that use it.
 
@@ -225,9 +225,9 @@ Scope:
 **Goal:** Move from "works" to "production-ready."
 
 Scope per research-5:
-- API tier system: JSDoc tags + build-step metadata mirror (`@acture/build-tier`); runtime gating with `tiers: [...]` opt-in (already in core; deprecation banner reads `deprecationReason` from build-step mirror).
-- `acture compare-schemas` CLI per research-5 §6: full-surface diff (descriptions MAJOR by default with `--allow-description-edits` per-invocation), tier-aware, JSON output for machines, colored text for humans. (`@acture/cli` package.)
-- `@acture/devtools`: inspector UI for the registry, dispatch log, when-clause evaluator state.
+- API tier system: JSDoc tags + build-step metadata mirror (`acture-build-tier`); runtime gating with `tiers: [...]` opt-in (already in core; deprecation banner reads `deprecationReason` from build-step mirror).
+- `acture compare-schemas` CLI per research-5 §6: full-surface diff (descriptions MAJOR by default with `--allow-description-edits` per-invocation), tier-aware, JSON output for machines, colored text for humans. (`acture-cli` package.)
+- `acture-devtools`: inspector UI for the registry, dispatch log, when-clause evaluator state.
 - Hardening: error messages, edge cases, JSDoc.
 - v1.0 release.
 

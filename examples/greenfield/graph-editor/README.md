@@ -4,7 +4,7 @@ A tiny SVG graph editor whose every state mutation flows through `registry.dispa
 
 ```bash
 pnpm install
-pnpm --filter @acture/example-graph-editor dev
+pnpm --filter acture-example-graph-editor dev
 # open http://localhost:5173
 ```
 
@@ -12,11 +12,11 @@ pnpm --filter @acture/example-graph-editor dev
 
 | Surface | Adapter | What it does |
 | --- | --- | --- |
-| Ctrl/Cmd+K palette | `@acture/palette-react` + `@acture/forms-autoform` | List, atomic picker chain, handoff form |
-| Keyboard shortcuts | `@acture/hotkeys` | Reads each command's `keybinding`, dispatches through the registry |
-| MCP server (Node) | `@acture/mcp` | `pnpm mcp` exposes the graph as MCP tools |
-| Vercel AI SDK | `@acture/ai-vercel` | `pnpm ai-demo` lets Claude compose multi-step actions |
-| State substrate | `@acture/state-zustand` | zustand+immer with patch capture |
+| Ctrl/Cmd+K palette | `acture-palette-react` + `acture-forms-autoform` | List, atomic picker chain, handoff form |
+| Keyboard shortcuts | `acture-hotkeys` | Reads each command's `keybinding`, dispatches through the registry |
+| MCP server (Node) | `acture-mcp` | `pnpm mcp` exposes the graph as MCP tools |
+| Vercel AI SDK | `acture-ai-vercel` | `pnpm ai-demo` lets Claude compose multi-step actions |
+| State substrate | `acture-state-zustand` | zustand+immer with patch capture |
 
 ## Commands
 
@@ -83,14 +83,14 @@ defineCommand({
 ### 4. The `getState()` vs `setStateWithPatches` split
 
 - **Read** with `state.getState()` — returns the latest immutable snapshot.
-- **Mutate** with `state.setStateWithPatches(recipe)` — runs the recipe on an Immer draft and returns the patches for future `@acture/undo`. (`state.setState(updater)` works too, without the patch capture.)
+- **Mutate** with `state.setStateWithPatches(recipe)` — runs the recipe on an Immer draft and returns the patches for future `acture-undo`. (`state.setState(updater)` works too, without the patch capture.)
 
 The Phase 1 reflection (§4 #4) noted this wasn't called out — fixed here.
 
 ## MCP server demo
 
 ```bash
-pnpm --filter @acture/example-graph-editor mcp
+pnpm --filter acture-example-graph-editor mcp
 # in another shell:
 npx @modelcontextprotocol/inspector node \
   examples/greenfield/graph-editor/scripts/mcp-server.ts
@@ -102,7 +102,7 @@ The graph state lives in the Node process that runs the MCP script — it does N
 
 ```bash
 export ANTHROPIC_API_KEY=...
-pnpm --filter @acture/example-graph-editor ai-demo
+pnpm --filter acture-example-graph-editor ai-demo
 ```
 
 Claude composes a multi-step "build a triangle of A, B, C nodes" plan through the registry.

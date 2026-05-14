@@ -5,7 +5,7 @@
  * That rules out Sets, Maps, Date, etc. in the state.
  */
 
-import { createZustandAdapter } from '@acture/state-zustand';
+import { createZustandAdapter } from 'acture-state-zustand';
 
 export interface NodeRecord {
   id: string;

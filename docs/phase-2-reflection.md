@@ -35,9 +35,9 @@ This file answers the six questions from `docs/implementation_plan.md` §"Phase 
 
 **Yes, and the dual path is cleaner than expected.**
 
-- **Vercel AI SDK** accepts Zod schemas directly. `@acture/ai-vercel` passes `record.params` through unchanged, preserving every `z.refine`, `z.transform`, and custom error message that JSON Schema would silently lose. The AI SDK's `tool({ parameters: zodSchema, execute })` handles the rest.
+- **Vercel AI SDK** accepts Zod schemas directly. `acture-ai-vercel` passes `record.params` through unchanged, preserving every `z.refine`, `z.transform`, and custom error message that JSON Schema would silently lose. The AI SDK's `tool({ parameters: zodSchema, execute })` handles the rest.
 
-- **MCP** wants JSON Schema on the wire. `@acture/mcp/tools.ts` calls `toJsonSchema(record)` and emits the envelope as a `McpToolDescriptor`. Strict mode is opt-in (the OpenAI-style `additionalProperties: false` flavor).
+- **MCP** wants JSON Schema on the wire. `acture-mcp/tools.ts` calls `toJsonSchema(record)` and emits the envelope as a `McpToolDescriptor`. Strict mode is opt-in (the OpenAI-style `additionalProperties: false` flavor).
 
 **Edge cases I expected but didn't hit:** none of the worked-example commands triggered a Zod feature that JSON Schema can't represent. The `JSON-Schema-representable subset` rule (`acture-schema-bridge` skill §"hard rule") was easy to obey — `z.string().min(1)`, `z.enum([...])`, `z.number()`, `z.object({...})` all project cleanly.
 
@@ -63,22 +63,22 @@ Ran `.claude/skills/acture-hard-donts/SKILL.md` against every new package.
 
 1. **No conditional logic in command metadata.** ✅ The `kind` field is still discrete (`'atomic' | 'handoff'`); auto-derivation happens at palette/render time, not at record-definition time.
 2. **No god-package.** ✅ Each new package is single-purpose:
-   - `@acture/hotkeys` — keyboard binding only.
-   - `@acture/forms-autoform` — Zod-aware form only.
-   - `@acture/forms-rjsf` — JSON-Schema form only.
-   - `@acture/state-redux` — RTK ↔ StateAdapter only.
-   - `@acture/mcp` — MCP projection + server only.
-   - `@acture/ai-vercel` — Vercel AI tool definitions only.
+   - `acture-hotkeys` — keyboard binding only.
+   - `acture-forms-autoform` — Zod-aware form only.
+   - `acture-forms-rjsf` — JSON-Schema form only.
+   - `acture-state-redux` — RTK ↔ StateAdapter only.
+   - `acture-mcp` — MCP projection + server only.
+   - `acture-ai-vercel` — Vercel AI tool definitions only.
 3. **No business logic in adapter packages.** ✅ Each adapter only translates between an external interface and the registry/state contracts. Spot-checked every `execute` path.
 4. **No `if (mode === ...)` in shared helpers.** ✅ Core was not touched in Phase 2.
 5. **No `eval()`-ing LLM strings.** ✅ MCP and AI SDK both use `registry.dispatch(name, args)` with Zod validation on the way in — no reflective call construction.
-6. **No coupling the registry to React.** ✅ Core has no React import. Hotkeys' main entry is React-free; the React hook lives at `@acture/hotkeys/react`.
+6. **No coupling the registry to React.** ✅ Core has no React import. Hotkeys' main entry is React-free; the React hook lives at `acture-hotkeys/react`.
 7. **No promoting `@experimental` without a migration story.** N/A.
 8. **No bundling a UI kit.** ✅ Both form adapters render bare HTML with CSS hooks (`data-acture-autoform-*`, `data-acture-rjsf-*`); the host owns styling.
 9. **No marketing on category.** ✅ READMEs lead with mechanical descriptions.
 10. **No LLM-as-authorization.** ✅ Schema validation is at the dispatcher, not at the AI/MCP boundary.
 
-**One borderline call:** `@acture/forms-autoform` and `@acture/forms-rjsf` ship as separate packages even though both implement the same `PaletteFormAdapterProps` contract. This is *intentional* (research-2 §9.4: form library is the host's choice; acture provides the contract). But it means a host that wants the autoform-rjsf-side-by-side comparison has to install both. Not a hard-don't violation; a documented tradeoff.
+**One borderline call:** `acture-forms-autoform` and `acture-forms-rjsf` ship as separate packages even though both implement the same `PaletteFormAdapterProps` contract. This is *intentional* (research-2 §9.4: form library is the host's choice; acture provides the contract). But it means a host that wants the autoform-rjsf-side-by-side comparison has to install both. Not a hard-don't violation; a documented tradeoff.
 
 ## 6. Decisions to escalate to user
 
@@ -91,13 +91,13 @@ Ran `.claude/skills/acture-hard-donts/SKILL.md` against every new package.
 
 **Non-blocking observations for the user:**
 
-1. **The MCP and AI-demo scripts in `examples/greenfield/graph-editor/scripts/`** hold state in the Node process — they do not share the graph state with the browser app. This is documented in both the script comments and the example README. A real production setup would proxy to a single source of truth. If this becomes a friction point, consider a `@acture/sync` package that wires registry events across processes (post-v1).
+1. **The MCP and AI-demo scripts in `examples/greenfield/graph-editor/scripts/`** hold state in the Node process — they do not share the graph state with the browser app. This is documented in both the script comments and the example README. A real production setup would proxy to a single source of truth. If this becomes a friction point, consider a `acture-sync` package that wires registry events across processes (post-v1).
 
 2. **Zod introspection is brittle.** `derive-kind.ts` and `auto-form.tsx` both peek into Zod's `_def` / `.def` internals to detect enum / boolean / optional / default. Zod has no public introspection API yet. If Standard Schema's `~standard` marker grows a public field-shape API, migrate to it.
 
 3. **The dev server was not exercised in a real browser** during this session — the time budget was spent on the package surface and tests. The graph-editor's production bundle builds (Vite reports success, ~358KB gzipped), and the existing UI tests verify the dispatcher path; but I did not click through the new palette + form flow in a browser. **Recommended manual smoke test before merging:** open the graph-editor, press Ctrl/Cmd+K, pick "Add node", verify the form renders and dispatches.
 
-4. **`@acture/forms-rjsf`'s test coverage is thin** (3 tests). The package is a thin shim over `@rjsf/core` so most of the failure modes belong upstream. If the user wants stronger coverage, add a "renders rjsf form for nested-object schema" test before declaring v1.
+4. **`acture-forms-rjsf`'s test coverage is thin** (3 tests). The package is a thin shim over `@rjsf/core` so most of the failure modes belong upstream. If the user wants stronger coverage, add a "renders rjsf form for nested-object schema" test before declaring v1.
 
 5. **Tinykeys' broken type exports** required an ambient declaration in `packages/hotkeys/src/tinykeys.d.ts`. If upstream fixes its `package.json` `exports` field, remove the shim.
 

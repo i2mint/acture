@@ -1,5 +1,5 @@
 {
-  "name": "@acture/state-zustand",
+  "name": "acture-state-zustand",
   "version": "1.0.0",
   "description": "acture StateAdapter for zustand + zustand/middleware/immer. Phase 1's documented happy path.",
   "license": "Apache-2.0",

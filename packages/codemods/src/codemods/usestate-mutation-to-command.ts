@@ -45,7 +45,7 @@
  *                         setter identifiers. Override if the codebase
  *                         uses a different convention.
  *   - `events`            default `onClick,onChange,onSubmit`.
- *   - `import-from`       default `@acture/migration`.
+ *   - `import-from`       default `acture-migration`.
  */
 
 import {
@@ -78,7 +78,7 @@ function resolveOptions(opts: Record<string, string | undefined> | undefined): R
     idPrefix: opts?.['id-prefix'] ?? 'app.state',
     setterPattern,
     events,
-    importFrom: opts?.['import-from'] ?? '@acture/migration',
+    importFrom: opts?.['import-from'] ?? 'acture-migration',
   };
 }
 

@@ -4,10 +4,10 @@
 
 The v1.2 backlog from `docs/next_session.md` named five candidates. The user authorized all five (an explicit override of the "pick at most TWO" rule of three guideline, which was a planning safety net rather than a hard merge gate). Everything in scope shipped:
 
-- **#1: `@acture/codemods` package** (research-4 §B.5). Two of five planned codemods + the manifest pattern + a CLI runner + 23 tests. The other three (`redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`) are tracked in `manifest.ts` and `migrations.json` as `status: 'planned'` so users can see what's coming.
-- **#2: DOM-event interception middleware** (research-4 §A.5). `createDomInterceptor(registry, options)` lives in `@acture/migration` alongside the existing `actureMiddleware`. Plain TS (no React import — hard-don't #6), works in any framework, opt-in scoping per root. 14 tests using jsdom.
+- **#1: `acture-codemods` package** (research-4 §B.5). Two of five planned codemods + the manifest pattern + a CLI runner + 23 tests. The other three (`redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`) are tracked in `manifest.ts` and `migrations.json` as `status: 'planned'` so users can see what's coming.
+- **#2: DOM-event interception middleware** (research-4 §A.5). `createDomInterceptor(registry, options)` lives in `acture-migration` alongside the existing `actureMiddleware`. Plain TS (no React import — hard-don't #6), works in any framework, opt-in scoping per root. 14 tests using jsdom.
 - **#3: RTK worked example.** `examples/migration/redux-wrap/`. 5 integration tests demonstrating UI + palette paths converging on the same RTK store, observed as one stream via `actureMiddleware`. The example doubles as documentation for the slash-vs-dot id mapping (RTK action types vs. acture command ids).
-- **#4: AST mode for `@acture/build-tier`.** Second entry point at `@acture/build-tier/ast` using ts-morph. Output is interchangeable with the regex mode on every case the regex handles; AST mode adds coverage for 5000-char spec bodies and template-literal `${...}` substitutions. ts-morph is an optional peer dep — only paid by users who import the AST entry point.
+- **#4: AST mode for `acture-build-tier`.** Second entry point at `acture-build-tier/ast` using ts-morph. Output is interchangeable with the regex mode on every case the regex handles; AST mode adds coverage for 5000-char spec bodies and template-literal `${...}` substitutions. ts-morph is an optional peer dep — only paid by users who import the AST entry point.
 - **#5: Deep nested object diffs in `compare-schemas`.** The classifier now recurses through nested object `properties` and array `items`. Change paths read `inputSchema.properties.user.properties.email` instead of stopping at the top level. 8 new test cases.
 
 ---
@@ -18,23 +18,23 @@ The v1.2 backlog from `docs/next_session.md` named five candidates. The user aut
 
 No changes. The `tier` field added in Phase 4 and the runtime helper added in v1.1 are unchanged. CommandRecord field count holds at 15.
 
-### Migration (`@acture/migration`, bumped to 1.1.0)
+### Migration (`acture-migration`, bumped to 1.1.0)
 
 - `createDomInterceptor(registry, options?)` — new public export. Delegated DOM listener at a root element / Document; routes `data-acture-command` events through `registry.dispatch`. Configurable events, attribute, params source, capture phase, preventDefault policy.
 - `DomInterceptorOptions`, `DomInterceptorMount` — public types.
 - jsdom added as a devDep.
 
-### Build-tier (`@acture/build-tier`, bumped to 1.1.0)
+### Build-tier (`acture-build-tier`, bumped to 1.1.0)
 
-- New entry point: `@acture/build-tier/ast` exporting `transformSourceAst(source)`. Uses ts-morph (optional peer) to handle source the regex transform falls through on (large spec bodies, template-literal substitutions with braces).
+- New entry point: `acture-build-tier/ast` exporting `transformSourceAst(source)`. Uses ts-morph (optional peer) to handle source the regex transform falls through on (large spec bodies, template-literal substitutions with braces).
 - README updated with the AST mode section. Caveats list updated to point users toward `/ast` when they trip the regex.
 
-### CLI (`@acture/cli`, bumped to 1.2.0)
+### CLI (`acture-cli`, bumped to 1.2.0)
 
 - `classifyChanges` recurses through nested object `properties` and array `items`. Change paths are fully qualified (`inputSchema.properties.user.properties.email`). Identical change-kind taxonomy — the recursion uses the same `diffSchemaProperty` logic at every depth.
 - 8 new test cases covering: nested removal, nested required addition, nested type narrowing, nested enum removal, type-swap *not* recursing (avoids double-counting), array-of-objects recursion, array-of-primitives type narrowing, three-deep nesting.
 
-### Codemods (`@acture/codemods`, new at 1.0.0)
+### Codemods (`acture-codemods`, new at 1.0.0)
 
 - New publishable package. Single `acture-codemods` CLI with bin, the `MANIFEST` registry, an Nx-style `migrations.json`, and two shipped codemods:
   - `wrap-handler-with-mutation` — wraps `onClick`/`onChange`/`onSubmit` handler expressions with `wrapMutation(...)`. Adds the import. Idempotent. Configurable via `--option events=...`, `--option import-from=...`, etc.
@@ -62,7 +62,7 @@ No changes. The `tier` field added in Phase 4 and the runtime helper added in v1
 Ran `.claude/skills/acture-hard-donts/SKILL.md` against the v1.2 increment.
 
 1. **No conditional logic in command metadata.** ✅ Zero CommandRecord shape changes.
-2. **No god-package.** ✅ One new package (`@acture/codemods`), single-purpose. DOM interception lives in `@acture/migration` next to `actureMiddleware` because both are event-interception primitives — not bundled into a "god migration" package; the existing migration package's charter is "transitional adoption primitives" and DOM interception fits cleanly. The build-tier AST mode is a second entry point in an existing package, not a new package.
+2. **No god-package.** ✅ One new package (`acture-codemods`), single-purpose. DOM interception lives in `acture-migration` next to `actureMiddleware` because both are event-interception primitives — not bundled into a "god migration" package; the existing migration package's charter is "transitional adoption primitives" and DOM interception fits cleanly. The build-tier AST mode is a second entry point in an existing package, not a new package.
 3. **No business logic in adapter packages.** ✅ All new code is translation: DOM events → command dispatch, JSX AST → wrapped JSX AST, source string → AST → source string with metadata injected. No domain decisions live in any new module.
 4. **No `if (mode === ...)` in shared helpers.** ✅ Codemod options branch on user-supplied configuration (event names, import paths) — that's data, not mode. The build-tier AST mode is exposed as a different ENTRY POINT, not as a conditional inside the existing transform.
 5. **No `eval()`-ing LLM-produced strings.** ✅ The codemod runner reads `--option key=value` pairs and JSON-encoded `data-acture-params` attributes; no eval, no `new Function`. The DOM interceptor parses params with `JSON.parse` (data-only) and looks up commands via `registry.has(id)` (not reflective dispatch).
@@ -80,7 +80,7 @@ Ran `.claude/skills/acture-hard-donts/SKILL.md` against the v1.2 increment.
 
 | Metric | v1.1 end | v1.2 end | Δ |
 | --- | --- | --- | --- |
-| Packages | 13 | 14 | +1 (`@acture/codemods`) |
+| Packages | 13 | 14 | +1 (`acture-codemods`) |
 | Worked examples | 3 | 4 | +1 (`examples/migration/redux-wrap`) |
 | Tests (packages) | 288 | 350 | +62 (codemods: +23; migration: +14; build-tier: +17; cli: +8) |
 | Tests (examples) | 36 | 41 | +5 (redux-wrap integration) |

@@ -2,14 +2,14 @@
 /**
  * Vercel AI SDK demo for the graph-editor example. Sets up the registry
  * over an in-process zustand store, builds a tool map via
- * `@acture/ai-vercel`, and asks an Anthropic model to compose a
+ * `acture-ai-vercel`, and asks an Anthropic model to compose a
  * multi-step graph mutation.
  *
  * Requires `ANTHROPIC_API_KEY` in the environment.
  *
  * Run via:
  *
- *     pnpm --filter @acture/example-graph-editor ai-demo
+ *     pnpm --filter acture-example-graph-editor ai-demo
  *
  * Expected behavior: the model issues 3 `app.graph.addNode` calls
  * (labels A, B, C) followed by 3 `app.selection.set` + `app.graph.connectNodes`
@@ -19,8 +19,8 @@
 import { generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createRegistry } from 'acture';
-import { createZustandAdapter } from '@acture/state-zustand';
-import { toAITools } from '@acture/ai-vercel';
+import { createZustandAdapter } from 'acture-state-zustand';
+import { toAITools } from 'acture-ai-vercel';
 import { buildCommands } from '../src/commands/index.js';
 import { initialGraphState, type GraphState } from '../src/state.js';
 

@@ -316,7 +316,7 @@ They report going from ~50 LoC/day per engineer to "hundreds of lines per day, s
 
 **Why three tools rather than one?** The cost of multiplexing is low (each codemod is a one-file package consumed via `npx`), and matching tool to job avoids forcing a complex jscodeshift transform when a 10-line ast-grep rule would suffice.
 
-**Packaging shape (borrowed from Nx [19] and `types-react-codemod` [18]):** a single `npx @acture/codemods <name>` CLI, with a `migrations.json`-style manifest declaring which codemod runs on which acture version boundary.
+**Packaging shape (borrowed from Nx [19] and `types-react-codemod` [18]):** a single `npx acture-codemods <name>` CLI, with a `migrations.json`-style manifest declaring which codemod runs on which acture version boundary.
 
 **Deliberately out of scope for v1.1:** any "graduation" codemod that removes `wrapMutation` calls. That requires a runtime telemetry signal acture won't have until users have lived with v1 for several months. Plan for v1.2.
 
@@ -341,7 +341,7 @@ CLAUDE CODE:
      - Step E: add `actureMiddleware` to the store config
 
   3. For each codemod step:
-     a. Invokes:  npx @acture/codemods extract-onclick-to-command \
+     a. Invokes:  npx acture-codemods extract-onclick-to-command \
                     --target src/checkout/ --dry-run
      b. Reads the diff. If the transformation looks wrong on any file,
         marks that file as "needs AI rewrite" and skips the codemod for it.

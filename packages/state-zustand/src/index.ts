@@ -1,5 +1,5 @@
 /**
- * `@acture/state-zustand` — Phase 1 reference state adapter.
+ * `acture-state-zustand` — Phase 1 reference state adapter.
  *
  * Implements `PatchCapableAdapter<S>` from `acture` on top of
  * `zustand/vanilla` + `immer`. The vanilla store is essential —

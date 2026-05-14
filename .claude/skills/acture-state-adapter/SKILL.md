@@ -1,6 +1,6 @@
 ---
 name: acture-state-adapter
-description: Load context on acture's StateAdapter<S> interface (per research-3), the PatchCapableAdapter sub-interface for the future undo subsystem, and the strategy of being state-library-agnostic with documented happy-path adapters. Two reference adapters now ship: `@acture/state-zustand` and `@acture/state-redux`. Use when building or modifying a state adapter, when designing the StateAdapter interface, when working on the reference adapters, when integrating acture with a host app's existing store, or when reviewing the get/set/subscribe contract. Triggers on "StateAdapter", "state library", "zustand", "Redux Toolkit", "RTK", "Jotai", "Valtio", "MobX", "Effector", "XState", "state substrate", "patches", "Immer", "produceWithPatches". Do NOT use for the undo subsystem itself (post-v1).
+description: Load context on acture's StateAdapter<S> interface (per research-3), the PatchCapableAdapter sub-interface for the future undo subsystem, and the strategy of being state-library-agnostic with documented happy-path adapters. Two reference adapters now ship: `acture-state-zustand` and `acture-state-redux`. Use when building or modifying a state adapter, when designing the StateAdapter interface, when working on the reference adapters, when integrating acture with a host app's existing store, or when reviewing the get/set/subscribe contract. Triggers on "StateAdapter", "state library", "zustand", "Redux Toolkit", "RTK", "Jotai", "Valtio", "MobX", "Effector", "XState", "state substrate", "patches", "Immer", "produceWithPatches". Do NOT use for the undo subsystem itself (post-v1).
 ---
 
 # acture state adapter
@@ -64,7 +64,7 @@ Both are valid. Implementations choose whichever fits their substrate.
 
 zustand passes `(state, previous)`. RTK passes nothing. Recommendation: keep `previous` in the interface; default to `undefined` for adapters that don't track it. Document the quirk in the adapter's README.
 
-## Reference adapter: `@acture/state-zustand`
+## Reference adapter: `acture-state-zustand`
 
 The documented happy path. Per research-3 §6, ~50 LOC including tests.
 
@@ -95,7 +95,7 @@ export function createZustandAdapter<S>(initial: S): PatchCapableAdapter<S> {
 
 `zustand/vanilla` is essential — it gives first-class support for non-React surfaces (MCP, CLI, keyboard daemons).
 
-## Phase 2 adapter: `@acture/state-redux`
+## Phase 2 adapter: `acture-state-redux`
 
 Per research-3 §6 second choice. RTK already runs Immer internally; `createSlice` is the exemplar of typed slices. Adapter pattern: wrap the store; expose typed slice accessors.
 

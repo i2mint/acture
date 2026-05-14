@@ -5,15 +5,15 @@
   "fixed": [
     [
       "acture",
-      "@acture/state-zustand",
-      "@acture/state-redux",
-      "@acture/palette-react",
-      "@acture/hotkeys",
-      "@acture/forms-autoform",
-      "@acture/forms-rjsf",
-      "@acture/mcp",
-      "@acture/ai-vercel",
-      "@acture/migration"
+      "acture-state-zustand",
+      "acture-state-redux",
+      "acture-palette-react",
+      "acture-hotkeys",
+      "acture-forms-autoform",
+      "acture-forms-rjsf",
+      "acture-mcp",
+      "acture-ai-vercel",
+      "acture-migration"
     ]
   ],
   "linked": [],
@@ -21,9 +21,9 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@acture/example-graph-editor",
-    "@acture/example-drop-in",
-    "@acture/example-zustand-wrap-before",
-    "@acture/example-zustand-wrap-after"
+    "acture-example-graph-editor",
+    "acture-example-drop-in",
+    "acture-example-zustand-wrap-before",
+    "acture-example-zustand-wrap-after"
   ]
 }

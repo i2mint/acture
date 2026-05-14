@@ -37,7 +37,7 @@ Decision points:
 
 - **Id prefix.** Options: `app`, the project name, custom. Default: `app`.
 - **Categories.** Show the categories that emerged from the diagnosis; offer merge / rename. Categories surface in the palette grouping.
-- **State adapter.** If zustand → `@acture/state-zustand`. If RTK → `@acture/state-redux`. If neither, ask.
+- **State adapter.** If zustand → `acture-state-zustand`. If RTK → `acture-state-redux`. If neither, ask.
 - **Phase A scope.** Conservative (5–8) / moderate (8–12) / aggressive (12–20). Default: moderate.
 - **Surface ambitions.** Which of palette / hotkeys / MCP / AI will be wired in this migration? Determines which `migration-wire-*` follow-ons matter.
 

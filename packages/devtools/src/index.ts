@@ -1,5 +1,5 @@
 /**
- * `@acture/devtools` — embeddable inspector for acture registries.
+ * `acture-devtools` — embeddable inspector for acture registries.
  *
  * Two pieces:
  *

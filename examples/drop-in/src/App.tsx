@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { CommandPalette } from '@acture/palette-react';
-import { useHotkeys } from '@acture/hotkeys/react';
+import { CommandPalette } from 'acture-palette-react';
+import { useHotkeys } from 'acture-hotkeys/react';
 import { registry } from './registry.js';
 import { store } from './store.js';
 import { useTodoState } from './use-store.js';

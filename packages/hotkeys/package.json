@@ -1,5 +1,5 @@
 {
-  "name": "@acture/hotkeys",
+  "name": "acture-hotkeys",
   "version": "1.0.0",
   "description": "acture keyboard-shortcut adapter. Reads `keybinding` off every CommandRecord; dispatches via the registry. tinykeys under the hood.",
   "license": "Apache-2.0",

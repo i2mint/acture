@@ -47,7 +47,7 @@ function resolveOptions(opts: Record<string, string | undefined> | undefined): R
     : DEFAULT_EVENTS;
   return {
     events,
-    importFrom: opts?.['import-from'] ?? '@acture/migration',
+    importFrom: opts?.['import-from'] ?? 'acture-migration',
     importName: opts?.['import-name'] ?? 'wrapMutation',
   };
 }

@@ -26,7 +26,7 @@
  * Anything else is left alone: an exported binding may be called from
  * another file; a referenced binding is still load-bearing; a result that
  * is returned or passed as an argument is still in use. Namespace imports
- * (`import * as m from '@acture/migration'`) are not tracked.
+ * (`import * as m from 'acture-migration'`) are not tracked.
  */
 
 import type { Rule, SourceCode } from 'eslint';
@@ -37,7 +37,7 @@ import type {
   VariableDeclarator,
 } from 'estree';
 
-const DEFAULT_MODULE = '@acture/migration';
+const DEFAULT_MODULE = 'acture-migration';
 const WRAP_MUTATION = 'wrapMutation';
 
 interface Options {

@@ -1,5 +1,5 @@
 /**
- * `@acture/build-tier` — build-time tier mirror.
+ * `acture-build-tier` — build-time tier mirror.
  *
  * Scans source for `@stable` / `@experimental` / `@internal` /
  * `@deprecated [reason]` JSDoc tags on `defineCommand` calls and mirrors
@@ -11,10 +11,10 @@
  * Two integration points are exported in separate entry points so users
  * pay only for the bundler they use:
  *
- *   - `@acture/build-tier/esbuild` → an esbuild plugin (also works with
+ *   - `acture-build-tier/esbuild` → an esbuild plugin (also works with
  *     tsup, which is esbuild under the hood).
- *   - `@acture/build-tier/vite` → a Vite plugin.
- *   - `@acture/build-tier/ast` → AST-mode polish using `ts-morph`. Same
+ *   - `acture-build-tier/vite` → a Vite plugin.
+ *   - `acture-build-tier/ast` → AST-mode polish using `ts-morph`. Same
  *     contract as the regex transform, but handles 5000-char spec
  *     bodies and template-substitution edge cases the regex caps out
  *     on. Optional peer; only loaded if you import it. (v1.2.)

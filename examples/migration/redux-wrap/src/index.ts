@@ -11,7 +11,7 @@
  * trails, devtools) sees the events as a single stream.
  */
 
-import { actureMiddleware } from '@acture/migration';
+import { actureMiddleware } from 'acture-migration';
 import { createCartStore } from './store.js';
 import { createCartRegistry, registerCartCommands } from './acture/registry.js';
 

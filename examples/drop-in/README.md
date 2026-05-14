@@ -4,7 +4,7 @@ Demonstrates the **drop-in / footprint-minimizer** positioning path: an existing
 
 ```bash
 pnpm install
-pnpm --filter @acture/example-drop-in dev
+pnpm --filter acture-example-drop-in dev
 # open http://localhost:5174
 ```
 
@@ -26,15 +26,15 @@ Total new code: ~90 lines. Existing app components: zero changes.
 ## What you get
 
 - **Ctrl/Cmd+K palette** searches and dispatches across all 5 todo commands.
-- **⌘⇧1** toggles the first todo; **⌘⇧C** clears done — both via `@acture/hotkeys` reading the same `keybinding` field the palette displays.
-- **MCP server** (`pnpm --filter @acture/example-drop-in mcp`) exposes the same commands as MCP tools, so Claude Desktop / mcp-inspector can drive the app.
+- **⌘⇧1** toggles the first todo; **⌘⇧C** clears done — both via `acture-hotkeys` reading the same `keybinding` field the palette displays.
+- **MCP server** (`pnpm --filter acture-example-drop-in mcp`) exposes the same commands as MCP tools, so Claude Desktop / mcp-inspector can drive the app.
 - **Errors-as-data** at every surface: invalid params or unknown IDs return `{ ok: false, error: {...} }` instead of throwing.
 
 ## The wrap point
 
 ```ts
 // src/store.ts
-import { wrapZustandStore } from '@acture/state-zustand';
+import { wrapZustandStore } from 'acture-state-zustand';
 import { createExistingStore } from './existing-app.js';
 
 export const store = createExistingStore();
@@ -49,4 +49,4 @@ The greenfield example ([`../greenfield/graph-editor`](../greenfield/graph-edito
 
 ## When you'd graduate
 
-Once the palette + MCP coverage feels right, you can start *moving* the action implementations into the command `execute` bodies and deleting the legacy actions. That's the strangler-fig path and is the subject of `@acture/migration` (Phase 3).
+Once the palette + MCP coverage feels right, you can start *moving* the action implementations into the command `execute` bodies and deleting the legacy actions. That's the strangler-fig path and is the subject of `acture-migration` (Phase 3).

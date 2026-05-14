@@ -1,82 +1,58 @@
-# Next Session — v1.5 Planning
+# Next Session — `acture` core positioning-alignment review
 
-**Your role:** You are the v1.5 planning / implementing agent. **v1.4 is DONE as of 2026-05-14.** Phase 4 v1.0 + v1.1 + v1.2 + v1.3 + v1.4 increments have all landed. Your job is to confirm v1.5 scope with the user and ship it.
+**Your role:** review (and refactor where the review demands it) the `acture` **core** package so it genuinely lives up to `docs/positioning.md`. This is the immediate next step after the v1.5 repositioning + namespace-migration increment.
 
-**v1.4 finished 2026-05-14.** Repo state at handoff:
+**This is a review first, a refactor second.** Do not start rewriting. Audit, find the gaps, then make the *minimum* changes the audit surfaces. The closed `CommandRecord` (15 fields) does not change.
 
-- **15 packages publishable.** New this increment: `eslint-plugin-acture-migration@1.0.0`. Other notable versions: `acture@1.1.0`, `@acture/cli@1.2.0`, `@acture/migration@1.1.0`, `@acture/build-tier@1.1.0`, `@acture/codemods@1.1.0`, the rest at `1.0.0`.
-- **396 package tests** + **41 example tests** all green.
-- **4 worked examples** unchanged.
-- All packages typecheck and build via tsup / vite.
-- v1.4 reflection: [`docs/v1_4-reflection.md`](v1_4-reflection.md).
-- v1.4 ran the deferred fresh-agent release-gate test — results in [`docs/fresh-agent-test-results.md`](fresh-agent-test-results.md).
+## Step 0 — Orient
 
-What v1.4 shipped on top of v1.3:
+Read, in this order:
 
-- **`eslint-plugin-acture-migration`** — one rule, `acture/no-stale-wrap-mutation`, flags `wrapMutation(...)` calls whose result is never used (the migration has graduated; author with `defineCommand`). Closes a research-4 backlog item carried since v1.1. The `migration-graduate` skill now points at it.
-- **Fresh-agent release-gate test** — a fresh agent drove `@acture/codemods` from its README alone. Engine + CLI passed; the README did not (see below).
+1. `docs/positioning.md` — **canonical.** The dev-tool-first principle and the two flexibility dimensions. This is the standard you are auditing core against.
+2. `docs/roadmap.md` — where this session sits, what's done, what's deferred.
+3. `.claude/skills/acture-architecture-primer/SKILL.md` and `.claude/skills/acture-consumer-integration/SKILL.md`.
+4. `.claude/skills/acture-hard-donts/SKILL.md` — re-read before changing anything.
+5. `.claude/skills/acture-command-record-shape/SKILL.md` — the closed surface you must not widen.
+6. `packages/core/` — the actual code under review.
 
-What's still in the backlog:
+## Step 1 — The audit
 
-- **Codemods README + CLI polish.** The v1.4 fresh-agent test found the `@acture/codemods` README's headline `npx @acture/codemods` invocation fails pre-publish, and that per-codemod `--option` keys, `--manifest`, and `--files-from` are undiscoverable from the docs. The CLI also gives an ambiguous "No files matched" error for missing-vs-nonexistent `--target`. Full finding list and priority order in [`docs/fresh-agent-test-results.md`](fresh-agent-test-results.md) §"Recommended v1.5 follow-up". This is the direct, scoped output of v1.4's release gate.
-- **`.d.ts` mirror of resolved tier values.** Optional polish — JSDoc already surfaces in `.d.ts`; this would put the resolved `tier: 'experimental'` on the type-system path too. Slipped through v1.2 → v1.4.
-- **Hypermod-style AI-generation recipe doc.** Research-4 recommendation #8 — markdown doc in `docs/` showing how to ask Claude to write a one-off codemod for a handler shape that doesn't match any of the shipped five.
+The positioning makes two promises about core. Check whether the code keeps them.
 
----
+**Promise A — core is the minimal primitive.** `acture` core is *registry + dispatcher + schema bridge + the state-adapter interface*, and nothing else. Audit `packages/core/src` for anything that is really consumer logic, adapter logic, or convenience that belongs in an optional package. For each thing in core, ask: is this a *primitive*, or is it an *accelerator that crept inward*? Anything that fails belongs in (or as) a separate optional package.
 
-## Step 1 — Orient
+**Promise B — the agent-written path is real.** The positioning says a developer can stand up command dispatch with *zero* `acture-*` dependency — the agent hand-writes it. Is that actually achievable today? An agent has the skills (which explain acture's *design*) and core's source (as a *reference implementation*). Could it reproduce an equivalent minimal registry + dispatcher in a target project from those? If not — if the patterns are only encoded as installable code and never as a *legible, reproducible reference* — that is the central gap, and closing it is the most valuable thing this session can do.
 
-Read in this order (~15 minutes total):
+Also check the boundary the hard-don'ts care about: core imports zero React, zero state libraries (hard-don'ts #6, and the spirit of #2/#3). Verify, don't assume.
 
-1. `docs/v1_4-reflection.md` — what v1.4 found, especially §"Pre-v1.5 reflection answers".
-2. `docs/fresh-agent-test-results.md` — the release-gate findings that drive the top v1.5 candidate.
-3. `.claude/skills/acture-hard-donts/SKILL.md` — re-read before merging anything.
-4. `docs/v1_plan.md` §"Post-v1 (deferred, not committed)" — long-term backlog (undo, macros, telemetry, Python companion). None promote to v1.5 without explicit user direction.
+## Step 2 — Decide the deliverable with the user
 
-## Step 2 — Pick v1.5 scope
+The audit will land in one of a few places. **Surface the finding to the user before refactoring** — the right deliverable is a judgment call:
 
-Rule of three. The three candidates below are concrete and bounded. Pick at most TWO unless the user explicitly authorizes more.
+- If core is already minimal and the agent-written path is genuinely reproducible from existing material → the deliverable may be just a short written confirmation + any small tightening. That is a fine outcome; do not invent work.
+- If non-primitive code has crept into core → propose the extraction (to which package?) and confirm scope before moving code.
+- If the agent-written path is *asserted but not reproducible* → the likely deliverable is a new reference artifact: a "hand-written registry" reference doc, and/or a consumer/greenfield skill that walks an agent through writing the dispatch layer by hand. Confirm the shape with the user.
 
-**Strong candidate (v1.5):**
+Use `AskUserQuestion` for the scope fork. Do not guess.
 
-1. **Codemods README + CLI polish.** Act on `docs/fresh-agent-test-results.md` §"Recommended v1.5 follow-up". In priority order: (a) fix the invocation story — document a monorepo invocation (`node dist/cli.js …` or a workspace bin) alongside the `npx` form, or add an explicit publish-status line so the Quick start contains at least one command that runs today; (b) document per-codemod `--option` keys — a column in the codemod table or a per-codemod sub-section; (c) document `--manifest` and `--files-from` in the README; (d) disambiguate the "No files matched" CLI error for missing-vs-nonexistent `--target`. Mostly a README pass plus one small CLI error-message edit + ~3 tests. This is the direct output of v1.4's release gate — high signal, well-scoped.
+## Step 3 — Refactor (only what Step 1–2 justified)
 
-**Medium candidates (could ship as quick polish):**
+- Rule of three and the hard-don'ts still bind. The `CommandRecord` stays at 15 fields.
+- If you move code between packages, it is a `minor` for the gaining package and the losing package; changeset accordingly.
+- `pnpm build && pnpm test && pnpm typecheck` green across the workspace; example apps still build and pass.
 
-2. **`.d.ts` mirror of resolved tier values.** A tsup post-process pass that walks the emitted `.d.ts` files and injects the resolved `tier:` value at the type level. Small lift if implemented as a `@acture/build-tier/dts-mirror` companion to the existing JS-side mirror.
+## Step 4 — Wrap up
 
-3. **Hypermod-style AI-generation recipe doc.** Pure docs (no code) — markdown in `docs/` showing how to prompt Claude to author a one-off codemod for a handler shape that doesn't match any of the shipped five. References the existing `Codemod` interface so users can drop the generated code into `@acture/codemods` or use it standalone.
+- Update `docs/roadmap.md`: mark this item done, record what the audit found, move the "macros + e2e tooling" item to NEXT.
+- Write a short reflection (`docs/core-review-reflection.md` or fold into the roadmap — your call; keep it short).
+- Replace this file with the handoff for the macros + e2e tooling work (see `docs/roadmap.md` §"Next" for what that entails).
 
-**My recommendation if asked:** ship **#1 (codemods polish)** — it closes the loop on the v1.4 release gate and removes a real "first command fails" blocker. Optionally pair with **#3 (AI-recipe doc)** since it's pure docs and thematically adjacent to the codemods surface. #2 is still optional polish and can wait.
+## Pre-flight note — publishing the renamed packages
 
-## Step 3 — Things that are still post-v1.5
-
-These remain `docs/v1_plan.md` §"Post-v1 (deferred, not committed)":
-
-- `acture/undo`.
-- `acture/macros`, `acture/telemetry`, `acture/sandbox`, `acture/test-property`.
-- `acture/state-jotai`, `acture/state-valtio`.
-- Python companion (research-6 not executed).
-
-Do NOT promote any of these without explicit user direction AND three concrete callers.
-
-## Step 4 — Hard-don'ts still in force
-
-Re-read `.claude/skills/acture-hard-donts/SKILL.md`. The closed-surface principle held through v1.0 → v1.4. CommandRecord remains at 15 fields. Hold the line.
-
-## Step 5 — Release ceremony for v1.5
-
-When v1.5 deliverables are merged and tests are green:
-
-1. Bump only the affected packages (e.g. `@acture/codemods` if its CLI/README changed — a `patch` for docs + error-message, a `minor` if a new flag is added).
-2. `pnpm -r --filter "./packages/*" build && pnpm test` — green.
-3. `npm pack --dry-run` clean for each bumped package.
-4. Tag and publish (owner discretion).
-5. Write `docs/v1_5-reflection.md`.
-6. Replace this file with a v1.6 / post-v1 planning prompt.
+The 13 packages renamed from `@acture/*` to `acture-*` in v1.5 are built, tested, and **not yet published**. `acture@1.1.0` and `eslint-plugin-acture-migration@1.0.0` are already on npm. Publishing the other 13 (`pnpm changeset publish`, or the relevant subset) is unblocked and owner-discretion — offer to do it, with explicit user confirmation, but it is independent of the core review and not required to start.
 
 ## When unsure
 
-Re-read this file, `docs/v1_4-reflection.md`, `docs/fresh-agent-test-results.md`, `docs/v1_plan.md` §"Post-v1", and `.claude/skills/acture-hard-donts/SKILL.md`. If still unsure, append a note to `docs/escalations.md` (create if missing) and ask the user before locking in any irreversible decision.
+Re-read `docs/positioning.md` and `docs/roadmap.md`. If a change is irreversible or you cannot tell whether it honours the positioning, append to `docs/escalations.md` (create if missing) and ask the user.
 
-**Good luck.** v1.4 rounded out the release-readiness theme — the ESLint plugin closed a backlog item and the fresh-agent test validated the codemod surface, surfacing a tight, scoped punch list. v1.5 should act on that punch list. Don't promote post-v1 items into v1.x.
+**Good luck.** The point of this session is to make the dev-tool-first promise *true in the code*, not just in the docs. A clean "it already holds" is a perfectly good result — the failure mode is inventing a refactor to look busy.

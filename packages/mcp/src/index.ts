@@ -1,5 +1,5 @@
 /**
- * `@acture/mcp` — project an acture registry as an MCP server.
+ * `acture-mcp` — project an acture registry as an MCP server.
  *
  * Per `acture-schema-bridge` and `acture-tier-system` skills:
  *

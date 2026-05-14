@@ -7,7 +7,7 @@
  *
  *   {
  *     "version": 1,
- *     "generator": "@acture/cli",
+ *     "generator": "acture-cli",
  *     "tools": [
  *       {
  *         "name": "app.search",
@@ -70,7 +70,7 @@ export function snapshotRegistry(
   const tools = list.map(commandToSnapshotTool);
   return {
     version: 1,
-    generator: '@acture/cli',
+    generator: 'acture-cli',
     tools,
   };
 }

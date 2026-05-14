@@ -32,15 +32,15 @@ Nothing in `src/` outside this directory is modified.
 ### 1. Install packages
 
 ```bash
-pnpm add acture @acture/migration zod
+pnpm add acture acture-migration zod
 # State adapter (pick one based on the plan):
-pnpm add @acture/state-zustand    # if the host uses zustand
-pnpm add @acture/state-redux      # if the host uses RTK
+pnpm add acture-state-zustand    # if the host uses zustand
+pnpm add acture-state-redux      # if the host uses RTK
 # Wire-up packages — install only what the plan calls for:
-pnpm add @acture/palette-react cmdk    # if palette is in scope
-pnpm add @acture/hotkeys tinykeys      # if hotkeys are in scope
-pnpm add @acture/mcp                   # if MCP is in scope
-pnpm add @acture/ai-vercel ai          # if AI tool calling is in scope
+pnpm add acture-palette-react cmdk    # if palette is in scope
+pnpm add acture-hotkeys tinykeys      # if hotkeys are in scope
+pnpm add acture-mcp                   # if MCP is in scope
+pnpm add acture-ai-vercel ai          # if AI tool calling is in scope
 ```
 
 Use `npm` / `yarn` instead of `pnpm` if the host uses them.
@@ -60,7 +60,7 @@ That's it. No middleware to register — acture's dispatcher already validates p
 For zustand:
 
 ```ts
-import { wrapZustandStore } from '@acture/state-zustand';
+import { wrapZustandStore } from 'acture-state-zustand';
 import { useTodoStore } from '../store';   // existing host store
 
 export const state = wrapZustandStore(useTodoStore);
@@ -69,7 +69,7 @@ export const state = wrapZustandStore(useTodoStore);
 For RTK:
 
 ```ts
-import { wrapReduxStore } from '@acture/state-redux';
+import { wrapReduxStore } from 'acture-state-redux';
 import { store } from '../store';
 
 export const state = wrapReduxStore(store, {
@@ -101,7 +101,7 @@ export { state } from './state';
 If the plan says to observe store events (e.g. for telemetry or to render dispatches in devtools), update the host's `configureStore` call:
 
 ```ts
-import { actureMiddleware } from '@acture/migration';
+import { actureMiddleware } from 'acture-migration';
 import { registry } from './acture/registry';
 
 export const store = configureStore({

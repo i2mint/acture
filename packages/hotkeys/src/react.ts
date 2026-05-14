@@ -2,7 +2,7 @@
  * Optional React entry-point. Imports React lazily so a host that
  * never uses the React hook does not pull React into its bundle.
  *
- *     import { useHotkeys } from '@acture/hotkeys/react';
+ *     import { useHotkeys } from 'acture-hotkeys/react';
  */
 
 import { useEffect, useRef } from 'react';

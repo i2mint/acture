@@ -1,10 +1,12 @@
 # acture
 
+> **acture is a development tool first.** Even this core package is optional — an agent can write a registry + dispatcher directly into your project following acture's patterns. Installing `acture` is a deliberate choice to reuse the primitive rather than own it. See [`docs/positioning.md`](../../docs/positioning.md).
+
 > One schema. Palette, hotkeys, AI tools, MCP, and tests — for free.
 
 Acture is a typed, schema-driven command dispatch library. Define an operation once; expose it as a command palette entry, keyboard shortcut, AI tool, MCP server tool, or test action.
 
-This package is the **core**: registry, dispatcher, when-clause DSL, schema bridge, state-adapter types. Zero React, zero state-library dependencies. Concrete adapters live in `@acture/state-zustand`, `@acture/palette-react`, etc.
+This package is the **core**: registry, dispatcher, when-clause DSL, schema bridge, state-adapter types. Zero React, zero state-library dependencies. Concrete adapters live in `acture-state-zustand`, `acture-palette-react`, etc.
 
 > **Phase 1 status.** `defineCommand` + `createRegistry` + `toJsonSchema` + when-clause DSL are stable. Parameterized-palette UX, hotkeys, MCP / AI adapters, and the migration package land in Phase 2 / 3.
 
@@ -122,7 +124,7 @@ type Result<R> =
   | { ok: false; error: { code: string; message: string; details?: unknown } };
 ```
 
-`patches` and `effects` are **reserved hooks** for the post-v1 `@acture/undo` subsystem. Phase 1 ignores them on dispatch but preserves whatever your handler returns. Helpers: `ok(value, { patches?, effects? })` and `err(code, message, details?)`. Predicates: `isOk(r)`, `isErr(r)`.
+`patches` and `effects` are **reserved hooks** for the post-v1 `acture-undo` subsystem. Phase 1 ignores them on dispatch but preserves whatever your handler returns. Helpers: `ok(value, { patches?, effects? })` and `err(code, message, details?)`. Predicates: `isOk(r)`, `isErr(r)`.
 
 ### Built-in error codes
 
@@ -198,7 +200,7 @@ interface PatchCapableAdapter<S> extends StateAdapter<S> {
 function isPatchCapable<S>(a: StateAdapter<S>): a is PatchCapableAdapter<S>;
 ```
 
-The Phase 1 reference adapter is [`@acture/state-zustand`](https://npm.im/@acture/state-zustand): `createZustandAdapter({ initialState })`.
+The Phase 1 reference adapter is [`acture-state-zustand`](https://npm.im/acture-state-zustand): `createZustandAdapter({ initialState })`.
 
 ## Writing a new command — pattern
 
@@ -227,7 +229,7 @@ const renameNode = defineCommand({
 registry.register(renameNode);
 ```
 
-The example below shows registry composition with a host's state adapter — see [`@acture/example-graph-editor`](../../examples/greenfield/graph-editor) for the full worked example.
+The example below shows registry composition with a host's state adapter — see [`acture-example-graph-editor`](../../examples/greenfield/graph-editor) for the full worked example.
 
 ## Type exports
 

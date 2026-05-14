@@ -1,7 +1,7 @@
 /**
  * `<AutoForm />` — render a CommandRecord's params schema as a small
  * form. Matches the `PaletteFormAdapter` shape expected by
- * `@acture/palette-react`.
+ * `acture-palette-react`.
  */
 
 /// <reference lib="dom" />

@@ -25,7 +25,7 @@ describe('wrap-handler-with-mutation', () => {
     const result = await wrapHandlerWithMutation.run({ files: [path] });
     expect(result.summary.changed).toBe(1);
     expect(result.files[0]!.after).toContain('onClick={wrapMutation(save)}');
-    expect(result.files[0]!.after).toMatch(/from ["']@acture\/migration["']/);
+    expect(result.files[0]!.after).toMatch(/from ["']acture-migration["']/);
     cleanup();
   });
 
@@ -44,7 +44,7 @@ declare function doStuff(): void;
 
   it('is idempotent on already-wrapped handlers', async () => {
     const { path, cleanup } = withFile(
-      `import { wrapMutation } from '@acture/migration';
+      `import { wrapMutation } from 'acture-migration';
 export function Btn({ save }: { save: () => void }) {
   return <button onClick={wrapMutation(save)}>Save</button>;
 }
@@ -105,7 +105,7 @@ export function Btn({ save }: { save: () => void }) {
 
   it('adds named import to existing migration import', async () => {
     const { path, cleanup } = withFile(
-      `import { chooseImplementation } from '@acture/migration';
+      `import { chooseImplementation } from 'acture-migration';
 export function X({ a }: { a: () => void }) {
   return <button onClick={a}>x</button>;
 }
@@ -113,7 +113,7 @@ export function X({ a }: { a: () => void }) {
     );
     const result = await wrapHandlerWithMutation.run({ files: [path] });
     expect(result.files[0]!.after).toMatch(
-      /import \{ chooseImplementation, wrapMutation \} from ["']@acture\/migration["']/,
+      /import \{ chooseImplementation, wrapMutation \} from ["']acture-migration["']/,
     );
     cleanup();
   });

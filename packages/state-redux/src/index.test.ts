@@ -9,7 +9,7 @@ interface AppState {
 
 const initial: AppState = { count: 0, items: ['a'] };
 
-describe('@acture/state-redux — createReduxAdapter', () => {
+describe('acture-state-redux — createReduxAdapter', () => {
   it('exposes getState / setState / subscribe', () => {
     const adapter = createReduxAdapter<AppState>({ initialState: initial });
     expect(adapter.getState()).toEqual(initial);
@@ -74,7 +74,7 @@ describe('@acture/state-redux — createReduxAdapter', () => {
   });
 });
 
-describe('@acture/state-redux — wrapReduxStore', () => {
+describe('acture-state-redux — wrapReduxStore', () => {
   it('treats one slice of an existing RTK store as acture state', () => {
     const counter = createSlice({
       name: 'counter',

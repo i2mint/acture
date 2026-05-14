@@ -1,11 +1,13 @@
-# @acture/build-tier
+# acture-build-tier
+
+> **acture is a development tool first.** This is dev/build-time tooling — it never becomes a runtime dependency of the apps it serves, and using it is entirely optional. See [`docs/positioning.md`](../../docs/positioning.md).
 
 Build-step plugin. Scans `.ts` / `.tsx` source for JSDoc tier tags on `defineCommand` calls and mirrors them into the runtime command's `tier` metadata field.
 
 ## Install
 
 ```bash
-pnpm add -D @acture/build-tier
+pnpm add -D acture-build-tier
 ```
 
 ## tsup / esbuild
@@ -13,7 +15,7 @@ pnpm add -D @acture/build-tier
 ```ts
 // tsup.config.ts
 import { defineConfig } from 'tsup';
-import { actureBuildTier } from '@acture/build-tier/esbuild';
+import { actureBuildTier } from 'acture-build-tier/esbuild';
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -26,7 +28,7 @@ export default defineConfig({
 ```ts
 // vite.config.ts
 import { defineConfig } from 'vite';
-import { actureBuildTierVite } from '@acture/build-tier/vite';
+import { actureBuildTierVite } from 'acture-build-tier/vite';
 
 export default defineConfig({
   plugins: [actureBuildTierVite()],
@@ -87,7 +89,7 @@ For projects where AST-level certainty matters more than a fast regex pass, an A
 
 ```ts
 // custom bundler plugin
-import { transformSourceAst } from '@acture/build-tier/ast';
+import { transformSourceAst } from 'acture-build-tier/ast';
 
 export function actureTierAstPlugin() {
   return {

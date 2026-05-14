@@ -1,17 +1,19 @@
-# @acture/devtools
+# acture-devtools
+
+> **acture is a development tool first.** This is dev/build-time tooling — it never becomes a runtime dependency of the apps it serves, and using it is entirely optional. See [`docs/positioning.md`](../../docs/positioning.md).
 
 Embeddable React Inspector + dispatch-log instrumentation for acture registries. Dev-only — production builds skip the imports and tree-shake to nothing.
 
 ## Install
 
 ```bash
-pnpm add -D @acture/devtools
+pnpm add -D acture-devtools
 ```
 
 ## Mount the Inspector
 
 ```tsx
-import { Inspector, instrumentRegistry } from '@acture/devtools';
+import { Inspector, instrumentRegistry } from 'acture-devtools';
 import { registry } from './registry';
 
 // Instrument once at module load so every dispatch is captured.

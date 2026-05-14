@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { CommandPalette } from '@acture/palette-react';
+import { CommandPalette } from 'acture-palette-react';
 import { store, useNotesStore, type Theme } from './store.js';
 import { registry } from './acture/registry.js';
 import './acture/index.js'; // side-effect: registers commands
@@ -129,7 +129,7 @@ export function App(): React.ReactElement {
         <h1>Notes — after acture</h1>
         <p>
           Same notes app. <kbd>⌘K</kbd> opens the palette. Five commands
-          are wrapped via `@acture/migration`; two are graduated to
+          are wrapped via `acture-migration`; two are graduated to
           direct `defineCommand` calls.
         </p>
       </header>

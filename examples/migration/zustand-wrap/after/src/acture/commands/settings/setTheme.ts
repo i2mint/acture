@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { wrapMutation } from '@acture/migration';
+import { wrapMutation } from 'acture-migration';
 import { registry } from '../../registry.js';
 import { store } from '../../../store.js';
 import type { Theme } from '../../../store.js';

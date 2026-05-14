@@ -10,7 +10,7 @@
  * Idempotent — wrapping a registry twice returns the same disposer.
  * Calling the returned disposer restores the original `dispatch`.
  *
- * Pattern mirrors `@acture/devtools` `instrumentRegistry`: we mutate
+ * Pattern mirrors `acture-devtools` `instrumentRegistry`: we mutate
  * one method on the registry. Per `acture-hard-donts` §6, this is
  * permitted because (a) it's opt-in and dev-leaning, (b) it preserves
  * the original signature exactly, (c) the wrapper is identifiable

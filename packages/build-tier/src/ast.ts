@@ -19,14 +19,14 @@
  * outputs for normal input.
  *
  * Cost: ts-morph is a real dependency (~7 MB). It is declared as an
- * *optional peer* of `@acture/build-tier` so consumers who only use
+ * *optional peer* of `acture-build-tier` so consumers who only use
  * the regex mode don't pay for it. Importing this file pulls ts-morph
  * in lazily.
  *
  * Usage:
  *
  *     // tsup, vite, etc. — point your plugin at the AST transform:
- *     import { transformSourceAst } from '@acture/build-tier/ast';
+ *     import { transformSourceAst } from 'acture-build-tier/ast';
  *
  *     export function actureTierAstPlugin(): Plugin {
  *       return {
@@ -39,8 +39,8 @@
  *       };
  *     }
  *
- * The regex mode at `@acture/build-tier/esbuild` and
- * `@acture/build-tier/vite` is the documented default. Use AST mode
+ * The regex mode at `acture-build-tier/esbuild` and
+ * `acture-build-tier/vite` is the documented default. Use AST mode
  * when the regex's lookahead window or string handling is insufficient.
  */
 

@@ -4,7 +4,7 @@
 
 ## 1. Graph editor example runs
 
-`pnpm --filter @acture/example-graph-editor dev` starts a Vite dev server on `http://localhost:5173`. Curl against the dev server returns the example's HTML and the transformed `main.tsx` source. `pnpm --filter @acture/example-graph-editor build` produces a production bundle (`dist/index.html`, `dist/assets/index-*.js`, `dist/assets/index-*.css`, total ~345 KB / ~107 KB gzip).
+`pnpm --filter acture-example-graph-editor dev` starts a Vite dev server on `http://localhost:5173`. Curl against the dev server returns the example's HTML and the transformed `main.tsx` source. `pnpm --filter acture-example-graph-editor build` produces a production bundle (`dist/index.html`, `dist/assets/index-*.js`, `dist/assets/index-*.css`, total ~345 KB / ~107 KB gzip).
 
 **Note:** browser verification (Ctrl+K opening the palette, click-to-select, etc.) requires a human-driven session. The agent cannot drive a browser. The dev server and build outputs verify wiring; the user should drive the UI once.
 

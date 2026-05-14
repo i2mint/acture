@@ -1,5 +1,5 @@
 /**
- * `@acture/hotkeys` — keyboard-shortcut adapter.
+ * `acture-hotkeys` — keyboard-shortcut adapter.
  *
  * Reads `record.keybinding` off every command in a registry, binds it
  * via [tinykeys](https://github.com/jamiebuilds/tinykeys), and dispatches
@@ -15,14 +15,14 @@
  *
  * Surface (plain DOM):
  *
- *     import { bindHotkeys } from '@acture/hotkeys';
+ *     import { bindHotkeys } from 'acture-hotkeys';
  *     const stop = bindHotkeys(registry, { contextProvider: () => myCtx });
  *     // ...later
  *     stop();
  *
  * Surface (React, optional sub-export):
  *
- *     import { useHotkeys } from '@acture/hotkeys/react';
+ *     import { useHotkeys } from 'acture-hotkeys/react';
  *     useHotkeys(registry, { context });
  */
 

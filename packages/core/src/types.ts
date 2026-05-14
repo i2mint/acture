@@ -25,7 +25,7 @@ export type CommandKind = 'atomic' | 'handoff';
 /** RFC 6902-compatible JSON Patch. The shape is intentionally a subset
  *  of Immer's Patch so that cross-substrate interop (Immer, MST) is
  *  trivial. Phase 1 core does NOT consume patches; they are reserved
- *  hooks for `@acture/undo` (post-v1). */
+ *  hooks for `acture-undo` (post-v1). */
 export interface Patch {
   op: 'add' | 'remove' | 'replace';
   path: readonly (string | number)[];
@@ -86,9 +86,9 @@ export interface CommandRecord<P = unknown, R = unknown> {
   readonly kind?: CommandKind;
   readonly tier?: Tier;
   /** Free-text reason populated from `@deprecated <reason text>` JSDoc by
-   *  the build-step tier mirror. Adapter packages (`@acture/mcp`,
-   *  `@acture/ai-vercel`) prepend `[DEPRECATED — <reason>]` to the
-   *  description when projecting. `@acture/devtools` surfaces it in the
+   *  the build-step tier mirror. Adapter packages (`acture-mcp`,
+   *  `acture-ai-vercel`) prepend `[DEPRECATED — <reason>]` to the
+   *  description when projecting. `acture-devtools` surfaces it in the
    *  inspector. (Three callers; closed-surface addition approved.) */
   readonly deprecationReason?: string;
   /** Opt-in token for `@internal` dispatch. The tier-mirror build step

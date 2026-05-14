@@ -5,7 +5,7 @@
  *
  * Three things matter for the migration demo:
  *   1. The store is created with `zustand/vanilla` so we can wrap it
- *      with `@acture/state-zustand` later without changing this file.
+ *      with `acture-state-zustand` later without changing this file.
  *   2. Actions are typed as plain methods (no Redux-action-creator
  *      ceremony).
  *   3. We use it in the React tree via the `useStore` hook below.

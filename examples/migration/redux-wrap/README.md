@@ -7,7 +7,7 @@ duplicating state.
 
 ## What this exercises
 
-`actureMiddleware` from `@acture/migration` is the store-event half of
+`actureMiddleware` from `acture-migration` is the store-event half of
 the strangler-fig pattern (research-4 §A.5). It does NOT replace
 `store.dispatch` — it observes. RTK's auto-generated action types
 (`cart/addItem`, `cart/removeItem`, …) are slash-separated, while
@@ -40,7 +40,7 @@ palette-driven dispatches as one stream.
 ## Wiring
 
 ```ts
-import { actureMiddleware } from '@acture/migration';
+import { actureMiddleware } from 'acture-migration';
 import { createCartRegistry, registerCartCommands } from './acture/registry.js';
 import { createCartStore } from './store.js';
 

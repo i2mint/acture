@@ -64,7 +64,7 @@ export interface CommandPaletteProps {
   onParameterizedSelect?: (cmd: AnyCommandRecord) => void;
   /** Optional form adapter for `handoff` commands. When present, the
    *  palette switches its inner view to this component instead of
-   *  closing. Plug in `@acture/forms-autoform` or `@acture/forms-rjsf`. */
+   *  closing. Plug in `acture-forms-autoform` or `acture-forms-rjsf`. */
   formAdapter?: PaletteFormAdapter;
   /** Per-field defaults injected into the picker chain / form. Useful
    *  for context-aware prefill (Things-style — research-2 §9.4). */

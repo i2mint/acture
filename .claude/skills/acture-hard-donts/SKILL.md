@@ -29,11 +29,11 @@ Source: `docs/redesign_takeaways.md` §3.
 
 ## 3. No business logic in adapter packages
 
-**Symptom:** `@acture/mcp` decides which commands to expose based on user preferences. `@acture/palette-react` runs an algorithm to pick command order beyond `defaultScore`. `@acture/ai-vercel` validates parameters in a way that differs from the core dispatcher.
+**Symptom:** `acture-mcp` decides which commands to expose based on user preferences. `acture-palette-react` runs an algorithm to pick command order beyond `defaultScore`. `acture-ai-vercel` validates parameters in a way that differs from the core dispatcher.
 
 **Why it's wrong:** Logic that should be uniform across surfaces drifts. Adapters become couplers, not translators.
 
-**Fix:** Adapters translate. They iterate the registry and emit per-target format. If you find yourself adding behavior, it belongs in `@acture/core`. If the behavior is per-consumer-specific (e.g., "MCP cares about tier filtering"), it goes in core as a parameterized projection (`registry.toMCPServer({ tiers })`).
+**Fix:** Adapters translate. They iterate the registry and emit per-target format. If you find yourself adding behavior, it belongs in `acture-core`. If the behavior is per-consumer-specific (e.g., "MCP cares about tier filtering"), it goes in core as a parameterized projection (`registry.toMCPServer({ tiers })`).
 
 ## 4. No `if (mode === ...)` in shared helpers
 
@@ -74,7 +74,7 @@ Set an explicit 3–6 month deadline on every experimental feature. If it hasn't
 
 ## 8. No bundling a UI kit
 
-**Symptom:** `@acture/palette-react` imports from `@mui/material` or `shadcn/ui` directly.
+**Symptom:** `acture-palette-react` imports from `@mui/material` or `shadcn/ui` directly.
 
 **Why it's wrong:** Users have their own design systems. Bundling makes acture unusable for them.
 
@@ -107,6 +107,7 @@ Before merging:
 3. If the PR added a field to `CommandRecord`: did three concrete callers ask for it? (See `acture-command-record-shape`.)
 4. If the PR added a runtime check or middleware: is it the dispatcher's concern, or did it leak into an adapter?
 5. If the PR added a "mode" branch anywhere: stop. Refactor into composition.
+6. **Positioning check** (`docs/positioning.md`): could a developer accomplish what this PR enables *without* installing an `acture-*` package? If the honest answer is "no", the dev-tool-first principle is violated — the agent-written path must stay viable and documented. If the PR adds or touches a consumer surface, the `acture-consumer-integration` skill's checklist also applies.
 
 ## When the answer is unclear
 
@@ -114,6 +115,8 @@ If you can't tell whether a PR violates a hard don't, the answer is usually yes 
 
 ## See also
 
-- `docs/redesign_takeaways.md` §3 — the source
+- `docs/positioning.md` — canonical positioning; the source of merge-ritual item #6
+- `docs/redesign_takeaways.md` §3 — the source of the ten don'ts
 - `docs/command_dispatch_journal_article.md` §6 — the underlying risks (Inner Platform, premature generalization, performance, astronaut syndrome)
+- `acture-consumer-integration` — the consumer-build pattern that operationalises the positioning
 - Each individual `acture-*` skill for domain-specific don'ts

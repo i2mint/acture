@@ -1,4 +1,6 @@
-# @acture/palette-react
+# acture-palette-react
+
+> **acture is a development tool first.** This package is an *optional accelerator* — an agent can hand-write this integration into your project instead, with no `acture-*` dependency. Installing it is a deliberate, opt-in choice to reuse tested code rather than own it. See [`docs/positioning.md`](../../docs/positioning.md).
 
 Command palette for [acture](https://npm.im/acture). Wraps [cmdk](https://cmdk.paco.me) and reads commands directly off the registry.
 
@@ -22,18 +24,18 @@ The `kind` is auto-derived from the schema unless `record.kind` is set explicitl
 ## Install
 
 ```sh
-pnpm add @acture/palette-react cmdk react
+pnpm add acture-palette-react cmdk react
 # pick a form adapter for handoff commands:
-pnpm add @acture/forms-autoform   # Zod-native (recommended)
+pnpm add acture-forms-autoform   # Zod-native (recommended)
 # or
-pnpm add @acture/forms-rjsf       # JSON-Schema-native
+pnpm add acture-forms-rjsf       # JSON-Schema-native
 ```
 
 ## Usage
 
 ```tsx
-import { CommandPalette } from '@acture/palette-react';
-import { AutoForm } from '@acture/forms-autoform';
+import { CommandPalette } from 'acture-palette-react';
+import { AutoForm } from 'acture-forms-autoform';
 import { registry } from './registry';
 
 function PaletteOverlay({ context, onClose }) {
@@ -89,5 +91,5 @@ Every meaningful node carries a `data-acture-*` attribute. Style with CSS — th
 ## See also
 
 - [acture-palette-design](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-palette-design/SKILL.md) — the design rationale
-- [@acture/forms-autoform](../forms-autoform) — Zod-native form adapter
-- [@acture/forms-rjsf](../forms-rjsf) — JSON-Schema-native form adapter
+- [acture-forms-autoform](../forms-autoform) — Zod-native form adapter
+- [acture-forms-rjsf](../forms-rjsf) — JSON-Schema-native form adapter

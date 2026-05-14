@@ -1,4 +1,6 @@
-# @acture/migration
+# acture-migration
+
+> **acture is a development tool first.** This package is an *optional accelerator* — an agent can hand-write this integration into your project instead, with no `acture-*` dependency. Installing it is a deliberate, opt-in choice to reuse tested code rather than own it. See [`docs/positioning.md`](../../docs/positioning.md).
 
 Strangler-fig adoption primitives for bringing acture into an existing app without a rewrite.
 
@@ -21,13 +23,13 @@ migration-diagnose → migration-plan → migration-scaffold → migration-wrap 
 ## Install
 
 ```bash
-pnpm add @acture/migration acture zod
+pnpm add acture-migration acture zod
 ```
 
 ## `wrapMutation` — the load-bearing primitive
 
 ```ts
-import { wrapMutation } from '@acture/migration';
+import { wrapMutation } from 'acture-migration';
 import { registry } from './acture/registry';
 import { useTodoStore } from './store';
 
@@ -53,7 +55,7 @@ Now `registry.dispatch('app.todo.add', { text: '…' })` works — the palette, 
 
 ```ts
 import { configureStore } from '@reduxjs/toolkit';
-import { actureMiddleware } from '@acture/migration';
+import { actureMiddleware } from 'acture-migration';
 import { registry } from './acture/registry';
 
 export const store = configureStore({
@@ -74,7 +76,7 @@ See `examples/migration/redux-wrap/` for a worked example exercising both paths 
 ## `createDomInterceptor` — DOM-event interception
 
 ```ts
-import { createDomInterceptor } from '@acture/migration';
+import { createDomInterceptor } from 'acture-migration';
 import { registry } from './acture/registry';
 
 const mount = createDomInterceptor(registry, {
@@ -103,7 +105,7 @@ A single delegated listener per event type (default: `click`, `submit`, `change`
 ## `chooseImplementation` — feature-flag bridge
 
 ```ts
-import { chooseImplementation } from '@acture/migration';
+import { chooseImplementation } from 'acture-migration';
 import { flags } from './flags';
 
 export const submit = chooseImplementation(
@@ -117,7 +119,7 @@ Five lines, no flag-SDK opinion baked in. Pair with LaunchDarkly / Statsig / Unl
 ## `shadowCompare` — Scientist-style A/B
 
 ```ts
-import { shadowCompare } from '@acture/migration';
+import { shadowCompare } from 'acture-migration';
 
 export const search = shadowCompare(
   (q: string) => newSearch(q),     // modern — always returned
@@ -140,6 +142,6 @@ Earlier sketches included a `divertHandler(commandId, { legacy, modern, predicat
 
 ## Codemods
 
-See [`@acture/codemods`](../codemods/README.md). The runtime-first principle of research-4 §B.1 still holds — start by wrapping handlers manually, lift to codemods only when scale demands it.
+See [`acture-codemods`](../codemods/README.md). The runtime-first principle of research-4 §B.1 still holds — start by wrapping handlers manually, lift to codemods only when scale demands it.
 
 See [`.claude/skills/acture-migration-package/SKILL.md`](../../.claude/skills/acture-migration-package/SKILL.md) for the architectural rationale.

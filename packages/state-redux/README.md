@@ -1,4 +1,6 @@
-# @acture/state-redux
+# acture-state-redux
+
+> **acture is a development tool first.** This package is an *optional accelerator* — an agent can hand-write this integration into your project instead, with no `acture-*` dependency. Installing it is a deliberate, opt-in choice to reuse tested code rather than own it. See [`docs/positioning.md`](../../docs/positioning.md).
 
 Reference state adapter binding [acture](https://npm.im/acture)'s `StateAdapter<S>` to [Redux Toolkit](https://redux-toolkit.js.org/). Implements `PatchCapableAdapter<S>` via Immer (already bundled with RTK).
 
@@ -7,7 +9,7 @@ Reference state adapter binding [acture](https://npm.im/acture)'s `StateAdapter<
 ### 1. Fresh single-slice store (greenfield)
 
 ```ts
-import { createReduxAdapter } from '@acture/state-redux';
+import { createReduxAdapter } from 'acture-state-redux';
 
 interface AppState { count: number }
 
@@ -26,7 +28,7 @@ state.applyPatches(inversePatches);
 
 ```ts
 import { configureStore, createSlice } from '@reduxjs/toolkit';
-import { wrapReduxStore } from '@acture/state-redux';
+import { wrapReduxStore } from 'acture-state-redux';
 
 const slice = createSlice({
   name: 'graph',
@@ -57,4 +59,4 @@ RTK's `store.subscribe(listener)` calls the listener with **no arguments** (unli
 ## See also
 
 - [`acture-state-adapter`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-state-adapter/SKILL.md) — the contract
-- [`@acture/state-zustand`](../state-zustand) — sibling adapter for zustand+immer
+- [`acture-state-zustand`](../state-zustand) — sibling adapter for zustand+immer

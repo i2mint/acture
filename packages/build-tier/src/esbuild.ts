@@ -3,7 +3,7 @@
  *
  * Usage in a consumer's tsup.config.ts:
  *
- *   import { actureBuildTier } from '@acture/build-tier/esbuild';
+ *   import { actureBuildTier } from 'acture-build-tier/esbuild';
  *   export default defineConfig({
  *     entry: ['src/index.ts'],
  *     esbuildPlugins: [actureBuildTier()],

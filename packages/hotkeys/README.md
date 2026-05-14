@@ -1,4 +1,6 @@
-# @acture/hotkeys
+# acture-hotkeys
+
+> **acture is a development tool first.** This package is an *optional accelerator* — an agent can hand-write this integration into your project instead, with no `acture-*` dependency. Installing it is a deliberate, opt-in choice to reuse tested code rather than own it. See [`docs/positioning.md`](../../docs/positioning.md).
 
 Keyboard-shortcut adapter for [acture](https://npm.im/acture). Reads `keybinding` off every CommandRecord and dispatches through the registry on key match. Built on [tinykeys](https://github.com/jamiebuilds/tinykeys).
 
@@ -9,13 +11,13 @@ Same reason acture has a palette adapter and a state adapter: keyboard shortcuts
 ## Install
 
 ```sh
-pnpm add @acture/hotkeys tinykeys
+pnpm add acture-hotkeys tinykeys
 ```
 
 ## Plain DOM API
 
 ```ts
-import { bindHotkeys } from '@acture/hotkeys';
+import { bindHotkeys } from 'acture-hotkeys';
 
 const stop = bindHotkeys(registry, {
   contextProvider: () => ({ selection: getSelection() }),
@@ -31,7 +33,7 @@ stop();
 ## React API
 
 ```tsx
-import { useHotkeys } from '@acture/hotkeys/react';
+import { useHotkeys } from 'acture-hotkeys/react';
 
 function App() {
   const selection = useSelection();

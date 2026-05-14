@@ -4,7 +4,7 @@ Hello and welcome! This folder is managed by `@changesets/cli`. Full docs: https
 
 ## Workflow for this repo
 
-The ten publishable packages — `acture`, `@acture/state-zustand`, `@acture/state-redux`, `@acture/palette-react`, `@acture/hotkeys`, `@acture/forms-autoform`, `@acture/forms-rjsf`, `@acture/mcp`, `@acture/ai-vercel`, `@acture/migration` — share a **fixed** version (see `config.json`). When any of them changes, all ten get a matching bump.
+The ten publishable packages — `acture`, `acture-state-zustand`, `acture-state-redux`, `acture-palette-react`, `acture-hotkeys`, `acture-forms-autoform`, `acture-forms-rjsf`, `acture-mcp`, `acture-ai-vercel`, `acture-migration` — share a **fixed** version (see `config.json`). When any of them changes, all ten get a matching bump.
 
 Add a changeset to any non-trivial PR:
 

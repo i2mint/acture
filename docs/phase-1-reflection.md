@@ -28,7 +28,7 @@ This file answers the six questions from `docs/implementation_plan.md` §"Phase 
 
 **The friction I expected but didn't hit:** wrapping `zustand/vanilla`'s native `subscribe(listener: (state, previousState) => void)` against acture's `subscribe(listener: (next, prev) => void)`. Zustand already passes both arguments natively; the adapter just forwards them. RTK won't be able to pass `previous` cleanly (it's not tracked) — the StateAdapter contract documents that adapters that can't track `previous` should pass the same value as `current`. That's still acceptable; Phase 2 will confirm with the RTK adapter.
 
-**Patches-capable extension was clean.** `setStateWithPatches` wraps `produceWithPatches` from `immer`; the resulting Immer patches are mapped to acture's `Patch` type (which is RFC-6902-shaped). `applyPatches` does the reverse mapping and feeds Immer's `applyPatches`. The integration test that round-trips through inverse patches passes — this is the load-bearing capability for the future `@acture/undo`.
+**Patches-capable extension was clean.** `setStateWithPatches` wraps `produceWithPatches` from `immer`; the resulting Immer patches are mapped to acture's `Patch` type (which is RFC-6902-shaped). `applyPatches` does the reverse mapping and feeds Immer's `applyPatches`. The integration test that round-trips through inverse patches passes — this is the load-bearing capability for the future `acture-undo`.
 
 **Recommendation for Phase 2:**
 - Pin the `Patch` op enum to `'add' | 'remove' | 'replace'` only for now. Don't add `'copy'`/`'move'` until a real caller asks. Immer does not produce them; only mobx-state-tree's `onPatch` does, and acture's undo design doesn't need them.
@@ -77,13 +77,13 @@ This file answers the six questions from `docs/implementation_plan.md` §"Phase 
 Ran the merge checklist from `.claude/skills/acture-hard-donts/SKILL.md`. Going through them:
 
 1. **No conditional logic in command metadata.** ✅ The `when` field is the upper bound; we did not grow callback variants à la Obsidian.
-2. **No god-package.** ✅ Core has zero React, zero state-library, zero UI deps. The three packages (`acture`, `@acture/state-zustand`, `@acture/palette-react`) are tightly scoped.
-3. **No business logic in adapter packages.** ✅ `@acture/state-zustand` only translates between zustand+immer and the `StateAdapter<S>` contract. `@acture/palette-react` only iterates the registry and renders cmdk items — even the parameterized-command "Phase 2 badge" is a rendering choice, not business logic.
+2. **No god-package.** ✅ Core has zero React, zero state-library, zero UI deps. The three packages (`acture`, `acture-state-zustand`, `acture-palette-react`) are tightly scoped.
+3. **No business logic in adapter packages.** ✅ `acture-state-zustand` only translates between zustand+immer and the `StateAdapter<S>` contract. `acture-palette-react` only iterates the registry and renders cmdk items — even the parameterized-command "Phase 2 badge" is a rendering choice, not business logic.
 4. **No `if (mode === ...)` in shared helpers.** ✅ Core has no mode awareness.
 5. **No `eval()`-ing LLM strings.** ✅ The dispatcher takes `(id, args)` and uses `Map.get(id)`. No reflective call.
-6. **No coupling the registry to React.** ✅ The `createRegistry` is plain TS. React lives only in `@acture/palette-react` (its hook + JSX). The example's `useGraphState` is in the example, not in core.
+6. **No coupling the registry to React.** ✅ The `createRegistry` is plain TS. React lives only in `acture-palette-react` (its hook + JSX). The example's `useGraphState` is in the example, not in core.
 7. **No promoting `@experimental` without a migration story.** N/A (no experimental→stable promotions yet).
-8. **No bundling a UI kit.** ✅ `@acture/palette-react` uses cmdk's headless primitives; styling is the host's job, demonstrated in the example with a small CSS file.
+8. **No bundling a UI kit.** ✅ `acture-palette-react` uses cmdk's headless primitives; styling is the host's job, demonstrated in the example with a small CSS file.
 9. **No marketing on category.** ✅ READMEs lead with "One schema. Palette, hotkeys, AI tools, MCP, and tests — for free."
 10. **No LLM-as-authorization.** ✅ Schema validation is at the dispatcher (`schema.safeParse(params)`) before `execute` runs.
 
@@ -94,7 +94,7 @@ Ran the merge checklist from `.claude/skills/acture-hard-donts/SKILL.md`. Going 
 **None blocking.** The four escalations from Phase 0's handoff doc were resolved at the start of this session via `AskUserQuestion`:
 
 - Branching: Phase 0 committed to `main`, Phase 1 on `phase-1` branch (PR-style).
-- Subpackage naming: `@acture/<name>` scoped pattern (`@acture/state-zustand`, `@acture/palette-react`).
+- Subpackage naming: `acture-<name>` scoped pattern (`acture-state-zustand`, `acture-palette-react`).
 - Schema layer: Zod-only for Phase 1. Standard Schema acceptance lands in Phase 2 without breaking Zod authors (additive).
 - When-clause parser: hand-rolled recursive descent. Confirmed in §3 above as the right call for Phase 1.
 
@@ -111,12 +111,12 @@ Ran the merge checklist from `.claude/skills/acture-hard-donts/SKILL.md`. Going 
 
 Per `docs/implementation_plan.md` §"Phase 2 — Adapter buildout" the next phase ships:
 
-- `@acture/hotkeys` (tinykeys)
-- Extended `@acture/palette-react` with parameterized command support (research-2 §9)
-- `@acture/forms-autoform` + `@acture/forms-rjsf`
-- `@acture/state-redux` (RTK reference adapter)
-- `@acture/mcp` (MCP server adapter)
-- `@acture/ai-vercel` (Vercel AI SDK adapter)
+- `acture-hotkeys` (tinykeys)
+- Extended `acture-palette-react` with parameterized command support (research-2 §9)
+- `acture-forms-autoform` + `acture-forms-rjsf`
+- `acture-state-redux` (RTK reference adapter)
+- `acture-mcp` (MCP server adapter)
+- `acture-ai-vercel` (Vercel AI SDK adapter)
 - Extended worked examples + a new drop-in example
 
 None of those are gated by a Phase 1 rethink. The CommandRecord shape, the StateAdapter contract, and the schema bridge are stable. **Phase 1 is DONE.**

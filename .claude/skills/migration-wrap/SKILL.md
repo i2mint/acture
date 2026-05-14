@@ -1,6 +1,6 @@
 ---
 name: migration-wrap
-description: Wrap one or more existing handlers / store actions as acture commands using @acture/migration's `wrapMutation`. Use after `migration-scaffold`. Triggers on "wrap this handler", "register as a command", "wrap onClick", "convert this action to a command", "use wrapMutation". The fourth skill in the migration track. Wraps incrementally without touching the legacy call site.
+description: Wrap one or more existing handlers / store actions as acture commands using acture-migration's `wrapMutation`. Use after `migration-scaffold`. Triggers on "wrap this handler", "register as a command", "wrap onClick", "convert this action to a command", "use wrapMutation". The fourth skill in the migration track. Wraps incrementally without touching the legacy call site.
 ---
 
 # migration-wrap
@@ -41,7 +41,7 @@ Path: `src/acture/commands/{category}/{actionName}.ts`. Lowercase the category, 
 For a parameter-less store action:
 
 ```ts
-import { wrapMutation } from '@acture/migration';
+import { wrapMutation } from 'acture-migration';
 import { registry } from '../../registry';
 import { useTodoStore } from '../../../store';
 
@@ -60,7 +60,7 @@ For a store action with params:
 
 ```ts
 import { z } from 'zod';
-import { wrapMutation } from '@acture/migration';
+import { wrapMutation } from 'acture-migration';
 import { registry } from '../../registry';
 import { useTodoStore } from '../../../store';
 
@@ -84,7 +84,7 @@ For a legacy event handler that wraps a mutation:
 // legacy: const onSignOut = () => { authClient.signOut(); router.push('/login'); }
 // We wrap the mutation, not the event handler. UI navigation stays in the host.
 
-import { wrapMutation } from '@acture/migration';
+import { wrapMutation } from 'acture-migration';
 import { registry } from '../../registry';
 import { authClient } from '../../../auth';
 
@@ -163,6 +163,6 @@ Stop when Phase A is done. Don't drift into Phase B without a plan update — th
 
 After Phase A is wrapped:
 
-- Wire the palette (`@acture/palette-react`) — agent skill list will have a `wire-palette` skill (Phase 2-era).
-- Wire hotkeys (`@acture/hotkeys`) — same.
+- Wire the palette (`acture-palette-react`) — agent skill list will have a `wire-palette` skill (Phase 2-era).
+- Wire hotkeys (`acture-hotkeys`) — same.
 - Run `migration-graduate` to retire wrappers where the legacy handler is no longer called.

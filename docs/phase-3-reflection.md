@@ -1,6 +1,6 @@
 # Phase 3 Reflection
 
-**Authored:** 2026-05-13 by the Phase 3 implementing agent. All previous tests still pass; **185 package tests** (was 149 at end of Phase 2; +36 in `@acture/migration`). Plus **36 example tests** (was 10 at end of Phase 2; +5 in `zustand-wrap/before`, +21 in `zustand-wrap/after`). Every package and example typechecks and builds via tsup / vite. Production bundles: `before/` 198KB / 62KB gzipped, `after/` 352KB / 109KB gzipped (palette-react + cmdk dominate the delta).
+**Authored:** 2026-05-13 by the Phase 3 implementing agent. All previous tests still pass; **185 package tests** (was 149 at end of Phase 2; +36 in `acture-migration`). Plus **36 example tests** (was 10 at end of Phase 2; +5 in `zustand-wrap/before`, +21 in `zustand-wrap/after`). Every package and example typechecks and builds via tsup / vite. Production bundles: `before/` 198KB / 62KB gzipped, `after/` 352KB / 109KB gzipped (palette-react + cmdk dominate the delta).
 
 This file answers the seven questions from `docs/implementation_plan.md` §"Phase 3 → Pre-next-phase reflection checklist."
 
@@ -63,7 +63,7 @@ A future skill `migration-diagnose-graduate-readiness` could grep for remaining 
 Ran `.claude/skills/acture-hard-donts/SKILL.md` against `packages/migration/`.
 
 1. **No conditional logic in command metadata.** ✅ `wrapMutation` builds a `CommandRecord` with discrete fields; nothing decides at registration time based on runtime context.
-2. **No god-package.** ✅ `@acture/migration` is single-purpose: strangler-fig adoption primitives. It does not import palette / hotkeys / MCP / AI.
+2. **No god-package.** ✅ `acture-migration` is single-purpose: strangler-fig adoption primitives. It does not import palette / hotkeys / MCP / AI.
 3. **No business logic in adapter packages.** ✅ The four functions translate between user-supplied handlers and acture's registry / errors-as-data contract. No domain logic.
 4. **No `if (mode === ...)` in shared helpers.** ✅ `wrapMutation`'s execute branches on `options.params !== undefined` — that's data-shape branching, not mode branching. Same as the way the dispatcher branches on `cmd.params !== undefined`.
 5. **No `eval()`-ing LLM strings.** ✅ The wrapped commands are dispatched through `registry.dispatch(id, params)` with Zod validation at the boundary. No reflective invocation, no string evaluation.
@@ -110,14 +110,14 @@ Per `docs/next_session.md` Step 3:
 
 | Metric | Phase 2 end | Phase 3 end | Δ |
 | --- | --- | --- | --- |
-| Packages | 9 | 10 | +1 (`@acture/migration`) |
+| Packages | 9 | 10 | +1 (`acture-migration`) |
 | Worked examples | 2 | 3 | +1 (`zustand-wrap` with before/after) |
 | Tests (packages) | 149 | 185 | +36 |
 | Tests (examples) | 10 | 36 | +26 |
 | Public surface (named exports) | ~55 | ~65 | +10 |
 | Migration-track skills | 0 | 5 | +5 |
 
-The package count includes `@acture/migration`. The worked-example count treats `zustand-wrap/before` and `zustand-wrap/after` as one example with two halves (they share a README and a purpose). Skills count includes `migration-diagnose`, `migration-plan`, `migration-scaffold`, `migration-wrap`, `migration-graduate`.
+The package count includes `acture-migration`. The worked-example count treats `zustand-wrap/before` and `zustand-wrap/after` as one example with two halves (they share a README and a purpose). Skills count includes `migration-diagnose`, `migration-plan`, `migration-scaffold`, `migration-wrap`, `migration-graduate`.
 
 ## Phase 4 readiness gate
 

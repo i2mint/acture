@@ -1,5 +1,5 @@
 {
-  "name": "@acture/example-redux-wrap",
+  "name": "acture-example-redux-wrap",
   "version": "0.0.0",
   "private": true,
   "description": "Migration example: a Redux Toolkit (RTK) app with actureMiddleware wired in. Store actions flow through the registry's observer bus without re-dispatching.",
@@ -10,8 +10,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@acture/migration": "workspace:*",
-    "@acture/state-redux": "workspace:*",
+    "acture-migration": "workspace:*",
+    "acture-state-redux": "workspace:*",
     "@reduxjs/toolkit": "^2.5.0",
     "acture": "workspace:*",
     "zod": "^4.0.0"

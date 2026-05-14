@@ -1,5 +1,5 @@
 /**
- * `@acture/ai-vercel` — project an acture registry as Vercel AI SDK
+ * `acture-ai-vercel` — project an acture registry as Vercel AI SDK
  * tool definitions.
  *
  * The Vercel AI SDK's `tool({ description, parameters, execute })`
@@ -7,7 +7,7 @@
  * through without re-projection — preserving validators that JSON
  * Schema would silently drop (e.g., `z.refine` predicates).
  *
- * Tier filter and deprecation banners mirror `@acture/mcp`.
+ * Tier filter and deprecation banners mirror `acture-mcp`.
  */
 
 import { tool } from 'ai';
@@ -21,7 +21,7 @@ import type {
 } from 'acture';
 import { isFunctionWhen, isOk } from 'acture';
 
-/** See `@acture/mcp` tools.ts: identical banner format. */
+/** See `acture-mcp` tools.ts: identical banner format. */
 const DEPRECATION_PREFIX_BARE = '[DEPRECATED]';
 function deprecationBanner(reason?: string): string {
   return reason && reason.length > 0

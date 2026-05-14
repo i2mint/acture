@@ -1,11 +1,13 @@
 ---
 name: acture-palette-design
-description: Load context on acture's command palette design, including the parameterized-command UX (atomic vs. handoff), the auto-derived `kind` heuristic, the per-parameter-count defaults, and the don't-do list. Use when building or modifying `@acture/palette-react`, when implementing parameter collection, when reviewing palette UX choices, or when working on form adapters (`@acture/forms-autoform`, `@acture/forms-rjsf`). Triggers on "command palette", "parameter collection", "atomic vs handoff", "param collector", "cmdk", "kbar", "form adapter", "picker chain", "Ctrl+K". Do NOT use for keybinding-only work (focus on `acture-command-record-shape` for the `keybinding` field).
+description: Load context on acture's command palette design, including the parameterized-command UX (atomic vs. handoff), the auto-derived `kind` heuristic, the per-parameter-count defaults, and the don't-do list. Use when building or modifying `acture-palette-react`, when implementing parameter collection, when reviewing palette UX choices, or when working on form adapters (`acture-forms-autoform`, `acture-forms-rjsf`). Triggers on "command palette", "parameter collection", "atomic vs handoff", "param collector", "cmdk", "kbar", "form adapter", "picker chain", "Ctrl+K". Do NOT use for keybinding-only work (focus on `acture-command-record-shape` for the `keybinding` field).
 ---
 
 # acture palette design
 
 Loads research-2's findings on parameterized command palettes and acture's resulting `kind: "atomic" | "handoff"` design.
+
+> **Load `acture-consumer-integration` first.** The command palette is a *consumer* — this skill covers palette-specific UX, but the foundational pattern (agent-written vs `acture-palette-react`, the cmdk/kbar/custom tool choice belongs to the user, the dev-tool-first rule) lives there.
 
 ## The empirical cliff (research-2 §7)
 
@@ -71,7 +73,7 @@ function deriveKind(record: CommandRecord): "atomic" | "handoff" {
 
 ## Form adapters
 
-`@acture/forms-autoform` and `@acture/forms-rjsf` shipped as separate packages in Phase 2. Both implement the same `PaletteFormAdapterProps` interface (`{ command, defaults?, onSubmit, onCancel }`) consumed by `<CommandPalette formAdapter={...} />`. The palette switches to the supplied form for `kind: 'handoff'` commands.
+`acture-forms-autoform` and `acture-forms-rjsf` shipped as separate packages in Phase 2. Both implement the same `PaletteFormAdapterProps` interface (`{ command, defaults?, onSubmit, onCancel }`) consumed by `<CommandPalette formAdapter={...} />`. The palette switches to the supplied form for `kind: 'handoff'` commands.
 
 - **autoform** — Zod-native; lighter; fits the recommended Zod-first authoring path.
 - **rjsf** — JSON-Schema-native; battle-tested; larger bundle but more themes.

@@ -1,8 +1,8 @@
 /**
- * `@acture/state-redux` — Redux Toolkit reference adapter.
+ * `acture-state-redux` — Redux Toolkit reference adapter.
  *
  * Wraps an RTK store as `PatchCapableAdapter<S>`. RTK bundles Immer, so
- * the patches story is identical to `@acture/state-zustand` — same
+ * the patches story is identical to `acture-state-zustand` — same
  * `produceWithPatches` plumbing.
  *
  * Two forms:

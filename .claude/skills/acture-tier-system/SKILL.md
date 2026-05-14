@@ -87,7 +87,7 @@ acture compare-schemas --allow-description-edits  # per-invocation, NOT a config
 acture compare-schemas --snapshot-path .acture/snapshot.json  # when args are git refs
 ```
 
-Lives in `packages/cli/` (`@acture/cli`). Reads two pre-rendered snapshots and diffs them. The snapshot is produced by `snapshotRegistry(registry)` (programmatic) or by `acture snapshot <config>` (CLI subcommand, v1.1+):
+Lives in `packages/cli/` (`acture-cli`). Reads two pre-rendered snapshots and diffs them. The snapshot is produced by `snapshotRegistry(registry)` (programmatic) or by `acture snapshot <config>` (CLI subcommand, v1.1+):
 
 ```bash
 acture snapshot ./registry.mjs --out .acture/snapshot.json    # write to file

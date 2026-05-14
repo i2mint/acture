@@ -1,5 +1,5 @@
 {
-  "name": "@acture/example-zustand-wrap-after",
+  "name": "acture-example-zustand-wrap-after",
   "version": "0.0.0",
   "private": true,
   "description": "Migration example: the 'before' notes app with acture bolted on via the migration skills. Five wrapped commands + a palette + two graduated.",
@@ -13,10 +13,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@acture/hotkeys": "workspace:*",
-    "@acture/migration": "workspace:*",
-    "@acture/palette-react": "workspace:*",
-    "@acture/state-zustand": "workspace:*",
+    "acture-hotkeys": "workspace:*",
+    "acture-migration": "workspace:*",
+    "acture-palette-react": "workspace:*",
+    "acture-state-zustand": "workspace:*",
     "acture": "workspace:*",
     "cmdk": "^1.0.0",
     "immer": "^11.0.0",

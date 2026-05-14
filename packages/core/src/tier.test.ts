@@ -1,6 +1,6 @@
 /**
  * Tier-system runtime tests. The JSDoc-tag mirror lives in
- * `@acture/build-tier`; this file verifies what the registry does once
+ * `acture-build-tier`; this file verifies what the registry does once
  * a command already carries `tier` / `deprecationReason` / `internalToken`.
  */
 

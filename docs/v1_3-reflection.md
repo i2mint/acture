@@ -38,7 +38,7 @@ Each is a one-file addition that drops into the existing manifest. The CLI, runn
 Ran `.claude/skills/acture-hard-donts/SKILL.md` against the v1.3 increment.
 
 1. **No conditional logic in command metadata.** ✅ Zero CommandRecord shape changes (still 15 fields).
-2. **No god-package.** ✅ Zero new packages. Three new codemods inside the existing `@acture/codemods`.
+2. **No god-package.** ✅ Zero new packages. Three new codemods inside the existing `acture-codemods`.
 3. **No business logic in adapter packages.** ✅ Codemods are translations: AST in, AST out. No domain decisions.
 4. **No `if (mode === ...)` in shared helpers.** ✅ All three codemods branch on data (action shape, setter pattern, thunk shape) and on user-supplied options. No mode awareness.
 5. **No `eval()`-ing LLM-produced strings.** ✅ Same as v1.2 — codemods read `--option key=value`, never reflectively invoke.
@@ -77,7 +77,7 @@ The +30 codemod tests bring the total package test count to 380. CI green across
 
 3. **Is `--option` syntax enough, or do agents need a config-file fallback?** Probably enough for now. Across all five codemods, the longest `--option` chain we've documented is two flags. If a real migration drives users past that, a `--config <json>` flag is a one-line addition.
 
-4. **What's the right release gate for v1.3?** Fresh-agent test. With all five codemods shipped, the `@acture/codemods` README is now the densest agent-facing surface in the repo. A fresh agent reading the README and running `acture-codemods <name> --target ... --dry-run` is the natural release-readiness signal. The release gate moves into the v1.4 plan.
+4. **What's the right release gate for v1.3?** Fresh-agent test. With all five codemods shipped, the `acture-codemods` README is now the densest agent-facing surface in the repo. A fresh agent reading the README and running `acture-codemods <name> --target ... --dry-run` is the natural release-readiness signal. The release gate moves into the v1.4 plan.
 
 5. **Hard-don'ts audit.** Clean.
 
@@ -87,7 +87,7 @@ The +30 codemod tests bring the total package test count to 380. CI green across
 
 - ✅ All packages typecheck and build.
 - ✅ 380 package tests + 41 example tests green.
-- ✅ `npm pack --dry-run` clean for `@acture/codemods@1.1.0`.
+- ✅ `npm pack --dry-run` clean for `acture-codemods@1.1.0`.
 - ✅ Hard-don'ts audit clean.
 - 🟡 Fresh-agent test remains the recommended release gate for the next session.
 
