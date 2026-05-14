@@ -59,7 +59,7 @@
     }
   },
   "devDependencies": {
-    "acture-mcp": "workspace:*",
+    "acture-mcp-server": "workspace:*",
     "@types/node": "^22.10.0",
     "acture": "workspace:*",
     "ts-morph": "^25.0.0",

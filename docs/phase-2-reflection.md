@@ -37,7 +37,7 @@ This file answers the six questions from `docs/implementation_plan.md` §"Phase 
 
 - **Vercel AI SDK** accepts Zod schemas directly. `acture-ai-vercel` passes `record.params` through unchanged, preserving every `z.refine`, `z.transform`, and custom error message that JSON Schema would silently lose. The AI SDK's `tool({ parameters: zodSchema, execute })` handles the rest.
 
-- **MCP** wants JSON Schema on the wire. `acture-mcp/tools.ts` calls `toJsonSchema(record)` and emits the envelope as a `McpToolDescriptor`. Strict mode is opt-in (the OpenAI-style `additionalProperties: false` flavor).
+- **MCP** wants JSON Schema on the wire. `acture-mcp-server/tools.ts` calls `toJsonSchema(record)` and emits the envelope as a `McpToolDescriptor`. Strict mode is opt-in (the OpenAI-style `additionalProperties: false` flavor).
 
 **Edge cases I expected but didn't hit:** none of the worked-example commands triggered a Zod feature that JSON Schema can't represent. The `JSON-Schema-representable subset` rule (`acture-schema-bridge` skill §"hard rule") was easy to obey — `z.string().min(1)`, `z.enum([...])`, `z.number()`, `z.object({...})` all project cleanly.
 
@@ -67,7 +67,7 @@ Ran `.claude/skills/acture-hard-donts/SKILL.md` against every new package.
    - `acture-forms-autoform` — Zod-aware form only.
    - `acture-forms-rjsf` — JSON-Schema form only.
    - `acture-state-redux` — RTK ↔ StateAdapter only.
-   - `acture-mcp` — MCP projection + server only.
+   - `acture-mcp-server` — MCP projection + server only.
    - `acture-ai-vercel` — Vercel AI tool definitions only.
 3. **No business logic in adapter packages.** ✅ Each adapter only translates between an external interface and the registry/state contracts. Spot-checked every `execute` path.
 4. **No `if (mode === ...)` in shared helpers.** ✅ Core was not touched in Phase 2.

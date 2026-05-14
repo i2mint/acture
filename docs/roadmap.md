@@ -10,7 +10,7 @@ Last updated: **2026-05-14** (v1.5 — repositioning + namespace migration).
 
 ## Status snapshot
 
-- **15 packages** in the workspace. `acture@1.1.0` and `eslint-plugin-acture-migration@1.0.0` are **published on npm**; the other 13 (renamed `@acture/*` → `acture-*` in v1.5) are built, tested, and **not yet published**.
+- **15 packages** in the workspace, **all published on npm** (2026-05-14). Note: the MCP adapter ships as **`acture-mcp-server`** — the unscoped name `acture-mcp` was already taken by an unrelated project, so the package was renamed.
 - **396 package tests + 41 example tests** green; all packages and examples build + typecheck.
 - Canonical positioning is now written down (`docs/positioning.md`) and wired into the skills.
 - 14 skills: 8 dev (`acture-*`), 5 migration-track (`migration-*`), 1 consumer-integration foundation (`acture-consumer-integration`).
@@ -31,8 +31,8 @@ DOM interception, RTK example, build-tier AST mode, deep schema diffs, the full 
 - **Namespace migration** — all 13 `@acture/*` packages renamed to unscoped `acture-*` (the `@acture` npm scope was unavailable; flat naming also fits the "optional à-la-carte tools" positioning better). All imports, workspace deps, configs, examples, docs, and skills updated; lockfile regenerated; full workspace re-validated.
 - **READMEs** — root, `packages/core`, and all 14 sub-package READMEs carry the dev-tool-first framing. `AGENTS.md` updated.
 
-### npm publishing — partial
-`acture@1.1.0` + `eslint-plugin-acture-migration@1.0.0` live. The `@acture` org could not be created (namespace taken); decision was to go unscoped — see v1.5 above.
+### npm publishing — complete
+All 15 packages are live on npm (2026-05-14). The `@acture` org could not be created (namespace taken) → went unscoped `acture-*`. One further collision surfaced at publish time: the unscoped name `acture-mcp` was already taken by an unrelated project, so the MCP adapter was renamed to **`acture-mcp-server`**.
 
 ---
 
@@ -90,7 +90,7 @@ Explicit done/not-done for everything raised in conversation, so nothing is lost
 | --- | --- |
 | `eslint-plugin-acture-migration` | ✅ Done (v1.4), published |
 | Fresh-agent release-gate test | ✅ Done (v1.4) — `docs/fresh-agent-test-results.md` |
-| Publish acture suite to npm | 🟡 Partial — 2 of 15 published; 13 renamed packages ready, pending |
+| Publish acture suite to npm | ✅ Done — all 15 live (2026-05-14); `acture-mcp` collided, shipped as `acture-mcp-server` |
 | `@acture` npm org unavailable | ✅ Resolved — went unscoped `acture-*` (v1.5) |
 | Canonical positioning written down | ✅ Done (v1.5) — `docs/positioning.md` |
 | `acture-consumer-integration` skill + dev-skill wiring | ✅ Done (v1.5) |

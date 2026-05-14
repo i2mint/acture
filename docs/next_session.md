@@ -47,9 +47,9 @@ Use `AskUserQuestion` for the scope fork. Do not guess.
 - Write a short reflection (`docs/core-review-reflection.md` or fold into the roadmap — your call; keep it short).
 - Replace this file with the handoff for the macros + e2e tooling work (see `docs/roadmap.md` §"Next" for what that entails).
 
-## Pre-flight note — publishing the renamed packages
+## Note — all packages are published
 
-The 13 packages renamed from `@acture/*` to `acture-*` in v1.5 are built, tested, and **not yet published**. `acture@1.1.0` and `eslint-plugin-acture-migration@1.0.0` are already on npm. Publishing the other 13 (`pnpm changeset publish`, or the relevant subset) is unblocked and owner-discretion — offer to do it, with explicit user confirmation, but it is independent of the core review and not required to start.
+All 15 packages are live on npm as of 2026-05-14. The MCP adapter ships as **`acture-mcp-server`** (the unscoped name `acture-mcp` was already taken by an unrelated project). Nothing to publish before starting this review.
 
 ## When unsure
 

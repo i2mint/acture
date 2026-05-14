@@ -86,7 +86,7 @@ export interface CommandRecord<P = unknown, R = unknown> {
   readonly kind?: CommandKind;
   readonly tier?: Tier;
   /** Free-text reason populated from `@deprecated <reason text>` JSDoc by
-   *  the build-step tier mirror. Adapter packages (`acture-mcp`,
+   *  the build-step tier mirror. Adapter packages (`acture-mcp-server`,
    *  `acture-ai-vercel`) prepend `[DEPRECATED — <reason>]` to the
    *  description when projecting. `acture-devtools` surfaces it in the
    *  inspector. (Three callers; closed-surface addition approved.) */

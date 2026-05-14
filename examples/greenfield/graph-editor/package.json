@@ -19,7 +19,7 @@
     "acture-devtools": "workspace:*",
     "acture-forms-autoform": "workspace:*",
     "acture-hotkeys": "workspace:*",
-    "acture-mcp": "workspace:*",
+    "acture-mcp-server": "workspace:*",
     "acture-palette-react": "workspace:*",
     "acture-state-zustand": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.0.4",

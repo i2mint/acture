@@ -19,7 +19,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { createRegistry, defineCommand, ok } from 'acture';
-import { buildToolsList } from 'acture-mcp';
+import { buildToolsList } from 'acture-mcp-server';
 import { transformSource } from './transform.js';
 
 function transformAndEvalRegistry(): ReturnType<typeof createRegistry> {

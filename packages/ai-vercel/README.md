@@ -51,10 +51,10 @@ The model sees the same shape on every surface (palette, hotkeys, MCP, AI SDK). 
 
 ## Why pass Zod through (not JSON Schema)?
 
-The Vercel AI SDK accepts Zod schemas directly. Passing the original schema preserves validators (`z.refine`, `z.transform` constraints on output) that JSON Schema would silently drop. The same registry exposed via `acture-mcp` projects through `toJsonSchema` because MCP wants JSON Schema on the wire.
+The Vercel AI SDK accepts Zod schemas directly. Passing the original schema preserves validators (`z.refine`, `z.transform` constraints on output) that JSON Schema would silently drop. The same registry exposed via `acture-mcp-server` projects through `toJsonSchema` because MCP wants JSON Schema on the wire.
 
 ## See also
 
 - [`acture-schema-bridge`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-schema-bridge/SKILL.md)
 - [`acture-tier-system`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-tier-system/SKILL.md)
-- [`acture-mcp`](../mcp) — the MCP server counterpart
+- [`acture-mcp-server`](../mcp) — the MCP server counterpart

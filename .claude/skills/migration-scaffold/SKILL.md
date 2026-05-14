@@ -39,7 +39,7 @@ pnpm add acture-state-redux      # if the host uses RTK
 # Wire-up packages — install only what the plan calls for:
 pnpm add acture-palette-react cmdk    # if palette is in scope
 pnpm add acture-hotkeys tinykeys      # if hotkeys are in scope
-pnpm add acture-mcp                   # if MCP is in scope
+pnpm add acture-mcp-server                   # if MCP is in scope
 pnpm add acture-ai-vercel ai          # if AI tool calling is in scope
 ```
 

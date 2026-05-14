@@ -17,7 +17,7 @@ pnpm add acture                  # core registry + dispatcher + schema bridge (o
 pnpm add acture-state-zustand    # state adapter (or acture-state-redux)
 pnpm add acture-palette-react    # command palette UI (on cmdk)
 pnpm add acture-hotkeys          # keyboard shortcuts (on tinykeys)
-pnpm add acture-mcp              # MCP server projection
+pnpm add acture-mcp-server              # MCP server projection
 pnpm add acture-ai-vercel        # AI tool definitions (on the Vercel AI SDK)
 pnpm add acture-migration        # strangler-fig adoption primitives
 # …plus acture-forms-autoform and acture-forms-rjsf for parameterized commands.
@@ -44,7 +44,7 @@ pnpm add -D eslint-plugin-acture-migration  # ESLint rule that flags stale wrapM
 | [`acture-hotkeys`](packages/hotkeys) | tinykeys-backed keyboard bindings |
 | [`acture-forms-autoform`](packages/forms-autoform) | Zod-native form adapter |
 | [`acture-forms-rjsf`](packages/forms-rjsf) | JSON-Schema form adapter (rjsf) |
-| [`acture-mcp`](packages/mcp) | MCP server projection |
+| [`acture-mcp-server`](packages/mcp) | MCP server projection |
 | [`acture-ai-vercel`](packages/ai-vercel) | Vercel AI SDK tool definitions |
 | [`acture-migration`](packages/migration) | strangler-fig primitives: `wrapMutation`, `actureMiddleware`, `createDomInterceptor`, `chooseImplementation`, `shadowCompare` |
 | [`acture-build-tier`](packages/build-tier) | build-step plugin that mirrors `@stable`/`@experimental`/`@internal`/`@deprecated` JSDoc into runtime `tier`; regex default + AST mode polish |

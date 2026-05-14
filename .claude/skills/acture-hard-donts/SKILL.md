@@ -29,7 +29,7 @@ Source: `docs/redesign_takeaways.md` §3.
 
 ## 3. No business logic in adapter packages
 
-**Symptom:** `acture-mcp` decides which commands to expose based on user preferences. `acture-palette-react` runs an algorithm to pick command order beyond `defaultScore`. `acture-ai-vercel` validates parameters in a way that differs from the core dispatcher.
+**Symptom:** `acture-mcp-server` decides which commands to expose based on user preferences. `acture-palette-react` runs an algorithm to pick command order beyond `defaultScore`. `acture-ai-vercel` validates parameters in a way that differs from the core dispatcher.
 
 **Why it's wrong:** Logic that should be uniform across surfaces drifts. Adapters become couplers, not translators.
 

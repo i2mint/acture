@@ -161,8 +161,8 @@ These are choices where the references show real, defensible alternatives. Pick 
 These are anti-patterns the references collectively rule out. They should be enshrined in CONTRIBUTING and code review checklists.
 
 1. **No conditional logic in command metadata.** [ref_13] If you're tempted to add `command.if`, stop. Refactor into two commands, or push the conditional into `execute`.
-2. **No god-package.** [ref_14, ref_27] Ship `acture-core` plus per-consumer adapter packages (`acture-palette-react`, `acture-mcp`, `acture-ai-vercel`, `acture-hotkeys`, `acture-undo`, `acture-forms-*`, `acture-test-property`). Tree-shake-friendly. Mode-1 users grab one or two; greenfield users grab more.
-3. **No business logic in adapter packages.** [ref_14] Adapters translate. If you find yourself adding behavior in `acture-mcp`, it belongs in `acture-core`.
+2. **No god-package.** [ref_14, ref_27] Ship `acture-core` plus per-consumer adapter packages (`acture-palette-react`, `acture-mcp-server`, `acture-ai-vercel`, `acture-hotkeys`, `acture-undo`, `acture-forms-*`, `acture-test-property`). Tree-shake-friendly. Mode-1 users grab one or two; greenfield users grab more.
+3. **No business logic in adapter packages.** [ref_14] Adapters translate. If you find yourself adding behavior in `acture-mcp-server`, it belongs in `acture-core`.
 4. **No `if (mode === ...)` in shared helpers.** [ref_29] When a new caller almost-fits, prefer composition or a separate helper. Duplication is cheaper than the wrong abstraction.
 5. **No `eval()`-ing LLM-produced JSON or argument strings.** [ref_04] The dispatcher takes a `(name, args)` pair, validates against the schema, and routes via the registry's `Map<string, Command>`. Never reflectively call.
 6. **No coupling the registry to React.** [ref_19] kbar's `KBarProvider`-only access is the failure mode. The registry is a plain object; React adapters consume it.
@@ -215,7 +215,7 @@ acture-hotkeys           # tinykeys binding. Plain DOM, optional React hook.
 acture-forms-autoform    # Zod → form. Optional.
 acture-forms-rjsf        # JSON Schema → form. Optional.
 acture-ai-vercel         # Adapter to Vercel AI SDK tools.
-acture-mcp               # Adapter to MCP TS SDK (server + client). Errors-as-data.
+acture-mcp-server               # Adapter to MCP TS SDK (server + client). Errors-as-data.
 acture-test-property     # fast-check arbitraries derived from command schemas.
 acture-undo              # Patch-based undo, transactions, effect queue. Opt-in.
 acture-migration         # wrapMutation, divertHandler, event-interception. Mode-2 only.

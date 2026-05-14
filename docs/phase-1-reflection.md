@@ -115,7 +115,7 @@ Per `docs/implementation_plan.md` §"Phase 2 — Adapter buildout" the next phas
 - Extended `acture-palette-react` with parameterized command support (research-2 §9)
 - `acture-forms-autoform` + `acture-forms-rjsf`
 - `acture-state-redux` (RTK reference adapter)
-- `acture-mcp` (MCP server adapter)
+- `acture-mcp-server` (MCP server adapter)
 - `acture-ai-vercel` (Vercel AI SDK adapter)
 - Extended worked examples + a new drop-in example
 

@@ -14,7 +14,7 @@ pnpm --filter acture-example-graph-editor dev
 | --- | --- | --- |
 | Ctrl/Cmd+K palette | `acture-palette-react` + `acture-forms-autoform` | List, atomic picker chain, handoff form |
 | Keyboard shortcuts | `acture-hotkeys` | Reads each command's `keybinding`, dispatches through the registry |
-| MCP server (Node) | `acture-mcp` | `pnpm mcp` exposes the graph as MCP tools |
+| MCP server (Node) | `acture-mcp-server` | `pnpm mcp` exposes the graph as MCP tools |
 | Vercel AI SDK | `acture-ai-vercel` | `pnpm ai-demo` lets Claude compose multi-step actions |
 | State substrate | `acture-state-zustand` | zustand+immer with patch capture |
 

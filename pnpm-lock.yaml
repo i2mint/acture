@@ -23,7 +23,7 @@ importers:
       acture-hotkeys:
         specifier: workspace:*
         version: link:../../packages/hotkeys
-      acture-mcp:
+      acture-mcp-server:
         specifier: workspace:*
         version: link:../../packages/mcp
       acture-palette-react:
@@ -102,7 +102,7 @@ importers:
       acture-hotkeys:
         specifier: workspace:*
         version: link:../../../packages/hotkeys
-      acture-mcp:
+      acture-mcp-server:
         specifier: workspace:*
         version: link:../../../packages/mcp
       acture-palette-react:
@@ -319,7 +319,7 @@ importers:
       acture:
         specifier: workspace:*
         version: link:../core
-      acture-mcp:
+      acture-mcp-server:
         specifier: workspace:*
         version: link:../mcp
       ts-morph:

@@ -96,7 +96,7 @@ Fifteen packages ship in the workspace at versions ranging from v1.0.0 to v1.2.0
 - Core: `acture@1.1.0` — `enableTierWarnings`, `deprecationReason`, `internalToken`, `DispatchOptions`.
 - State: `acture-state-zustand@1.0.0`, `acture-state-redux@1.0.0`.
 - UI: `acture-palette-react@1.0.0`, `acture-hotkeys@1.0.0`, `acture-forms-autoform@1.0.0`, `acture-forms-rjsf@1.0.0`.
-- Surfaces: `acture-mcp@1.0.0`, `acture-ai-vercel@1.0.0` — honour the tier filter and prepend `[DEPRECATED — <reason>]`.
+- Surfaces: `acture-mcp-server@1.0.0`, `acture-ai-vercel@1.0.0` — honour the tier filter and prepend `[DEPRECATED — <reason>]`.
 - Migration: `acture-migration@1.1.0` — `createDomInterceptor` for DOM-event interception.
 - Tooling: `acture-build-tier@1.1.0` (regex + AST mode), `acture-cli@1.2.0` (deep nested compare-schemas diffs), `acture-devtools@1.0.0`.
 - Codemods: `acture-codemods@1.1.0` — **research-4 §B.5 codemod set is complete** (5 codemods: `wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`).
@@ -117,7 +117,7 @@ If a design choice is irreversible (per `docs/implementation_plan.md` §"Sequenc
 ## Conventions
 
 - TypeScript monorepo via pnpm workspaces (or npm; Phase 0 picks).
-- Package naming: `acture` (default barrel), `acture-<subpackage>` (e.g. `acture-state-zustand`, `acture-mcp`).
+- Package naming: `acture` (default barrel), `acture-<subpackage>` (e.g. `acture-state-zustand`, `acture-mcp-server`).
 - Test runner: `vitest`.
 - Build: `tsup` or `tshy` for ESM+CJS+types.
 - Code style: standard prettier defaults; no `any` in public API; `unknown` for untyped boundaries.

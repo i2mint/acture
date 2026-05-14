@@ -1,4 +1,4 @@
-# acture-mcp
+# acture-mcp-server
 
 > **acture is a development tool first.** This package is an *optional accelerator* — an agent can hand-write this integration into your project instead, with no `acture-*` dependency. Installing it is a deliberate, opt-in choice to reuse tested code rather than own it. See [`docs/positioning.md`](../../docs/positioning.md).
 
@@ -7,7 +7,7 @@ Project an [acture](https://npm.im/acture) registry as a [Model Context Protocol
 ## Install
 
 ```sh
-pnpm add acture-mcp @modelcontextprotocol/sdk acture
+pnpm add acture-mcp-server @modelcontextprotocol/sdk acture
 ```
 
 ## The two layers
@@ -15,7 +15,7 @@ pnpm add acture-mcp @modelcontextprotocol/sdk acture
 ### Pure functions (transport-agnostic)
 
 ```ts
-import { buildToolsList, callTool } from 'acture-mcp';
+import { buildToolsList, callTool } from 'acture-mcp-server';
 
 const tools = buildToolsList(registry);           // tier: ['stable'] by default
 const response = await callTool(registry, 'app.search', { query: 'foo' });
@@ -27,7 +27,7 @@ Use these from any transport — stdio, HTTP, in-browser WebSocket, custom.
 ### Node-side stdio server (the common path)
 
 ```ts
-import { createMcpServer, connectStdio } from 'acture-mcp';
+import { createMcpServer, connectStdio } from 'acture-mcp-server';
 import { registry } from './registry';
 
 const server = createMcpServer(registry, {

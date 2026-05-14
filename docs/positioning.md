@@ -43,7 +43,7 @@ Every acture engagement is positioned on two independent axes. Skills and docs m
 - **Agent-written** — the agent writes the integration code directly into the project, following acture's documented patterns. Maximum adaptability, minimum dependency. The project depends on nothing from acture (or, at most, on `acture` core if the team wants the registry primitive itself).
 - **Package-reuse** — the agent installs an acture package that already implements the piece. Less code to own, faster, tested — at the cost of a dependency the team must accept and track.
 
-These are not either/or for a whole project. A team can hand-write the palette, reuse `acture-mcp`, and skip a state adapter entirely. The agent picks per-piece, guided by the team's preferences (including *which* third-party tool to build on — see §5).
+These are not either/or for a whole project. A team can hand-write the palette, reuse `acture-mcp-server`, and skip a state adapter entirely. The agent picks per-piece, guided by the team's preferences (including *which* third-party tool to build on — see §5).
 
 ## 4. What the acture packages are, and what they are not
 

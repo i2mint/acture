@@ -1,6 +1,6 @@
 ---
 name: acture-consumer-integration
-description: The foundational pattern for building a command-dispatch CONSUMER in a target project — a command palette, keyboard shortcuts, AI tool calling, an MCP endpoint, e2e testing, macros, telemetry, undo. Load this whenever you are adding a consumer surface to a user's app, OR whenever you are working on a consumer-specific acture-* package (acture-palette-react, acture-hotkeys, acture-mcp, acture-ai-vercel, acture-e2e-playwright, …). It encodes acture's dev-tool-first positioning: the agent-written path is always viable, acture packages are an optional opt-in accelerator, and tool-library choices belong to the user. Triggers on "add a command palette", "add hotkeys", "wire up MCP", "expose commands to an AI", "set up e2e testing", "build a consumer", "which acture package should I use", "do I need to install acture".
+description: The foundational pattern for building a command-dispatch CONSUMER in a target project — a command palette, keyboard shortcuts, AI tool calling, an MCP endpoint, e2e testing, macros, telemetry, undo. Load this whenever you are adding a consumer surface to a user's app, OR whenever you are working on a consumer-specific acture-* package (acture-palette-react, acture-hotkeys, acture-mcp-server, acture-ai-vercel, acture-e2e-playwright, …). It encodes acture's dev-tool-first positioning: the agent-written path is always viable, acture packages are an optional opt-in accelerator, and tool-library choices belong to the user. Triggers on "add a command palette", "add hotkeys", "wire up MCP", "expose commands to an AI", "set up e2e testing", "build a consumer", "which acture package should I use", "do I need to install acture".
 ---
 
 # acture consumer integration — the foundational pattern
@@ -22,7 +22,7 @@ Before writing anything, locate the task on both axes (see `docs/positioning.md`
 1. **Core vs strangler-fig** — is command dispatch being designed in, or wrapped into an existing codebase incrementally? (If strangler-fig, also load the `migration-*` skills.)
 2. **Agent-written vs package-reuse** — will you hand-write this consumer following acture's patterns, or install an acture package that implements it?
 
-Dimension 2 is decided **per consumer**, not per project. Hand-write the palette, reuse `acture-mcp`, skip a state adapter — all in the same project — is normal.
+Dimension 2 is decided **per consumer**, not per project. Hand-write the palette, reuse `acture-mcp-server`, skip a state adapter — all in the same project — is normal.
 
 ## The decision procedure
 
@@ -46,7 +46,7 @@ Almost every consumer rests on *some* third-party library:
 | Command palette     | cmdk, kbar, custom                              | `acture-palette-react` (cmdk) |
 | Keyboard shortcuts  | tinykeys, react-hotkeys-hook, custom            | `acture-hotkeys` (tinykeys) |
 | AI tool calling     | Vercel AI SDK, Anthropic SDK, OpenAI SDK        | `acture-ai-vercel` (Vercel AI SDK) |
-| MCP server          | `@modelcontextprotocol/sdk`                     | `acture-mcp` |
+| MCP server          | `@modelcontextprotocol/sdk`                     | `acture-mcp-server` |
 | Parameter forms     | react-hook-form + Zod, rjsf, custom             | `acture-forms-autoform`, `acture-forms-rjsf` |
 | e2e testing         | Playwright, Cypress, custom                     | `acture-e2e-playwright` *(planned)* |
 

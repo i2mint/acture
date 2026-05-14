@@ -20,7 +20,7 @@
 
 import { createZustandAdapter } from 'acture-state-zustand';
 import { createRegistry } from 'acture';
-import { createMcpServer, connectStdio } from 'acture-mcp';
+import { createMcpServer, connectStdio } from 'acture-mcp-server';
 import { buildCommands } from '../src/commands/index.js';
 import { initialGraphState, type GraphState } from '../src/state.js';
 

@@ -66,7 +66,7 @@ type CommandRecord<P = unknown, R = unknown> = {
   tier?: "stable" | "experimental" | "internal" | "deprecated";
 
   /** Free-text reason injected by the build step from @deprecated <reason>.
-   *  Adapter packages (acture-mcp, acture-ai-vercel) prepend
+   *  Adapter packages (acture-mcp-server, acture-ai-vercel) prepend
    *  `[DEPRECATED — <reason>]` to the description; acture-devtools surfaces
    *  it in the inspector. Added in v1.0 (Phase 4) under the rule of three. */
   deprecationReason?: string;

@@ -11,7 +11,7 @@
       "acture-hotkeys",
       "acture-forms-autoform",
       "acture-forms-rjsf",
-      "acture-mcp",
+      "acture-mcp-server",
       "acture-ai-vercel",
       "acture-migration"
     ]

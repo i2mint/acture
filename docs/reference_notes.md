@@ -467,7 +467,7 @@ Notes are organized thematically (VS Code core; AI / MCP / plugins; migration & 
 **Direct relevance to acture design:**
 - The most important article for acture's API surface. The library is at high risk of architecture-astronaut bloat: command palette + LLM tools + MCP + undo + macros + telemetry + extensions is exactly the "messaging" abstraction Joel warns about.
 - Concrete decisions: don't ship undo/redo, macros, telemetry middleware, or proposed-API channels in v1 unless a real user has them. Ship the registry + dispatcher + palette + zod-schema-driven LLM tool conversion. Everything else stays in docs until pulled.
-- Reinforces mode 1 "minimize footprint": tree-shakeable subpackages (`acture-llm`, `acture-mcp`, `acture-undo`) over a god-package.
+- Reinforces mode 1 "minimize footprint": tree-shakeable subpackages (`acture-llm`, `acture-mcp-server`, `acture-undo`) over a god-package.
 
 **Quotable lines:**
 - "Any extensibility point that's never used isn't just wasted effort, it's likely to also get in your way as well."

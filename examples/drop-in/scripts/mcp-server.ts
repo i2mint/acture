@@ -7,7 +7,7 @@
  * palette also serves MCP — no separate "AI-tools" definitions.
  */
 
-import { createMcpServer, connectStdio } from 'acture-mcp';
+import { createMcpServer, connectStdio } from 'acture-mcp-server';
 import { registry } from '../src/registry.js';
 
 const server = createMcpServer(registry, {
