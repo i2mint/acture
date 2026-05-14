@@ -65,3 +65,23 @@ Options:
 Idempotent: calling twice on the same registry returns the same log. The mutation is local to this package; production builds simply don't call `instrumentRegistry` and pay zero runtime cost.
 
 See [`acture-hard-donts`](../../.claude/skills/acture-hard-donts/SKILL.md) §6 for why dev-only registry mutation is allowed when core React-coupling is not.
+
+## `enableTierWarnings(registry, options?)`
+
+Wraps `registry.dispatch` to emit a once-per-command `console.warn` on the first dispatch of each `@experimental` command in a process — a nudge that an unstable surface is being exercised.
+
+```ts
+import { enableTierWarnings } from 'acture-devtools';
+import { registry } from './registry';
+
+enableTierWarnings(registry);
+```
+
+Options:
+
+- `enabled?: boolean` — force on/off. Default: auto — suppressed when `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1` is set in `process.env`.
+- `warn?: (message: string) => void` — custom sink. Default: `console.warn`.
+
+Returns a disposer that restores the original `dispatch`. Idempotent: calling twice returns the same disposer.
+
+Like `instrumentRegistry`, this is dispatch *instrumentation* — it observes dispatch without changing its semantics — so it lives here, not in `acture` core. The core stays the minimal primitive (registry + dispatcher + schema bridge + state-adapter interface); anything that wraps `dispatch` to observe it is an opt-in devtools concern. The agent-written equivalent is a few lines around `registry.dispatch`; see [`docs/hand-written-registry.md`](../../docs/hand-written-registry.md).

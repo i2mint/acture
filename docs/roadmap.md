@@ -4,16 +4,16 @@ The live forward-planning surface. `docs/v1_plan.md` and `docs/implementation_pl
 
 **How work proceeds:** phases are over. Work is small, tracked increments. Each picks one or two items from "Next" or "Deferred", ships them, updates this file, and replaces `docs/next_session.md` with the following handoff.
 
-Last updated: **2026-05-14** (v1.5 — repositioning + namespace migration).
+Last updated: **2026-05-14** (v1.6 — core positioning-alignment review).
 
 ---
 
 ## Status snapshot
 
 - **15 packages** in the workspace, **all published on npm** (2026-05-14). Note: the MCP adapter ships as **`acture-mcp-server`** — the unscoped name `acture-mcp` was already taken by an unrelated project, so the package was renamed.
-- **396 package tests + 41 example tests** green; all packages and examples build + typecheck.
+- **396 package tests + 41 example tests** green; all packages and examples build + typecheck. (Net-zero test count after v1.6: the 8 `enableTierWarnings` tests moved from `acture` core to `acture-devtools`.)
 - Canonical positioning is now written down (`docs/positioning.md`) and wired into the skills.
-- 14 skills: 8 dev (`acture-*`), 5 migration-track (`migration-*`), 1 consumer-integration foundation (`acture-consumer-integration`).
+- 15 skills: 9 dev/foundation (`acture-*`) — including the new `acture-greenfield` foundation — and 5 migration-track (`migration-*`).
 
 ---
 
@@ -34,13 +34,13 @@ DOM interception, RTK example, build-tier AST mode, deep schema diffs, the full 
 ### npm publishing — complete
 All 15 packages are live on npm (2026-05-14). The `@acture` org could not be created (namespace taken) → went unscoped `acture-*`. One further collision surfaced at publish time: the unscoped name `acture-mcp` was already taken by an unrelated project, so the MCP adapter was renamed to **`acture-mcp-server`**.
 
----
+### v1.6 — core positioning-alignment review — complete (this increment)
+Audit of `packages/core` against `docs/positioning.md`. Findings and outcome (full write-up: `docs/core-review-reflection.md`):
 
-## In progress / immediate next
-
-**`acture` core positioning-alignment review** — `docs/next_session.md`. Audit `packages/core` against `docs/positioning.md`: (A) is core genuinely the minimal primitive, or has accelerator/adapter logic crept in? (B) is the agent-written path *reproducible*, not just asserted — could an agent hand-write an equivalent registry from the skills + core's source? Refactor only what the audit justifies. The `CommandRecord` stays closed at 15 fields.
-
-Also unblocked, owner-discretion: **publish the 13 renamed packages** to npm.
+- **Import boundary: clean.** Core depends only on `zod` (peer). Zero React, zero state libraries — verified across all source files (hard-don'ts #6 holds).
+- **Promise A (core is the minimal primitive): one extraction.** Seven of eight source files are genuinely primitive (registry/dispatcher, schema bridge, state-adapter interface; the `when` DSL is defensibly primitive — the dispatcher must evaluate the closed `when` field). The outlier was **`tier-warnings.ts`** — `enableTierWarnings` is dispatch *instrumentation* (it monkey-patches `registry.dispatch` to `console.warn`), structurally identical to `acture-devtools`'s `instrumentRegistry`. **Moved to `acture-devtools`.** `acture` core ↔ `acture-devtools` both `minor`.
+- **Promise B (the agent-written path is reproducible): the central gap, now closed.** The skills taught acture's *design* and `acture-consumer-integration` covered the hand-written path for *consumers*, but nothing made the **core primitive itself** reproducible without reverse-engineering ~1000 lines of source. New artifacts: **`docs/hand-written-registry.md`** (a legible, ~80-line, zero-dependency registry+dispatcher reference) and the **`acture-greenfield` skill** (walks an agent through standing up the core primitive in a new project — hand-write vs. install `acture` core as a deliberate per-project choice). `acture-architecture-primer` updated to load `acture-greenfield` for greenfield tasks.
+- `CommandRecord` unchanged — stays closed at 15 fields.
 
 ---
 
@@ -65,7 +65,7 @@ Valid, not scheduled. Pick up when prioritized.
 - **`.d.ts` mirror of resolved tier values** — optional `acture-build-tier` polish. Parked in the same backlog file.
 - **AI-codemod-recipe doc** — research-4 recommendation #8: a doc showing how to prompt an agent to author a one-off codemod. Parked in the same backlog file.
 - **Per-surface consumer skills** — `acture-consumer-integration` is the foundation; per-surface skills exist only for the palette (`acture-palette-design`). Hotkeys, MCP, AI, e2e, macros, telemetry, undo, extensions still need consumer skills. (e2e + macros are covered by the "Next" item above; the rest are backlog.)
-- **Greenfield agent-track skills** — the skill set is currently weighted toward migration and toward acture's internals. There is no greenfield "agent, help me build a command-dispatch app from scratch" track. Worth building once the consumer-skill family fills in.
+- **Greenfield agent-track skills** — the *foundation* now exists (`acture-greenfield` + `docs/hand-written-registry.md`, added v1.6). What's still missing: per-step greenfield skills below the foundation (state-model design walkthrough, a worked greenfield bootstrap). Lower priority now that the foundation is in place; build out as the consumer-skill family fills in.
 
 ---
 
@@ -101,9 +101,9 @@ Explicit done/not-done for everything raised in conversation, so nothing is lost
 | `acture-consumer-integration` skill + dev-skill wiring | ✅ Done (v1.5) |
 | `@acture/*` → `acture-*` rename | ✅ Done (v1.5) |
 | READMEs reflect dev-tool-first positioning | ✅ Done (v1.5) |
-| `acture` core positioning-alignment review | ⏭️ Immediate next — `docs/next_session.md` |
-| Macros tooling | ⏭️ Next |
-| e2e testing tooling (`acture-e2e-playwright`) | ⏭️ Next |
+| `acture` core positioning-alignment review | ✅ Done (v1.6) — `tier-warnings` extracted to `acture-devtools`; `docs/hand-written-registry.md` + `acture-greenfield` skill added; see `docs/core-review-reflection.md` |
+| Macros tooling | ⏭️ Immediate next — `docs/next_session.md` |
+| e2e testing tooling (`acture-e2e-playwright`) | ⏭️ Immediate next — `docs/next_session.md` |
 | Codemods README/CLI polish | ⏸️ Deferred — backlog |
 | `.d.ts` tier mirror | ⏸️ Deferred — backlog |
 | AI-codemod-recipe doc | ⏸️ Deferred — backlog |

@@ -41,7 +41,7 @@ Every engagement sits on **two independent dimensions** — keep both open, neve
 1. **Core vs strangler-fig** — is command dispatch designed in, or wrapped into an existing codebase incrementally? (The conceptual paper's three "positioning paths" — greenfield-pure, footprint-minimizer, strangler-fig — collapse onto this axis: the first two are *core*, the third is *strangler-fig*.)
 2. **Agent-written vs package-reuse** — does the agent write the integration into the project (zero acture dependency, maximum adaptability), or install an `acture-*` package (less code to own, tested, at the cost of a dependency)? Decided **per consumer**, not per project.
 
-**Standing rule:** whenever your task touches a consumer surface or a consumer-specific `acture-*` package, also load the **`acture-consumer-integration`** skill. It operationalises the positioning above; this primer only states it.
+**Standing rule:** whenever your task touches a consumer surface or a consumer-specific `acture-*` package, also load the **`acture-consumer-integration`** skill. It operationalises the positioning above; this primer only states it. When the task is standing up command dispatch in a *new* target project, load **`acture-greenfield`** — it operationalises the same positioning for the core primitive itself, backed by the `docs/hand-written-registry.md` reference (the registry is ~80 lines a project can own outright, with zero `acture-*` dependency).
 
 ## The rule of three
 

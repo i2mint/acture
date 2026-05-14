@@ -1,58 +1,89 @@
-# Next Session — `acture` core positioning-alignment review
+# Next Session — macros + e2e testing tooling
 
-**Your role:** review (and refactor where the review demands it) the `acture` **core** package so it genuinely lives up to `docs/positioning.md`. This is the immediate next step after the v1.5 repositioning + namespace-migration increment.
+**Your role:** build the two least-tooled consumer surfaces — **macros** and
+**e2e testing** — per `docs/positioning.md`. This is the increment after the
+v1.6 core positioning-alignment review.
 
-**This is a review first, a refactor second.** Do not start rewriting. Audit, find the gaps, then make the *minimum* changes the audit surfaces. The closed `CommandRecord` (15 fields) does not change.
+These two surfaces are structurally near-identical: both are a sequence (or
+DAG) of `{commandId, params}` pairs, replayed through `registry.dispatch`. An
+e2e test is a macro with assertions (journal article §3.4, §3.7). That shared
+structure is the central design question of this session — see Step 1.
 
 ## Step 0 — Orient
 
 Read, in this order:
 
-1. `docs/positioning.md` — **canonical.** The dev-tool-first principle and the two flexibility dimensions. This is the standard you are auditing core against.
-2. `docs/roadmap.md` — where this session sits, what's done, what's deferred.
-3. `.claude/skills/acture-architecture-primer/SKILL.md` and `.claude/skills/acture-consumer-integration/SKILL.md`.
-4. `.claude/skills/acture-hard-donts/SKILL.md` — re-read before changing anything.
-5. `.claude/skills/acture-command-record-shape/SKILL.md` — the closed surface you must not widen.
-6. `packages/core/` — the actual code under review.
+1. `docs/positioning.md` — **canonical.** Dev-tool-first; the two flexibility
+   dimensions. Both new surfaces must keep both dimensions open.
+2. `docs/roadmap.md` — the "Next" section is this work; "Status snapshot" and
+   the v1.6 "Done" entry are where you're starting from.
+3. `.claude/skills/acture-architecture-primer/SKILL.md` and
+   `.claude/skills/acture-consumer-integration/SKILL.md` — macros and e2e are
+   **consumer surfaces**, so the consumer-integration positioning binds.
+4. `.claude/skills/acture-hard-donts/SKILL.md` — re-read before adding a package.
+5. `docs/command_dispatch_journal_article.md` §3.4 + §3.7 — the "e2e test is a
+   macro with assertions" framing.
+6. `docs/hand-written-registry.md` — the v1.6 reproducibility reference; the
+   command-sequence concept should get the same agent-written-path treatment.
 
-## Step 1 — The audit
+## Step 1 — Settle the design question FIRST (before building)
 
-The positioning makes two promises about core. Check whether the code keeps them.
+**Macros and e2e share so much structure that a single command-sequence
+substrate underneath both may be the right shape — rather than two unrelated
+packages.** Evaluate this before committing to a package layout. The options:
 
-**Promise A — core is the minimal primitive.** `acture` core is *registry + dispatcher + schema bridge + the state-adapter interface*, and nothing else. Audit `packages/core/src` for anything that is really consumer logic, adapter logic, or convenience that belongs in an optional package. For each thing in core, ask: is this a *primitive*, or is it an *accelerator that crept inward*? Anything that fails belongs in (or as) a separate optional package.
+- One shared `acture-sequence` (or similarly-named) substrate — record /
+  compose / replay of `{commandId, params}` sequences — with macros and e2e as
+  thin layers on top (e2e adds assertions + a Playwright binding).
+- Two independent packages that happen to look similar.
+- A pattern + skill for the shared concept (no package), with only the
+  tool-bound piece (`acture-e2e-playwright`) shipping as a package.
 
-**Promise B — the agent-written path is real.** The positioning says a developer can stand up command dispatch with *zero* `acture-*` dependency — the agent hand-writes it. Is that actually achievable today? An agent has the skills (which explain acture's *design*) and core's source (as a *reference implementation*). Could it reproduce an equivalent minimal registry + dispatcher in a target project from those? If not — if the patterns are only encoded as installable code and never as a *legible, reproducible reference* — that is the central gap, and closing it is the most valuable thing this session can do.
+Use `AskUserQuestion` for this fork. The rule of three and the hard-don'ts
+(especially #2, no god-package) both bind the answer. Do not guess.
 
-Also check the boundary the hard-don'ts care about: core imports zero React, zero state libraries (hard-don'ts #6, and the spirit of #2/#3). Verify, don't assume.
+## Step 2 — Build, per the positioning
 
-## Step 2 — Decide the deliverable with the user
+Whatever Step 1 decides, these constraints hold:
 
-The audit will land in one of a few places. **Surface the finding to the user before refactoring** — the right deliverable is a judgment call:
+- **Core enables; packages are separate and optional.** The command-sequence
+  *concept* (record / compose / replay) is something an agent can hand-write
+  following a documented pattern — give it the `docs/hand-written-registry.md`
+  treatment. Specialized, tool-bound implementations are separate optional
+  packages.
+- **`acture-e2e-playwright`** — reusable e2e code bound specifically to
+  **Playwright**. Playwright is the tool choice here; the consumer skill must
+  still document the agent-written path and that other runners (Cypress, etc.)
+  are valid choices — per `acture-consumer-integration` §Step 2.
+- **Macros** — a record/replay tool. Step 1 decides whether it ships as a
+  package, a pattern + skill, or both.
+- **Each surface gets a consumer-integration skill** — `acture-e2e` and
+  `acture-macros` — building on `acture-consumer-integration`.
 
-- If core is already minimal and the agent-written path is genuinely reproducible from existing material → the deliverable may be just a short written confirmation + any small tightening. That is a fine outcome; do not invent work.
-- If non-primitive code has crept into core → propose the extraction (to which package?) and confirm scope before moving code.
-- If the agent-written path is *asserted but not reproducible* → the likely deliverable is a new reference artifact: a "hand-written registry" reference doc, and/or a consumer/greenfield skill that walks an agent through writing the dispatch layer by hand. Confirm the shape with the user.
+## Step 3 — Wrap up
 
-Use `AskUserQuestion` for the scope fork. Do not guess.
-
-## Step 3 — Refactor (only what Step 1–2 justified)
-
-- Rule of three and the hard-don'ts still bind. The `CommandRecord` stays at 15 fields.
-- If you move code between packages, it is a `minor` for the gaining package and the losing package; changeset accordingly.
-- `pnpm build && pnpm test && pnpm typecheck` green across the workspace; example apps still build and pass.
-
-## Step 4 — Wrap up
-
-- Update `docs/roadmap.md`: mark this item done, record what the audit found, move the "macros + e2e tooling" item to NEXT.
-- Write a short reflection (`docs/core-review-reflection.md` or fold into the roadmap — your call; keep it short).
-- Replace this file with the handoff for the macros + e2e tooling work (see `docs/roadmap.md` §"Next" for what that entails).
+- `pnpm build && pnpm test && pnpm typecheck` green across the workspace;
+  example apps still build + pass. Add a worked example if the surface needs
+  one to be legible.
+- Changesets: `minor` for any new or changed package.
+- Update `docs/roadmap.md`: mark the macros + e2e item done, record what was
+  built and the Step 1 decision, move the next backlog item to "Next".
+- Write a short reflection (`docs/v1_7-reflection.md` or similar — keep it short).
+- Replace this file with the handoff for whatever the roadmap says is next.
 
 ## Note — all packages are published
 
-All 15 packages are live on npm as of 2026-05-14. The MCP adapter ships as **`acture-mcp-server`** (the unscoped name `acture-mcp` was already taken by an unrelated project). Nothing to publish before starting this review.
+All 15 packages are live on npm as of 2026-05-14. The MCP adapter ships as
+**`acture-mcp-server`**. Nothing to publish before starting this work; the next
+release goes out when the pending changesets (including v1.6's
+`tier-warnings` extraction) are versioned.
 
 ## When unsure
 
-Re-read `docs/positioning.md` and `docs/roadmap.md`. If a change is irreversible or you cannot tell whether it honours the positioning, append to `docs/escalations.md` (create if missing) and ask the user.
+Re-read `docs/positioning.md` and `docs/roadmap.md`. If a change is
+irreversible or you cannot tell whether it honours the positioning, append to
+`docs/escalations.md` (create if missing) and ask the user.
 
-**Good luck.** The point of this session is to make the dev-tool-first promise *true in the code*, not just in the docs. A clean "it already holds" is a perfectly good result — the failure mode is inventing a refactor to look busy.
+**Good luck.** The shared-substrate question in Step 1 is the crux — get that
+right and the rest follows. Don't ship two packages that should have been one,
+and don't ship one god-package that should have been two.

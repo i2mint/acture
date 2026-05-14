@@ -10,15 +10,19 @@
  * Idempotent — wrapping a registry twice returns the same disposer.
  * Calling the returned disposer restores the original `dispatch`.
  *
- * Pattern mirrors `acture-devtools` `instrumentRegistry`: we mutate
- * one method on the registry. Per `acture-hard-donts` §6, this is
- * permitted because (a) it's opt-in and dev-leaning, (b) it preserves
- * the original signature exactly, (c) the wrapper is identifiable
- * via a WeakMap so callers cannot stack warnings infinitely.
+ * This is dispatch *instrumentation*, not a dispatch primitive — it
+ * observes dispatch without changing its semantics. Like
+ * `instrumentRegistry` (see `./dispatch-log.ts`), it lives in
+ * `acture-devtools` rather than in `acture` core: per
+ * `acture-hard-donts` §6, dispatch interception belongs in an opt-in
+ * devtools package, not in the core primitive. The wrapper is
+ * permitted here because (a) it's opt-in and dev-leaning, (b) it
+ * preserves the original `dispatch` signature exactly, (c) the
+ * wrapper is identifiable via a WeakMap so callers cannot stack
+ * warnings infinitely.
  */
 
-import type { Context, Result } from './types.js';
-import type { DispatchOptions, Registry } from './registry.js';
+import type { Context, DispatchOptions, Registry, Result } from 'acture';
 
 export interface EnableTierWarningsOptions {
   /** Force warnings on or off regardless of env. Default: auto (suppressed

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createRegistry, defineCommand, ok } from './index.js';
+import { createRegistry, defineCommand, ok } from 'acture';
 import { enableTierWarnings } from './tier-warnings.js';
 
 function setup() {

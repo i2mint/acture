@@ -62,9 +62,6 @@ export {
   isErr,
 } from './result.js';
 
-export { enableTierWarnings } from './tier-warnings.js';
-export type { EnableTierWarningsOptions } from './tier-warnings.js';
-
 export type {
   // Core data shapes
   CommandRecord,

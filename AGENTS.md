@@ -51,6 +51,7 @@ Skills are how you load focused context. Each is a self-contained primer for one
 | --- | --- |
 | `acture-architecture-primer` | Always, for any non-trivial task. The conceptual model + positioning in 5 minutes. |
 | `acture-consumer-integration` | **Whenever a task touches a consumer surface or a consumer-specific `acture-*` package.** The dev-tool-first build pattern: agent-written vs package-reuse, tool-library choices belong to the user. |
+| `acture-greenfield` | When standing up command dispatch in a **new** target project: state model, then hand-write the registry primitive or install `acture` core — a deliberate per-project choice. Backed by `docs/hand-written-registry.md`. |
 | `acture-command-record-shape` | When defining or modifying the `CommandRecord` interface or its fields. |
 | `acture-schema-bridge` | When working on Zod → JSON Schema projection, MCP tool emission, or AI tool definitions. |
 | `acture-palette-design` | When building or modifying the command palette UI, especially parameterized commands. |
@@ -64,7 +65,7 @@ Skills are how you load focused context. Each is a self-contained primer for one
 | `migration-wrap` | Fourth step: wrap existing handlers / store actions using `wrapMutation`. |
 | `migration-graduate` | Final step: retire `wrapMutation` calls once the legacy handler is no longer needed. |
 
-The `acture-*` skills are **dev skills** (working *on* acture). The `migration-*` skills are the **strangler-fig workflow**. `acture-consumer-integration` is the foundation of the (growing) **consumer-integration** family — per-surface skills for building a consumer *in a target project*. Per `docs/positioning.md` §6, dev skills must load `acture-consumer-integration` whenever the work touches a consumer.
+Most `acture-*` skills are **dev skills** (working *on* acture). The `migration-*` skills are the **strangler-fig workflow**. `acture-consumer-integration` is the foundation of the (growing) **consumer-integration** family — per-surface skills for building a consumer *in a target project*; `acture-greenfield` is the matching foundation for standing up the *core primitive* in a new project. Per `docs/positioning.md` §6, dev skills must load `acture-consumer-integration` whenever the work touches a consumer.
 
 ## The hard don'ts (merge checklist)
 
@@ -87,18 +88,20 @@ Full discussion is in `docs/redesign_takeaways.md` §3 and the `acture-hard-dont
 - Generalizing beyond what `v1_plan.md` commits to. Rule of three.
 - Modifying the central paper (`docs/command_dispatch_journal_article.md`). It is canonical.
 
-## Current state (v1.5 — repositioning + namespace migration, 2026-05-14)
+## Current state (v1.6 — core positioning-alignment review, 2026-05-14)
 
-**v1.5 (this increment):** the canonical positioning was clarified (`docs/positioning.md` — dev-tool-first, the two flexibility dimensions), the `acture-consumer-integration` skill was added and wired into the dev skills, and all 13 sub-packages were renamed from `@acture/*` to unscoped `acture-*` (the `@acture` npm scope was unavailable). `acture@1.1.0` and `eslint-plugin-acture-migration@1.0.0` are published on npm; the 13 renamed packages publish next under their new names. Forward plan and full done/not-done tracking live in `docs/roadmap.md`.
+**v1.6 (this increment):** audited `acture` core against the canonical positioning. Core stays the minimal primitive — `enableTierWarnings` was dispatch instrumentation, not a primitive, and moved to `acture-devtools`. The dev-tool-first promise is now reproducible in code: `docs/hand-written-registry.md` is a ~80-line zero-dependency registry+dispatcher reference, and the new `acture-greenfield` skill walks an agent through standing up the core primitive in a new project. `CommandRecord` unchanged (15 fields). See `docs/core-review-reflection.md`.
+
+**v1.5:** the canonical positioning was clarified (`docs/positioning.md` — dev-tool-first, the two flexibility dimensions), the `acture-consumer-integration` skill was added and wired into the dev skills, and all 13 sub-packages were renamed from `@acture/*` to unscoped `acture-*` (the `@acture` npm scope was unavailable). `acture@1.1.0` and `eslint-plugin-acture-migration@1.0.0` are published on npm; the 13 renamed packages publish next under their new names. Forward plan and full done/not-done tracking live in `docs/roadmap.md`.
 
 Fifteen packages ship in the workspace at versions ranging from v1.0.0 to v1.2.0:
 
-- Core: `acture@1.1.0` — `enableTierWarnings`, `deprecationReason`, `internalToken`, `DispatchOptions`.
+- Core: `acture@1.1.0` — `deprecationReason`, `internalToken`, `DispatchOptions`. (Stays the minimal primitive: registry + dispatcher + when-clause DSL + schema bridge + state-adapter interface.)
 - State: `acture-state-zustand@1.0.0`, `acture-state-redux@1.0.0`.
 - UI: `acture-palette-react@1.0.0`, `acture-hotkeys@1.0.0`, `acture-forms-autoform@1.0.0`, `acture-forms-rjsf@1.0.0`.
 - Surfaces: `acture-mcp-server@1.0.0`, `acture-ai-vercel@1.0.0` — honour the tier filter and prepend `[DEPRECATED — <reason>]`.
 - Migration: `acture-migration@1.1.0` — `createDomInterceptor` for DOM-event interception.
-- Tooling: `acture-build-tier@1.1.0` (regex + AST mode), `acture-cli@1.2.0` (deep nested compare-schemas diffs), `acture-devtools@1.0.0`.
+- Tooling: `acture-build-tier@1.1.0` (regex + AST mode), `acture-cli@1.2.0` (deep nested compare-schemas diffs), `acture-devtools@1.0.0` — `<Inspector />`, `instrumentRegistry`, `enableTierWarnings` (dispatch instrumentation lives here, not in core).
 - Codemods: `acture-codemods@1.1.0` — **research-4 §B.5 codemod set is complete** (5 codemods: `wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`).
 - Lint: `eslint-plugin-acture-migration@1.0.0` — **new in v1.4.** One rule, `acture/no-stale-wrap-mutation`: flags `wrapMutation(...)` calls whose result is never used (the migration has graduated; author with `defineCommand`).
 

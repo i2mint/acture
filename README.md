@@ -33,11 +33,13 @@ pnpm add -D eslint-plugin-acture-migration  # ESLint rule that flags stale wrapM
 
 ## Status
 
+**v1.6 — core positioning-alignment review (2026-05-14).** Audited `acture` core against the canonical positioning. Core stays the minimal primitive: `enableTierWarnings` (dispatch instrumentation, not a primitive) moved to `acture-devtools`. New `docs/hand-written-registry.md` — a ~80-line, zero-dependency registry+dispatcher reference — and the `acture-greenfield` skill make the dev-tool-first promise reproducible in code. `CommandRecord` unchanged (15 fields). See [`docs/core-review-reflection.md`](docs/core-review-reflection.md).
+
 **v1.5 — repositioning + namespace migration (2026-05-14).** Fifteen packages ship in the workspace. v1.5 clarified the canonical positioning ([`docs/positioning.md`](docs/positioning.md)), added the `acture-consumer-integration` skill, and renamed all 13 sub-packages from `@acture/*` to unscoped `acture-*`. `acture@1.1.0` and `eslint-plugin-acture-migration@1.0.0` are live on npm; the 13 renamed packages publish next under their new names.
 
 | Package | Role |
 | --- | --- |
-| [`acture`](packages/core) | core registry, dispatcher, when-clause DSL, schema bridge, `enableTierWarnings` |
+| [`acture`](packages/core) | core registry, dispatcher, when-clause DSL, schema bridge, state-adapter interface |
 | [`acture-state-zustand`](packages/state-zustand) | StateAdapter for zustand+immer |
 | [`acture-state-redux`](packages/state-redux) | StateAdapter for Redux Toolkit |
 | [`acture-palette-react`](packages/palette-react) | command palette with parameterized-command UX |
@@ -49,7 +51,7 @@ pnpm add -D eslint-plugin-acture-migration  # ESLint rule that flags stale wrapM
 | [`acture-migration`](packages/migration) | strangler-fig primitives: `wrapMutation`, `actureMiddleware`, `createDomInterceptor`, `chooseImplementation`, `shadowCompare` |
 | [`acture-build-tier`](packages/build-tier) | build-step plugin that mirrors `@stable`/`@experimental`/`@internal`/`@deprecated` JSDoc into runtime `tier`; regex default + AST mode polish |
 | [`acture-cli`](packages/cli) | `acture compare-schemas` (CI gating, deep nested diffs) + `acture snapshot` (registry → JSON) |
-| [`acture-devtools`](packages/devtools) | embeddable `<Inspector />` and `instrumentRegistry` dispatch log |
+| [`acture-devtools`](packages/devtools) | embeddable `<Inspector />`, `instrumentRegistry` dispatch log, `enableTierWarnings` |
 | [`acture-codemods`](packages/codemods) | Codemod CLI: all five research-4 §B.5 codemods now shipped (`wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`). `--dry-run` + `--json` for agents |
 | [`eslint-plugin-acture-migration`](packages/eslint-plugin-acture-migration) | ESLint rule `acture/no-stale-wrap-mutation` — flags `wrapMutation(...)` wrappers whose result is never used (the migration has graduated; author with `defineCommand`) |
 
@@ -91,9 +93,9 @@ Previously in v1.0 / v1.1:
 - **`acture compare-schemas`.** Diff two registry snapshots, classify per research-5 §6.1, gate CI with `--fail-on major`. Description changes are MAJOR by default; downgradable per-invocation via `--allow-description-edits`.
 - **`acture snapshot`.** Load a registry config (`./registry.mjs` default-exporting the registry) and emit a JSON snapshot suitable for `compare-schemas`.
 - **`<Inspector registry={...} />`.** Embeddable React dev-tool with a command list (tier-filterable), dispatch log, and live when-clause evaluator. Mount it behind a toggle in any greenfield app.
-- **`enableTierWarnings(registry)`.** Once-per-process `console.warn` on first dispatch of each `@experimental` command. Suppress with `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1`.
+- **`enableTierWarnings(registry)`.** Once-per-process `console.warn` on first dispatch of each `@experimental` command. Suppress with `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1`. (Ships in `acture-devtools` as of the core positioning-alignment review — it is dispatch instrumentation, not a core primitive.)
 
-What's next: see [`docs/roadmap.md`](docs/roadmap.md) for the forward plan and [`docs/next_session.md`](docs/next_session.md) for the immediate next step (a positioning-alignment review of `acture` core).
+What's next: see [`docs/roadmap.md`](docs/roadmap.md) for the forward plan and [`docs/next_session.md`](docs/next_session.md) for the immediate next step (macros + e2e testing tooling).
 
 ## Two flexibility dimensions
 
