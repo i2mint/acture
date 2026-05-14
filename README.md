@@ -116,7 +116,7 @@ acture adapts along two independent axes — and the agent keeps both open rathe
 - **Forward plan + status:** [`docs/roadmap.md`](docs/roadmap.md) — what's done, what's next, what's deferred.
 - **Design synthesis:** [`docs/redesign_takeaways.md`](docs/redesign_takeaways.md) — opinionated commitments and hard "don'ts."
 - **v1 plan (historical):** [`docs/v1_plan.md`](docs/v1_plan.md) / [`docs/implementation_plan.md`](docs/implementation_plan.md) — phases 0–4, all complete.
-- **Research:** [`docs/research/`](docs/research/) — five research findings (1–5) that informed the v1 plan.
+- **Research:** [`docs/research/`](docs/research/) — six research findings (1–6) that informed the plan (research-6: the cross-language TypeScript ↔ Python story).
 - **Patterns:** [`docs/parameterized_command_palette_guide.md`](docs/parameterized_command_palette_guide.md) — implementation patterns.
 - **For agents:** [`AGENTS.md`](AGENTS.md) and [`.claude/skills/`](.claude/skills/).
 
