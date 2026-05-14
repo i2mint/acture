@@ -1,6 +1,6 @@
 {
   "name": "acture",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Typed schema-driven command dispatch library. Core: registry, dispatcher, when-clause DSL, state adapter interface, schema bridge.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",

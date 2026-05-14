@@ -15,6 +15,6 @@ looking for the acture command-dispatch library, install it from npm:
 See the GitHub README for the full ecosystem.
 """
 
-__version__ = "0.2.0"
+__version__ = "1.2.0"
 """Tracks the npm package version exactly. Auto-synced by
 `scripts/sync-python-version.mjs` on release."""

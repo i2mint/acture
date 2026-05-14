@@ -58,7 +58,14 @@
     "vitest": "^2.1.0",
     "zod": "^4.0.0"
   },
-  "keywords": ["acture", "forms", "rjsf", "json-schema", "form-adapter", "command-palette"],
+  "keywords": [
+    "acture",
+    "forms",
+    "rjsf",
+    "json-schema",
+    "form-adapter",
+    "command-palette"
+  ],
   "publishConfig": {
     "access": "public"
   }

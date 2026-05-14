@@ -48,7 +48,13 @@
     "vitest": "^2.1.0",
     "zod": "^4.0.0"
   },
-  "keywords": ["acture", "vercel-ai-sdk", "ai-tools", "llm", "command-dispatch"],
+  "keywords": [
+    "acture",
+    "vercel-ai-sdk",
+    "ai-tools",
+    "llm",
+    "command-dispatch"
+  ],
   "publishConfig": {
     "access": "public"
   }

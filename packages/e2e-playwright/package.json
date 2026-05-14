@@ -1,6 +1,6 @@
 {
   "name": "acture-e2e-playwright",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "acture e2e adapter for Playwright. Record / compose / replay command sequences; dispatch through the page; e2e is a macro with assertions.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",

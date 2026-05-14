@@ -47,7 +47,13 @@
     "vitest": "^2.1.0",
     "zod": "^4.0.0"
   },
-  "keywords": ["acture", "mcp", "model-context-protocol", "ai-tools", "claude"],
+  "keywords": [
+    "acture",
+    "mcp",
+    "model-context-protocol",
+    "ai-tools",
+    "claude"
+  ],
   "publishConfig": {
     "access": "public"
   }

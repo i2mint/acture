@@ -54,7 +54,12 @@
     "vitest": "^2.1.0",
     "zod": "^4.0.0"
   },
-  "keywords": ["acture", "command-palette", "cmdk", "react"],
+  "keywords": [
+    "acture",
+    "command-palette",
+    "cmdk",
+    "react"
+  ],
   "publishConfig": {
     "access": "public"
   }
