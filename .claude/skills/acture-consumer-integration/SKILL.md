@@ -48,7 +48,8 @@ Almost every consumer rests on *some* third-party library:
 | AI tool calling     | Vercel AI SDK, Anthropic SDK, OpenAI SDK        | `acture-ai-vercel` (Vercel AI SDK) |
 | MCP server          | `@modelcontextprotocol/sdk`                     | `acture-mcp-server` |
 | Parameter forms     | react-hook-form + Zod, rjsf, custom             | `acture-forms-autoform`, `acture-forms-rjsf` |
-| e2e testing         | Playwright, Cypress, custom                     | `acture-e2e-playwright` *(planned)* |
+| e2e testing         | Playwright, Cypress, Vitest browser, custom     | `acture-e2e-playwright` (Playwright) |
+| Macros (record/replay) | none — registry only                         | *none — pattern + `acture-macros` skill* |
 
 **This dependency belongs to the user's consumer code, and the choice of tool is theirs.** acture does not mandate cmdk or Playwright or the Vercel SDK. The per-tool `acture-*` packages each bundle *one* known-good integration with *one* tool — useful if the user already chose that tool, irrelevant if they chose another. Name the realistic options; respect the user's pick; never imply acture's choice is the only choice.
 

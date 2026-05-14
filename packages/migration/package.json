@@ -36,7 +36,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "acture": "workspace:*",
+    "acture": "^1.0.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

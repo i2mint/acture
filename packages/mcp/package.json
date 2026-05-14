@@ -37,7 +37,7 @@
   },
   "peerDependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "acture": "workspace:*"
+    "acture": "^1.0.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",

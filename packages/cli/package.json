@@ -39,7 +39,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "acture": "workspace:*"
+    "acture": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

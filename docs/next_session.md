@@ -1,89 +1,93 @@
-# Next Session — macros + e2e testing tooling
+# Next Session — pick the next increment
 
-**Your role:** build the two least-tooled consumer surfaces — **macros** and
-**e2e testing** — per `docs/positioning.md`. This is the increment after the
-v1.6 core positioning-alignment review.
-
-These two surfaces are structurally near-identical: both are a sequence (or
-DAG) of `{commandId, params}` pairs, replayed through `registry.dispatch`. An
-e2e test is a macro with assertions (journal article §3.4, §3.7). That shared
-structure is the central design question of this session — see Step 1.
+**Your role:** choose and ship the next small increment. Unlike the last few
+handoffs, this one does **not** prescribe the work — v1.7 closed the last
+pre-scheduled item (macros + e2e). The roadmap's "Next" section is now open;
+your first job is to pick, with the user, what the increment is.
 
 ## Step 0 — Orient
 
 Read, in this order:
 
 1. `docs/positioning.md` — **canonical.** Dev-tool-first; the two flexibility
-   dimensions. Both new surfaces must keep both dimensions open.
-2. `docs/roadmap.md` — the "Next" section is this work; "Status snapshot" and
-   the v1.6 "Done" entry are where you're starting from.
-3. `.claude/skills/acture-architecture-primer/SKILL.md` and
-   `.claude/skills/acture-consumer-integration/SKILL.md` — macros and e2e are
-   **consumer surfaces**, so the consumer-integration positioning binds.
-4. `.claude/skills/acture-hard-donts/SKILL.md` — re-read before adding a package.
-5. `docs/command_dispatch_journal_article.md` §3.4 + §3.7 — the "e2e test is a
-   macro with assertions" framing.
-6. `docs/hand-written-registry.md` — the v1.6 reproducibility reference; the
-   command-sequence concept should get the same agent-written-path treatment.
+   dimensions. Everything you ship must keep both open.
+2. `docs/roadmap.md` — "Status snapshot", the v1.7 "Done" entry (where you're
+   starting from), "Next", and "Deferred / backlog".
+3. `docs/v1_7-reflection.md` — what just shipped and why.
+4. `.claude/skills/acture-architecture-primer/SKILL.md` and
+   `.claude/skills/acture-hard-donts/SKILL.md` — load before any non-trivial
+   change.
+5. If the increment touches a consumer surface or a consumer-specific package:
+   `.claude/skills/acture-consumer-integration/SKILL.md` (standing rule).
 
-## Step 1 — Settle the design question FIRST (before building)
+## Step 1 — Pick the increment (settle with the user)
 
-**Macros and e2e share so much structure that a single command-sequence
-substrate underneath both may be the right shape — rather than two unrelated
-packages.** Evaluate this before committing to a package layout. The options:
+The roadmap's **Deferred / backlog** is the candidate pool. No item is
+pre-selected. The strongest candidates, with the trade-offs:
 
-- One shared `acture-sequence` (or similarly-named) substrate — record /
-  compose / replay of `{commandId, params}` sequences — with macros and e2e as
-  thin layers on top (e2e adds assertions + a Playwright binding).
-- Two independent packages that happen to look similar.
-- A pattern + skill for the shared concept (no package), with only the
-  tool-bound piece (`acture-e2e-playwright`) shipping as a package.
+- **Per-surface consumer skills** *(recommended default)* — the consumer-skill
+  family now has a foundation (`acture-consumer-integration`) and four surface
+  skills (`acture-palette-design`, `acture-macros`, `acture-e2e`). Still missing:
+  **hotkeys, MCP, AI, telemetry, undo, extensions**. Each is a small,
+  self-contained skill building on the foundation; the packages already exist.
+  Low risk, steady value, and it fills out the primary delivery surface.
+- **Codemods README/CLI polish** — the v1.4 fresh-agent test found the codemods
+  README's `npx acture-codemods` story broken and several CLI options
+  undocumented. Parked in `docs/backlog/codemods-polish-and-tier-mirror.md`.
+  Concrete, bounded, release-quality work — but docs/polish, not new surface.
+- **Greenfield agent-track skills** — the `acture-greenfield` foundation exists;
+  per-step skills (state-model walkthrough, a worked greenfield bootstrap) do
+  not. Lower priority until the consumer-skill family is fuller.
 
-Use `AskUserQuestion` for this fork. The rule of three and the hard-don'ts
-(especially #2, no god-package) both bind the answer. Do not guess.
+Use `AskUserQuestion` to settle which one (or two) to ship. Don't guess — the
+last session's handoff made the scope decision explicit and it paid off.
 
 ## Step 2 — Build, per the positioning
 
-Whatever Step 1 decides, these constraints hold:
+Whatever Step 1 picks, the standing constraints hold:
 
-- **Core enables; packages are separate and optional.** The command-sequence
-  *concept* (record / compose / replay) is something an agent can hand-write
-  following a documented pattern — give it the `docs/hand-written-registry.md`
-  treatment. Specialized, tool-bound implementations are separate optional
-  packages.
-- **`acture-e2e-playwright`** — reusable e2e code bound specifically to
-  **Playwright**. Playwright is the tool choice here; the consumer skill must
-  still document the agent-written path and that other runners (Cypress, etc.)
-  are valid choices — per `acture-consumer-integration` §Step 2.
-- **Macros** — a record/replay tool. Step 1 decides whether it ships as a
-  package, a pattern + skill, or both.
-- **Each surface gets a consumer-integration skill** — `acture-e2e` and
-  `acture-macros` — building on `acture-consumer-integration`.
+- **Core enables; packages are separate and optional.** If the increment is
+  consumer skills: each skill must document the **agent-written path**, name the
+  realistic **tool-library choices** as the user's, and frame any `acture-*`
+  package as the opt-in accelerator — per `acture-consumer-integration`. Use the
+  `acture-macros` / `acture-e2e` skills (v1.7) as the template for shape and tone.
+- **Hard-don'ts bind.** Re-read the checklist before merging. The positioning
+  check (merge-ritual #6) is not optional.
+- **Rule of three.** Don't add a package, a field, or a feature without three
+  concrete callers.
 
 ## Step 3 — Wrap up
 
-- `pnpm build && pnpm test && pnpm typecheck` green across the workspace;
-  example apps still build + pass. Add a worked example if the surface needs
-  one to be legible.
-- Changesets: `minor` for any new or changed package.
-- Update `docs/roadmap.md`: mark the macros + e2e item done, record what was
-  built and the Step 1 decision, move the next backlog item to "Next".
-- Write a short reflection (`docs/v1_7-reflection.md` or similar — keep it short).
+- `pnpm -r build && pnpm -r test && pnpm -r typecheck` green across the
+  workspace; example apps still build + pass.
+- Changesets: `minor` for any new or changed package. (Skills + docs alone need
+  no changeset.)
+- Update `docs/roadmap.md`: mark the increment done, record what was built and
+  any decisions, refresh the "Next" section and the tracking table.
+- Write a short reflection (`docs/v1_8-reflection.md` or similar — keep it short).
 - Replace this file with the handoff for whatever the roadmap says is next.
 
-## Note — all packages are published
+## Note — publishing state
 
-All 15 packages are live on npm as of 2026-05-14. The MCP adapter ships as
-**`acture-mcp-server`**. Nothing to publish before starting this work; the next
-release goes out when the pending changesets (including v1.6's
-`tier-warnings` extraction) are versioned.
+16 packages in the workspace. 15 are live on npm (2026-05-14);
+**`acture-e2e-playwright`** (new in v1.7) ships with the next release. Pending
+changesets: v1.6's `tier-warnings` extraction (`acture` + `acture-devtools`,
+both `minor`) and v1.7's `acture-e2e-playwright` (`minor`). Nothing to publish
+before starting; the next release goes out when those are versioned.
+
+v1.7 fixed a pre-existing changeset misconfiguration that had `changeset status`
+reporting a spurious suite-wide `2.0.0` major bump (peer-dep major cascade + a
+drifted `fixed` group — full write-up in `docs/escalations.md`). The release
+math is now correct and **`changeset version` is safe to run**: it produces
+`acture` 1.2.0, `acture-devtools` 1.1.0, `acture-e2e-playwright` 1.1.0, nothing
+else. If you'd prefer `acture-e2e-playwright` to debut at `1.0.0` instead, delete
+`.changeset/e2e-playwright-macros.md` before versioning.
 
 ## When unsure
 
-Re-read `docs/positioning.md` and `docs/roadmap.md`. If a change is
-irreversible or you cannot tell whether it honours the positioning, append to
+Re-read `docs/positioning.md` and `docs/roadmap.md`. If a change is irreversible
+or you cannot tell whether it honours the positioning, append to
 `docs/escalations.md` (create if missing) and ask the user.
 
-**Good luck.** The shared-substrate question in Step 1 is the crux — get that
-right and the rest follows. Don't ship two packages that should have been one,
-and don't ship one god-package that should have been two.
+**Good luck.** Step 1 is the only real decision this session — pick a bounded
+increment, settle it with the user, then Step 2/3 are routine.
