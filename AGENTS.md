@@ -77,9 +77,9 @@ Full discussion is in `docs/redesign_takeaways.md` §3 and the `acture-hard-dont
 - Generalizing beyond what `v1_plan.md` commits to. Rule of three.
 - Modifying the central paper (`docs/command_dispatch_journal_article.md`). It is canonical.
 
-## Current state (v1.3, Phase 4 + v1.1 + v1.2 + v1.3 increments DONE, 2026-05-13)
+## Current state (v1.4, Phase 4 + v1.1 → v1.4 increments DONE, 2026-05-14)
 
-Fourteen packages ship in the workspace at versions ranging from v1.0.0 to v1.2.0:
+Fifteen packages ship in the workspace at versions ranging from v1.0.0 to v1.2.0:
 
 - Core: `acture@1.1.0` — `enableTierWarnings`, `deprecationReason`, `internalToken`, `DispatchOptions`.
 - State: `@acture/state-zustand@1.0.0`, `@acture/state-redux@1.0.0`.
@@ -87,9 +87,12 @@ Fourteen packages ship in the workspace at versions ranging from v1.0.0 to v1.2.
 - Surfaces: `@acture/mcp@1.0.0`, `@acture/ai-vercel@1.0.0` — honour the tier filter and prepend `[DEPRECATED — <reason>]`.
 - Migration: `@acture/migration@1.1.0` — `createDomInterceptor` for DOM-event interception.
 - Tooling: `@acture/build-tier@1.1.0` (regex + AST mode), `@acture/cli@1.2.0` (deep nested compare-schemas diffs), `@acture/devtools@1.0.0`.
-- Codemods: `@acture/codemods@1.1.0` — **research-4 §B.5 codemod set is complete in v1.3** (5 codemods: `wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`).
+- Codemods: `@acture/codemods@1.1.0` — **research-4 §B.5 codemod set is complete** (5 codemods: `wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`).
+- Lint: `eslint-plugin-acture-migration@1.0.0` — **new in v1.4.** One rule, `acture/no-stale-wrap-mutation`: flags `wrapMutation(...)` calls whose result is never used (the migration has graduated; author with `defineCommand`).
 
-Four worked examples: `examples/greenfield/graph-editor/`, `examples/drop-in/`, `examples/migration/zustand-wrap/{before,after}/`, `examples/migration/redux-wrap/` (RTK + `actureMiddleware` end-to-end). See `docs/next_session.md` for the v1.4 backlog.
+Four worked examples: `examples/greenfield/graph-editor/`, `examples/drop-in/`, `examples/migration/zustand-wrap/{before,after}/`, `examples/migration/redux-wrap/` (RTK + `actureMiddleware` end-to-end).
+
+v1.4 also ran the deferred fresh-agent release-gate test against `@acture/codemods` — see `docs/fresh-agent-test-results.md`. The codemod engine passed; README-accuracy fixes are carried to v1.5. See `docs/next_session.md` for the v1.5 backlog.
 
 ## Phase progression
 

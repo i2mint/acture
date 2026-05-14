@@ -17,16 +17,17 @@ pnpm add @acture/migration        # strangler-fig adoption primitives
 # …plus @acture/forms-autoform and @acture/forms-rjsf for parameterized commands.
 
 # Dev / CI tooling (post-v1.0):
-pnpm add -D @acture/build-tier    # build-step @stable/@experimental/@internal/@deprecated mirror
-pnpm add -D @acture/cli           # `acture compare-schemas` / `acture snapshot` CLI
-pnpm add -D @acture/devtools      # embeddable <Inspector /> for dev builds
+pnpm add -D @acture/build-tier              # build-step @stable/@experimental/@internal/@deprecated mirror
+pnpm add -D @acture/cli                     # `acture compare-schemas` / `acture snapshot` CLI
+pnpm add -D @acture/devtools                # embeddable <Inspector /> for dev builds
+pnpm add -D eslint-plugin-acture-migration  # ESLint rule that flags stale wrapMutation wrappers
 ```
 
 > The `acture` name is also reserved on PyPI as a placeholder; a real Python companion is post-v1. `pip install acture` gives you a no-op package whose only purpose is to keep the name ours.
 
 ## Status
 
-**v1.3.0 (Phase 4 DONE + v1.1 + v1.2 + v1.3 increments, 2026-05-13).** Fourteen packages ship in the workspace:
+**v1.4.0 (Phase 4 DONE + v1.1 → v1.4 increments, 2026-05-14).** Fifteen packages ship in the workspace:
 
 | Package | Role |
 | --- | --- |
@@ -44,6 +45,7 @@ pnpm add -D @acture/devtools      # embeddable <Inspector /> for dev builds
 | [`@acture/cli`](packages/cli) | `acture compare-schemas` (CI gating, deep nested diffs) + `acture snapshot` (registry → JSON) |
 | [`@acture/devtools`](packages/devtools) | embeddable `<Inspector />` and `instrumentRegistry` dispatch log |
 | [`@acture/codemods`](packages/codemods) | Codemod CLI: all five research-4 §B.5 codemods now shipped (`wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`). `--dry-run` + `--json` for agents |
+| [`eslint-plugin-acture-migration`](packages/eslint-plugin-acture-migration) | ESLint rule `acture/no-stale-wrap-mutation` — flags `wrapMutation(...)` wrappers whose result is never used (the migration has graduated; author with `defineCommand`) |
 
 Worked examples:
 
@@ -53,6 +55,11 @@ Worked examples:
 - [`examples/migration/redux-wrap/`](examples/migration/redux-wrap) — **new in v1.2.** Redux Toolkit cart with `actureMiddleware` end-to-end. UI dispatch and palette dispatch converge on the same store, observed as one stream.
 
 Agent skills live under [`.claude/skills/`](.claude/skills/): five migration-track skills (`migration-diagnose`, `migration-plan`, `migration-scaffold`, `migration-wrap`, `migration-graduate`) plus the architecture / tier / schema / hard-don'ts primer skills.
+
+What's new in v1.4 (release-readiness theme):
+
+- **`eslint-plugin-acture-migration`.** One rule, `acture/no-stale-wrap-mutation`: flags `wrapMutation(...)` calls whose result is never used — the strangler-fig wrapper has graduated and should become a `defineCommand`. Single-file, conservative detection. +16 tests. Closes a research-4 backlog item carried since v1.1.
+- **Fresh-agent release-gate test.** A fresh agent drove `@acture/codemods` from its README alone. The codemod engine + CLI passed; the README's pre-publish `npx` invocation and undocumented `--option` keys did not. Full assessment in [`docs/fresh-agent-test-results.md`](docs/fresh-agent-test-results.md); fixes carried to v1.5.
 
 What's new in v1.3:
 
@@ -74,7 +81,7 @@ Previously in v1.0 / v1.1:
 - **`<Inspector registry={...} />`.** Embeddable React dev-tool with a command list (tier-filterable), dispatch log, and live when-clause evaluator. Mount it behind a toggle in any greenfield app.
 - **`enableTierWarnings(registry)`.** Once-per-process `console.warn` on first dispatch of each `@experimental` command. Suppress with `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1`.
 
-What's next: see [`docs/next_session.md`](docs/next_session.md) for the v1.4 backlog.
+What's next: see [`docs/next_session.md`](docs/next_session.md) for the v1.5 backlog.
 
 ## Three paths
 

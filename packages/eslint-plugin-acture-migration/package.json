@@ -1,0 +1,60 @@
+{
+  "name": "eslint-plugin-acture-migration",
+  "version": "1.0.0",
+  "description": "ESLint rule for acture strangler-fig migrations. Flags stale wrapMutation(...) wrappers whose result is never used — the migration has graduated and the wrapper should become a defineCommand.",
+  "license": "Apache-2.0",
+  "author": "Thor Whalen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorwhalen/acture.git",
+    "directory": "packages/eslint-plugin-acture-migration"
+  },
+  "homepage": "https://github.com/thorwhalen/acture#readme",
+  "bugs": "https://github.com/thorwhalen/acture/issues",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "eslint": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@types/estree": "^1.0.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "acture",
+    "migration",
+    "wrap-mutation",
+    "strangler-fig"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

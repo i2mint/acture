@@ -28,6 +28,18 @@ For each graduated command:
 - The legacy handler is either deleted (most common) or kept as a tiny adapter the command's execute calls.
 - All tests still pass.
 
+## Finding graduation candidates with ESLint
+
+`eslint-plugin-acture-migration` ships the `acture/no-stale-wrap-mutation` rule, which flags `wrapMutation(...)` calls whose result is never used — a strong single-file signal that the wrapper has graduated. Enable it during a migration and the lint warnings become your graduation backlog:
+
+```js
+// eslint.config.js
+import acture from 'eslint-plugin-acture-migration';
+export default [{ plugins: { acture }, rules: { 'acture/no-stale-wrap-mutation': 'warn' } }];
+```
+
+The rule is conservative (it stays quiet on exported or still-referenced bindings), so a clean lint run does not prove every wrapper has graduated — but every warning is a real candidate. Step 1 below is the cross-file verification the rule cannot do.
+
 ## Steps
 
 ### 1. Pick a wrapped command to graduate
