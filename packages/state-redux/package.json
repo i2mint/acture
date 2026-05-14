@@ -37,7 +37,7 @@
   },
   "peerDependencies": {
     "@reduxjs/toolkit": "^2.0.0",
-    "acture": "workspace:*",
+    "acture": "^1.0.0",
     "immer": "^10.0.0 || ^11.0.0"
   },
   "devDependencies": {

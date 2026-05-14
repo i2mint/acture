@@ -24,10 +24,10 @@ A single `CommandRecord` simultaneously serves:
 1. **Command palette** + **keyboard shortcuts** (`acture-palette-react` + `acture-hotkeys`)
 2. **AI tool calling** (`acture-ai-vercel`) — schema → JSON Schema for LLM function calling
 3. **MCP server** (`acture-mcp-server`) — `{name, description, inputSchema}` tool emission
-4. **End-to-end testing** — same `dispatch(id, params)` used by tests at unit/component/E2E levels
+4. **End-to-end testing** (`acture-e2e-playwright` + the `acture-e2e` skill) — same `dispatch(id, params)` used by tests at unit/component/E2E levels; an e2e test is a macro with assertions
 5. **Telemetry** (post-v1) — middleware logging every dispatch
 6. **Undo/redo** (post-v1) — `Result<R>` reserves `patches?` and `effects?`
-7. **Macros** (post-v1) — record/replay of `{commandId, params}` pairs
+7. **Macros** (the `acture-macros` skill + `docs/hand-written-command-sequence.md` — pattern, no package) — record/replay of `{commandId, params}` pairs
 8. **Extensions/plugins** — third-party additions via the registry API
 
 ## Positioning: acture is a development tool first

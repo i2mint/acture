@@ -1,13 +1,13 @@
 {
-  "name": "acture-state-zustand",
+  "name": "acture-e2e-playwright",
   "version": "1.0.0",
-  "description": "acture StateAdapter for zustand + zustand/middleware/immer. Phase 1's documented happy path.",
+  "description": "acture e2e adapter for Playwright. Record / compose / replay command sequences; dispatch through the page; e2e is a macro with assertions.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thorwhalen/acture.git",
-    "directory": "packages/state-zustand"
+    "directory": "packages/e2e-playwright"
   },
   "homepage": "https://github.com/thorwhalen/acture#readme",
   "bugs": "https://github.com/thorwhalen/acture/issues",
@@ -26,6 +26,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./fixture": {
+      "types": "./dist/fixture.d.ts",
+      "import": "./dist/fixture.js",
+      "require": "./dist/fixture.cjs"
+    },
     "./package.json": "./package.json"
   },
   "sideEffects": false,
@@ -36,19 +41,31 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "peerDependencies": {
-    "acture": "^1.0.0",
-    "immer": "^11.0.0 || ^10.0.0",
-    "zustand": "^5.0.0"
+    "@playwright/test": "^1.40.0",
+    "acture": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@playwright/test": {
+      "optional": true
+    }
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "acture": "workspace:*",
-    "immer": "^11.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0",
-    "zustand": "^5.0.0"
+    "zod": "^4.0.0"
   },
-  "keywords": ["acture", "zustand", "immer", "state", "command-dispatch"],
+  "keywords": [
+    "acture",
+    "e2e",
+    "playwright",
+    "macros",
+    "command-sequence",
+    "command-dispatch",
+    "testing"
+  ],
   "publishConfig": {
     "access": "public"
   }
