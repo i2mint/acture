@@ -86,4 +86,4 @@ The same positioning applies inward:
 - `docs/positioning.md` — the canonical positioning this skill enforces.
 - `acture-architecture-primer` — the eight consumer surfaces and the three primitives.
 - `acture-hard-donts` — the merge checklist; #2 (no god-package) and #3 (adapters translate) are the ones this skill operationalises.
-- Per-surface skills (`acture-palette-design`, and the consumer skills added over time) for the specifics of each surface.
+- Per-surface skills — `acture-palette-design`, `acture-hotkeys`, `acture-mcp`, `acture-ai`, `acture-macros`, `acture-e2e` — for the specifics of each surface.
