@@ -76,6 +76,17 @@ export function createUndoHistory<S>(
   registry: Registry,
   options: { limit?: number; onEffect?: UndoEffectHandler } = {},
 ) {
+  // The TS signature guarantees patch-capability, but a runtime caller
+  // could bypass it with a cast. Fail loud and informative instead of
+  // crashing one frame deeper on `adapter.setStateWithPatches.bind`.
+  // (acture-undo ships the same guard; mirror it here.)
+  if (!('supportsPatches' in adapter) || (adapter as { supportsPatches: unknown }).supportsPatches !== true) {
+    throw new Error(
+      'createUndoHistory requires a PatchCapableAdapter ' +
+        '(supportsPatches: true, with setStateWithPatches and applyPatches).',
+    );
+  }
+
   const limit = options.limit ?? 100;
   const onEffect = options.onEffect;
   let entries: UndoEntry[] = [];
