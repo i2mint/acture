@@ -33,9 +33,9 @@ export interface StateAdapter<S> {
 
 /**
  * Capability extension: adapters whose substrate produces Immer-shaped
- * patches natively (zustand+immer, RTK, MST). The future
- * `acture-undo` subsystem will check for this capability and fall back
- * to wrapping `produceWithPatches` inside the command's exec otherwise.
+ * patches natively (zustand+immer, RTK, MST). `acture-undo` (shipped
+ * v1.11) requires this capability; non-patch adapters must wrap
+ * `produceWithPatches` inside the command's `exec` themselves.
  */
 export interface PatchCapableAdapter<S> extends StateAdapter<S> {
   readonly supportsPatches: true;

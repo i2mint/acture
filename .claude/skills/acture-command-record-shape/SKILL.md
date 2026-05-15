@@ -99,7 +99,7 @@ type Result<R> =
   | { ok: false; error: { code: string; message: string; details?: unknown } };
 ```
 
-The `patches?` and `effects?` fields are **reserved hooks** for `acture-undo` (post-v1). v1 core ignores them. They exist so adding undo later is non-breaking.
+The `patches?` and `effects?` fields are the **runtime contract** consumed by `acture-undo` (shipped v1.11). Core itself ignores them — they're forwarded to the undo subsystem when one is installed. The pre-v1.11 framing ("reserved hooks for a future undo") is outdated.
 
 ## Fields that are deliberately NOT on this record
 

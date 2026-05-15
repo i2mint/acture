@@ -135,7 +135,7 @@ Per `docs/v1_plan.md` §"Post-v1" — none ship without explicit user direction.
 
 - ~~**`acture-undo`** — patch-based undo, transactions, effect queue.~~ ✅ Shipped v1.11.
 - ~~**`acture-telemetry`** — middleware logging every dispatch.~~ ✅ Shipped v1.11.
-- **`acture-sandbox`** — membrane-pattern third-party extension sandboxing.
+- **`acture-sandbox`** — membrane-pattern third-party extension sandboxing. Gating research prompt **drafted post-v1.13** in `docs/research/acture_research_prompts.md` (Prompt 7) — covers threat model, membrane primitive, resource quotas, registration UX, the hand-writable-equivalent question, and v1 scope. Not launched until the user opts into Option C from `docs/next_session.md`.
 - ~~**`acture-test-property`** — fast-check arbitraries derived from command param schemas; random command sequences asserting state invariants.~~ ✅ Shipped v1.12.
 - **`acture-state-jotai`, `acture-state-valtio`** — additional reference `StateAdapter<S>` implementations.
 - ~~**Python companion** — thin MCP-client facade.~~ ✅ Shipped v1.13 as the `acture` PyPI package, graduating from the name-reservation placeholder. See `docs/v1_13-reflection.md`. Out of scope and explicitly post-v1.13: Pydantic-codegen SDK, OpenAPI emitter, inverse-direction skill kit (Python authors registering commands that acture surfaces back through MCP).
@@ -181,6 +181,6 @@ Explicit done/not-done for everything raised in conversation, so nothing is lost
 | `acture-test-property` | ✅ Shipped v1.12 — see `docs/v1_12-reflection.md` |
 | `state-jotai`, `state-valtio` | 🔒 Post-v1 |
 | `acture-undo`, `acture-telemetry` | ✅ Shipped v1.11 — see `docs/v1_11-reflection.md` |
-| `acture-sandbox` | 🔒 Post-v1 |
+| `acture-sandbox` | 🔒 Post-v1 — gating research prompt drafted (`docs/research/acture_research_prompts.md` Prompt 7, 2026-05-15); not launched without user direction |
 | Research-6 (cross-language story) | ✅ Done — filed at `docs/research/acture_research_6 …` |
 | Python companion | ✅ Shipped v1.13 — `acture` on PyPI, graduated from placeholder; thin MCP-client facade per research-6; see `docs/v1_13-reflection.md` |

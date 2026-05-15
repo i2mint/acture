@@ -56,7 +56,7 @@ The registry never touches the substrate directly — it talks through a `StateA
 - **Hand-write** the ~3-method adapter over whatever the project uses (or over a plain object + listener set).
 - **Install a reference adapter** — `acture-state-zustand` (the documented happy path) or `acture-state-redux`.
 
-**Load the `acture-state-adapter` skill** for the interface contract, the `PatchCapableAdapter` extension (patches power the future undo surface), and the reference adapters. The state model (this skill) is *what* the state is; the adapter is *how the registry reaches it*.
+**Load the `acture-state-adapter` skill** for the interface contract, the `PatchCapableAdapter` extension (patches power `acture-undo`, shipped v1.11), and the reference adapters. The state model (this skill) is *what* the state is; the adapter is *how the registry reaches it*.
 
 ## What does NOT belong in state
 

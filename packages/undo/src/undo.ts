@@ -28,6 +28,7 @@
  * captured at install time; dispose in reverse install order.
  */
 
+import { isPatchCapable } from 'acture';
 import type {
   DispatchOptions,
   Effect,
@@ -35,7 +36,16 @@ import type {
   PatchCapableAdapter,
   Registry,
   Result,
+  StateAdapter,
 } from 'acture';
+
+/** Resolve `console` defensively — `globalThis.console` may be absent in
+ *  some edge runtimes (Workers, embedded). Same pattern as the registry's
+ *  listener-error path. */
+function warn(message: string, err: unknown): void {
+  const c = (globalThis as { console?: { warn?: (...args: unknown[]) => void } }).console;
+  c?.warn?.(`[acture-undo] ${message}`, err);
+}
 
 /** Context passed to `onEffect`. `isUndo`/`isRedo` are mutually exclusive;
  *  both `false` means a forward dispatch that just landed. */
@@ -119,6 +129,20 @@ export function createUndoHistory<S>(
   registry: Registry,
   options: CreateUndoHistoryOptions = {},
 ): UndoHistory {
+  // The TS type guarantees patch-capability, but a runtime caller may
+  // have cast a plain StateAdapter (or omitted the patch fields from a
+  // hand-rolled adapter). Without this guard the failure mode is a
+  // cryptic `Cannot read properties of undefined (reading 'bind')` on
+  // the next line. Surface a useful error instead.
+  if (!isPatchCapable(adapter as StateAdapter<S>)) {
+    throw new Error(
+      'acture-undo: createUndoHistory requires a PatchCapableAdapter ' +
+        '(supportsPatches: true, with setStateWithPatches and applyPatches). ' +
+        'Use acture-state-zustand (with immer), acture-state-redux, or any ' +
+        'adapter that implements PatchCapableAdapter<S>.',
+    );
+  }
+
   const limit = options.limit ?? 100;
   const onEffect = options.onEffect;
 
@@ -197,8 +221,10 @@ export function createUndoHistory<S>(
       for (const eff of captured.effects) {
         try {
           onEffect(eff, { isUndo: false, isRedo: false });
-        } catch {
-          // swallow — effect handlers must never break dispatch
+        } catch (e) {
+          // Effect handlers must never break dispatch. Surface to
+          // console so host-side bugs aren't invisible.
+          warn('onEffect threw during apply:', e);
         }
       }
     }
@@ -228,8 +254,8 @@ export function createUndoHistory<S>(
       for (const eff of entry.effects) {
         try {
           onEffect(eff, { isUndo: true, isRedo: false });
-        } catch {
-          // swallow
+        } catch (e) {
+          warn('onEffect threw during undo:', e);
         }
       }
     }
@@ -244,8 +270,8 @@ export function createUndoHistory<S>(
       for (const eff of entry.effects) {
         try {
           onEffect(eff, { isUndo: false, isRedo: true });
-        } catch {
-          // swallow
+        } catch (e) {
+          warn('onEffect threw during redo:', e);
         }
       }
     }

@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 /**
- * Sync python/acture/__init__.py's `__version__` to match the npm
- * `acture` package version in packages/core/package.json.
+ * Sync the two version strings that mirror `packages/core/package.json`:
  *
- * Run after `pnpm changeset version` so the Python stub stays in
- * lockstep with the npm release. Hatchling reads `__version__` from the
- * Python source, so this single edit drives the PyPI version too.
+ *   1. `python/acture/__init__.py`'s `__version__` — Hatchling reads
+ *      this when building the PyPI distribution, so the single edit
+ *      drives the PyPI version.
+ *   2. `packages/core/src/index.ts`'s `__version` export — surfaced for
+ *      runtime introspection; drifted historically (v1.1.0 → v1.2.1)
+ *      because nothing was rewriting it. Now it tracks the package.json
+ *      automatically, same way Python does.
+ *
+ * Run after `pnpm changeset version` (already wired into the
+ * `version-packages` script in the repo root `package.json`).
  *
  *   node scripts/sync-python-version.mjs
  *
@@ -22,6 +28,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, '..');
 const CORE_PKG = join(REPO, 'packages/core/package.json');
 const PY_INIT = join(REPO, 'python/acture/__init__.py');
+const TS_INDEX = join(REPO, 'packages/core/src/index.ts');
 
 const corePkg = JSON.parse(readFileSync(CORE_PKG, 'utf8'));
 const target = corePkg.version;
@@ -30,19 +37,43 @@ if (typeof target !== 'string' || target.length === 0) {
   process.exit(1);
 }
 
-const before = readFileSync(PY_INIT, 'utf8');
-// Match `__version__ = "x.y.z"`; we only rewrite the right-hand string.
-const VERSION_LINE = /__version__\s*=\s*"[^"]*"/;
-if (!VERSION_LINE.test(before)) {
-  console.error(
-    `[sync-python-version] no __version__ assignment found in ${PY_INIT}`,
-  );
-  process.exit(1);
+/**
+ * Rewrite a single line of `filePath` matching `pattern` to `replacement`.
+ * Returns `true` if the file was modified.
+ */
+function rewriteOnce(filePath, pattern, replacement, label) {
+  const before = readFileSync(filePath, 'utf8');
+  if (!pattern.test(before)) {
+    console.error(`[sync-python-version] no ${label} assignment found in ${filePath}`);
+    process.exit(1);
+  }
+  const after = before.replace(pattern, replacement);
+  if (before === after) return false;
+  writeFileSync(filePath, after);
+  return true;
 }
-const after = before.replace(VERSION_LINE, `__version__ = "${target}"`);
-if (before === after) {
-  // Already in sync — silent success.
-  process.exit(0);
+
+// Python __version__ — Hatchling reads this for the PyPI build.
+if (
+  rewriteOnce(
+    PY_INIT,
+    /__version__\s*=\s*"[^"]*"/,
+    `__version__ = "${target}"`,
+    '__version__',
+  )
+) {
+  console.log(`[sync-python-version] python/acture/__init__.py → ${target}`);
 }
-writeFileSync(PY_INIT, after);
-console.log(`[sync-python-version] python/acture/__init__.py → ${target}`);
+
+// TS __version — runtime introspection in `packages/core/src/index.ts`.
+// Matches `__version = 'x.y.z' as const` or with double quotes.
+if (
+  rewriteOnce(
+    TS_INDEX,
+    /__version\s*=\s*['"][^'"]*['"]\s*as\s+const/,
+    `__version = '${target}' as const`,
+    '__version',
+  )
+) {
+  console.log(`[sync-python-version] packages/core/src/index.ts → ${target}`);
+}

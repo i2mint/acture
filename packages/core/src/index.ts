@@ -81,4 +81,4 @@ export type {
 } from './types.js';
 
 /** Package version. */
-export const __version = '1.1.0' as const;
+export const __version = '1.2.1' as const;

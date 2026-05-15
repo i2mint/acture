@@ -379,29 +379,139 @@ Save the report as 'research_findings_prompt_6.md'.
 
 ---
 
+## Prompt 7 — Membrane-pattern third-party extension sandboxing
+
+*Status: drafted post-v1.13 (2026-05-15) as the gating prerequisite for `acture-sandbox`. Not launched until the user opts in to Option C from `docs/next_session.md`.*
+
+```
+=== CONTEXT ===
+
+I'm designing acture, a TypeScript/React library that provides a command-dispatch architecture for frontend applications: a typed, schema-driven command registry that powers a command palette, keyboard shortcuts, AI tool use (LLM function calling), MCP servers, automated tests, and undo/redo from a single source of truth.
+
+The architecture brief is the file 'command_dispatch_journal_article.md' (the central paper). One of the consumer surfaces enumerated in §3 is "third-party extensions" — third-party code that registers commands into the host registry. The current sketch is that an extension registers commands into a *child* registry that the host registry proxies through a security membrane.
+
+This is post-v1.13 territory. The package, if it ships, would be 'acture-sandbox'. There are no concrete callers yet; the question is whether the design is well-formed enough to build, and what the SCOPE of v1 of that package should be.
+
+Two of acture's hard-don'ts bear on this directly:
+- #5: NO eval of LLM strings — the registry must never 'eval()' model-produced code.
+- The inverse of #5 also applies: third-party extension code is, in security terms, "code the user couldn't otherwise audit", and the sandbox is the answer to *how the host accommodates that without blanket trust*.
+
+When this brief says "ref_NN", I mean the file in your project knowledge whose name starts with that prefix.
+
+=== KEY DECISION CONTEXT ===
+
+The acture project ships at v1.13 (19 npm packages + 1 PyPI package). The maintainer principles in 'docs/positioning.md' and 'docs/redesign_takeaways.md' §6 are:
+- YAGNI / wait for a concrete named need (no "rule of three" gate on maintainer decisions, but the inverse principle — no speculative god-packaging — does apply).
+- Hard-don't #2: no god-package — 'acture-sandbox' should NOT bundle "everything someone could want around extensions".
+- Dev-tool-first: acture's positioning is that the user CAN hand-write the equivalent of any acture-* package; the package is an optional accelerator. The sandbox is the first consumer surface where that principle is potentially non-trivial — "hand-write a JS sandbox" is not a 60-line exercise like 'docs/hand-written-registry.md'.
+
+The handoff doc 'docs/next_session.md' identifies four design questions as unresolved:
+- Threat model: adversarial extensions, supply-chain compromise, both?
+- Membrane primitive: 'Proxy', iframe, WebContainer, full ECMAScript SES (ses.endo.systems)?
+- Resource quotas: CPU / memory / network or just JS-API isolation?
+- Registration UX: manifest, runtime API, build-time codemod?
+
+=== THE QUESTION ===
+
+**Part A — Threat models in shipped extension systems:**
+
+1. Survey the threat models of 6-8 shipped extension/plugin systems, including at minimum: VS Code, Figma plugins, Obsidian, Chrome extensions, Slack apps, Raycast extensions, Notion API, and any IDE / editor / design-tool plugin system you find with a written-down threat model. For each, identify:
+   - What is the assumed attacker — a malicious extension author, a supply-chain compromise of a trusted author, both?
+   - What is the isolation primitive (separate process, iframe, WebWorker, V8 isolates, SES Compartment, no isolation at all)?
+   - What is the API-call boundary (sync vs. async, capability-based vs. ambient authority)?
+   - What was given up to make that choice (DX cost, performance cost, capability cost)?
+
+2. Where do these systems fail? Find documented incidents: a malicious VS Code extension that exfiltrated tokens, a Chrome extension takeover via supply-chain, a Figma plugin that read clipboard data it shouldn't have. For each, identify which layer of the threat model failed (signing, review, runtime isolation, capability scoping) and what was changed in response.
+
+**Part B — Membrane primitives:**
+
+3. Compare the realistic membrane primitives for a JS/TS in-browser extension system:
+   - 'Proxy'-based membranes (the membrane.js pattern, realms-style proxies).
+   - 'iframe' with 'postMessage' (Figma's choice).
+   - 'WebWorker' / 'SharedWorker' (no DOM, message passing).
+   - SES (Secure ECMAScript) Compartment, from Agoric / Endo (ses.endo.systems).
+   - WebContainer / browser-native sandboxes (StackBlitz's approach).
+   - Native browser sandboxing (Trusted Types, COOP/COEP isolation, Origin-Agent-Cluster).
+
+4. For each: what does the extension AUTHOR's code actually look like? What ergonomic cost does the membrane impose (sync vs. async API, structured cloning of arguments, loss of identity equality, loss of prototypes)? Where is the cliff at which extension authors revolt?
+
+5. The specific question for acture: an extension registers a 'CommandRecord' — which includes a 'params' Zod schema and an 'exec' function. The host calls 'exec' when the command is dispatched. What's the right shape of that call across the membrane? Synchronous Proxy? Async 'postMessage'? A capability object the extension can call back through?
+
+**Part C — Resource quotas:**
+
+6. Which of the surveyed systems enforce CPU / memory / network quotas, and which only enforce API-isolation? What's the toolchain (Atomics-based watchdog, isolate-per-extension with V8 memory limits, iframe with COOP/COEP, no enforcement at all)?
+
+7. For an in-browser extension system, is CPU/memory enforcement realistic without isolates? Or is the practical posture "we isolate the API surface; if you write an infinite loop you DoS your own tab"?
+
+**Part D — Registration UX:**
+
+8. Compare three concrete registration models:
+   - **Manifest-based** (VS Code's 'package.json' contributes, Chrome's 'manifest.json'): extension declares commands statically; the host reads the manifest at load time.
+   - **Runtime API** (Obsidian's 'this.addCommand(...)'): extension calls into a host API at activation time; commands are registered at runtime.
+   - **Build-time codemod** (more speculative): extension code is statically rewritten at build time to insert into the host registry; no runtime registration.
+
+9. For each: how does the host enforce capability scoping? (E.g., "this command can read state slice X but not write to slice Y.") Is it a manifest declaration the host trusts, a runtime check on every read, or a build-time proof?
+
+10. The specific question for acture: given that acture commands are already Zod-described with explicit 'kind' / 'when' / 'tier' / 'params', does the manifest case essentially reduce to "the CommandRecord *is* the manifest"? If so, what additional capability metadata (read scopes, write scopes, side-effect declarations) does the sandbox need?
+
+**Part E — Hand-writable equivalent:**
+
+11. acture's dev-tool-first positioning says the user CAN hand-write the equivalent of any acture-* package; the package is an optional accelerator. What is the minimum hand-writable sandbox a user could ship — a Proxy wrapping the host registry that whitelists commands and validates params via the registry's own schema? Or is sandboxing inherently package-level territory (the SES / iframe / Worker setup is non-trivial)?
+
+12. If the hand-writable version is just "wrap the registry in a Proxy with whitelist + schema validation", then 'acture-sandbox' as a package is mostly a documented pattern + a few helpers. If the hand-writable version is materially harder than every other consumer surface, that's a finding — 'acture-sandbox' is the first acture consumer that genuinely demands a package, not a pattern.
+
+**Part F — Scope of v1:**
+
+13. Given the maintainer principles (YAGNI, hard-don't #2, dev-tool-first, single accelerators), what does 'acture-sandbox' v1.0 plausibly ship?
+   - The MINIMAL credible v1: e.g., a typed 'ChildRegistry' interface + a Proxy-based host membrane + a manifest schema + 'docs/hand-written-sandbox.md' (the hand-writable reference).
+   - The MAXIMAL credible v1: above + an iframe transport + a Worker transport + capability scoping at the state-slice level + a quota enforcement primitive.
+   - The middle ground.
+
+14. What is the NAMED USER NEED that would justify shipping v1? Is there a real extension-author / extension-host user (the acture maintainer, or another concrete project) who needs this — or is the question "we will probably want this for X" still speculative? If speculative, what's the trigger that flips it from research to code?
+
+=== WHAT I NEED ===
+
+A written report (3000-5000 words) with:
+
+- A table of surveyed extension systems × (threat model, membrane primitive, API boundary, what was given up).
+- A list of 2-4 documented extension-ecosystem incidents and the threat-model layer that failed.
+- A comparison of the five membrane primitives along: DX cost, performance cost, capability cost, browser support, security guarantees.
+- A concrete recommendation on the membrane choice for acture v1, with rationale.
+- A concrete recommendation on the registration UX, with rationale.
+- A concrete answer to "is sandboxing the first consumer surface that DOES require a package, not a pattern?" — with evidence.
+- A SCOPE recommendation for 'acture-sandbox' v1 (minimal / middle / maximal) with rationale.
+- A GO/NO-GO recommendation: given the lack of a named concrete user, should v1 of the package ship now, or should this stay a written design that ships only when a user surfaces?
+- A list of references with URLs.
+
+Save the report as 'research_findings_prompt_7.md'.
+```
+
+**Decision it unblocks:** Whether `acture-sandbox` v1 ships now, its scope, its membrane primitive, its registration UX, and whether sandboxing breaks the dev-tool-first "hand-writable equivalent" promise for the first time. Per `docs/next_session.md`, this prompt is the gating prerequisite for any `acture-sandbox` code.
+
+**Project knowledge files to add:**
+- `command_dispatch_journal_article.md`
+- `positioning.md`
+- `redesign_takeaways.md`
+- (No specific `ref_NN` files are pinned — this prompt asks the researcher to survey extension systems from scratch. If the project knowledge base contains any prior plugin-sandbox references, add them; otherwise the prompt is intended to be the first investigation of this territory.)
+
+---
+
 ## Recommended order
 
-You've already launched **Prompt 1** (convergent-evidence audit). The recommended order for the remaining 5 prompts is below. The ordering principle is: prompts whose findings the most other prompts could build on come first.
+Prompts 1–6 all completed during the v1 phase and Post-v1 chain; their findings are filed alongside this file as `acture_research_{1..6} -- *.md`. Prompt 7 was drafted post-v1.13 (2026-05-15) as the gating prerequisite for `acture-sandbox`; it is independent of 1–6 and only runs if the user opts into Option C from `docs/next_session.md`.
 
-| Order | Prompt | Why this order | Depends on |
+| Order | Prompt | Status | Depends on |
 | --- | --- | --- | --- |
-| **1 (launched)** | 1 — Convergent evidence | Settles command-record shape; informs all others | — |
-| **2** | 2 — Parameterized palette UX | Self-contained; high leverage on Phase 2; independent of others | — |
-| **3** | 3 — State substrate | Decision-blocking for Phase 1 implementation | — |
-| **4** | 4 — Migration API + codemods | Mode-2 specific; large scope; can run in parallel with 2 and 3 | — |
-| **5** | 5 — Schema versioning | Narrower scope; informs Phase 4 tier system | Lightly: P1's findings on what shipped products do |
-| **6** | 6 — Cross-language story | Post-v1 question; lowest urgency | Lightly: P5's findings on schema versioning |
+| **1** | 1 — Convergent evidence | ✅ Filed | — |
+| **2** | 2 — Parameterized palette UX | ✅ Filed | — |
+| **3** | 3 — State substrate | ✅ Filed | — |
+| **4** | 4 — Migration API + codemods | ✅ Filed | — |
+| **5** | 5 — Schema versioning | ✅ Filed | Lightly: P1's findings on what shipped products do |
+| **6** | 6 — Cross-language story | ✅ Filed | Lightly: P5's findings on schema versioning |
+| **7** | 7 — Extension sandboxing | ⏸️ Drafted, not launched (user-gated, Option C) | — |
 
 ### Parallelism
 
-Prompts 2, 3, 4 can run **fully in parallel** with each other and with Prompt 1. None depends on the others' findings. If you want maximum throughput: launch 2, 3, 4 now, alongside the already-running Prompt 1.
+Historical note (for prompts 1–6): Prompts 2, 3, 4 ran **fully in parallel** with each other and with Prompt 1; Prompts 5 and 6 ran after Prompt 1 landed. All have since been filed; the parallelism plan is documented here for reproducibility but is no longer actionable.
 
-Prompts 5 and 6 should run **after Prompt 1 lands**, because:
-- Prompt 5 (schema versioning) is more useful once we know whether the command-record shape from Prompt 1 already includes versioning conventions.
-- Prompt 6 (cross-language) is post-v1 and benefits from having Prompt 5's versioning findings to reference.
-
-If you only run two: **Prompts 2 and 3.** They unblock Phase 1 and Phase 2 of [`v1_plan.md`](v1_plan.md) most directly.
-
-If you only run three: **Prompts 2, 3, 4.** Adds the mode-2 migration concrete story.
-
-Prompts 5 and 6 are valuable but not phase-blocking — they can land during Phase 2 or Phase 3 without slowing implementation.
+Prompt 7 is standalone — it does not depend on any of 1–6, but it lightly references `docs/positioning.md` and `docs/redesign_takeaways.md`, both written during the v1 phase. If launched, it can run in a single fresh conversation without needing any of the earlier findings as project knowledge.
