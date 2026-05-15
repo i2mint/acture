@@ -87,7 +87,7 @@ function zodToArb(schema: unknown): fc.Arbitrary<unknown> {
 /* ── Arbitraries over the registry ───────────────────────────────────── */
 
 /** One random { commandId, params } pair drawn from the registry. */
-export function commandArb(registry: Registry): fc.Arbitrary<SequenceStep> {
+export function commandArbitrary(registry: Registry): fc.Arbitrary<SequenceStep> {
   const commands = registry.list({ tiers: ['stable'] });
   if (commands.length === 0) throw new Error('no commands to fuzz');
   return fc.constantFrom(...commands).chain((cmd) => {
@@ -97,11 +97,11 @@ export function commandArb(registry: Registry): fc.Arbitrary<SequenceStep> {
 }
 
 /** A random sequence of length in [min, max]. */
-export function sequenceArb(
+export function sequenceArbitrary(
   registry: Registry,
   length = { min: 1, max: 10 },
 ): fc.Arbitrary<CommandSequence> {
-  return fc.array(commandArb(registry), {
+  return fc.array(commandArbitrary(registry), {
     minLength: length.min,
     maxLength: length.max,
   });
@@ -142,7 +142,7 @@ export async function propertyTest<S>(opts: {
 
   try {
     await fc.assert(
-      fc.asyncProperty(sequenceArb(registry, length), async (sequence) => {
+      fc.asyncProperty(sequenceArbitrary(registry, length), async (sequence) => {
         resetState();
         const replay = await replaySequence(registry, sequence, { stopOnError: false });
         if (!replay.ok) {
