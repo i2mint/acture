@@ -1,6 +1,6 @@
 {
   "name": "acture-test-property",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "acture property-testing adapter — fast-check arbitraries over the command registry; random CommandSequences replayed via acture-e2e-playwright's sequence engine; invariants asserted end-of-sequence.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",
