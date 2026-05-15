@@ -277,16 +277,25 @@ describe('effects', () => {
   });
 
   it('a throwing onEffect does NOT break dispatch or undo', async () => {
-    const { adapter, registry } = setup();
-    const history = createUndoHistory(adapter, registry, {
-      onEffect: () => {
-        throw new Error('handler boom');
-      },
-    });
-    await registry.dispatch('app.with.effect');
-    expect(adapter.getState().count).toBe(1);
-    history.undo();
-    expect(adapter.getState().count).toBe(0);
+    // onEffect errors are now surfaced via `console.warn` (v1.13 audit).
+    // Silence the spy so test output stays clean while still asserting
+    // the dispatch + undo paths complete.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const { adapter, registry } = setup();
+      const history = createUndoHistory(adapter, registry, {
+        onEffect: () => {
+          throw new Error('handler boom');
+        },
+      });
+      await registry.dispatch('app.with.effect');
+      expect(adapter.getState().count).toBe(1);
+      history.undo();
+      expect(adapter.getState().count).toBe(0);
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it('a dispatch that returns {ok:false} contributes no effects (but its mutations DO still get a patches-only entry)', async () => {
@@ -353,5 +362,41 @@ describe('composition with another instrumenter', () => {
     expect(adapter.getState().count).toBe(4);
     history.undo();
     expect(adapter.getState().count).toBe(0);
+  });
+});
+
+describe('runtime patch-capability guard', () => {
+  it('throws an informative error when given a non-patch-capable adapter', () => {
+    const { registry } = setup();
+    // Hand-rolled plain StateAdapter (no `supportsPatches`, no
+    // `setStateWithPatches`). The TS cast simulates a runtime caller
+    // who bypassed the type check.
+    const plainAdapter = {
+      getState: () => ({ count: 0 }),
+      setState: () => undefined,
+      subscribe: () => () => undefined,
+    } as unknown as Parameters<typeof createUndoHistory>[0];
+
+    expect(() => createUndoHistory(plainAdapter, registry)).toThrow(
+      /PatchCapableAdapter/,
+    );
+  });
+
+  it('logs onEffect handler errors via console.warn instead of swallowing', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const { adapter, registry } = setup();
+      const history = createUndoHistory(adapter, registry, {
+        onEffect: () => {
+          throw new Error('host-side bug');
+        },
+      });
+      await registry.dispatch('app.with.effect');
+      expect(warnSpy).toHaveBeenCalled();
+      // The dispatch + capture still succeeded despite the handler error.
+      expect(history.entries()).toHaveLength(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });

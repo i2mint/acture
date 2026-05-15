@@ -5,7 +5,8 @@ name: Release
 #   - Pending changesets present → opens (or updates) a "Version Packages"
 #     PR that bumps versions and writes CHANGELOGs. No publish.
 #   - No pending changesets AND versions in repo are ahead of the
-#     registries → publishes the 10 npm packages and the Python stub.
+#     registries → publishes the npm packages and the `acture` Python
+#     client to PyPI.
 #   - No pending changesets AND versions match the registries → no-op.
 #
 # Secrets consumed (already configured on the repo):
@@ -96,7 +97,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   pypi:
-    name: Publish Python stub to PyPI
+    name: Publish acture Python client to PyPI
     runs-on: ubuntu-latest
     needs: release
     # Only run when the upstream npm publish succeeded.

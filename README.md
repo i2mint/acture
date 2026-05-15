@@ -2,7 +2,7 @@
 
 > Get AI-agentic help building a command-dispatch architecture — one schema, and the palette, hotkeys, AI tools, MCP, and tests fall out of it.
 
-acture is **a development tool** for building, migrating to, and maintaining a command-dispatch architecture in TypeScript/React apps. Define an operation once as a command; it becomes a command palette entry, a keyboard shortcut, an AI tool call, an MCP server tool, a test action, and (post-v1) a macro step.
+acture is **a development tool** for building, migrating to, and maintaining a command-dispatch architecture in TypeScript/React apps. Define an operation once as a command; it becomes a command palette entry, a keyboard shortcut, an AI tool call, an MCP server tool, a macro step, an end-to-end test action, an undo entry, and a telemetry event — and, via the [`acture`](https://pypi.org/project/acture/) PyPI client, a Python call.
 
 It is delivered primarily as **skills, patterns, and codemods** an AI agent uses to write command dispatch *into your project* — adapted to your stack and your preferences. The `acture-*` npm packages are an **optional accelerator**: ready-made, tested implementations the agent can reach for instead of hand-writing similar code.
 
@@ -17,85 +17,79 @@ pnpm add acture                  # core registry + dispatcher + schema bridge (o
 pnpm add acture-state-zustand    # state adapter (or acture-state-redux)
 pnpm add acture-palette-react    # command palette UI (on cmdk)
 pnpm add acture-hotkeys          # keyboard shortcuts (on tinykeys)
-pnpm add acture-mcp-server              # MCP server projection
+pnpm add acture-mcp-server       # MCP server projection
 pnpm add acture-ai-vercel        # AI tool definitions (on the Vercel AI SDK)
 pnpm add acture-migration        # strangler-fig adoption primitives
+pnpm add acture-telemetry        # observe every dispatch via a sink
+pnpm add acture-undo             # patch-based undo/redo over a PatchCapableAdapter
 # …plus acture-forms-autoform and acture-forms-rjsf for parameterized commands.
 
 # Dev / CI tooling:
 pnpm add -D acture-build-tier              # build-step @stable/@experimental/@internal/@deprecated mirror
 pnpm add -D acture-cli                     # `acture compare-schemas` / `acture snapshot` CLI
 pnpm add -D acture-devtools                # embeddable <Inspector /> for dev builds
-pnpm add -D eslint-plugin-acture-migration  # ESLint rule that flags stale wrapMutation wrappers
+pnpm add -D acture-e2e-playwright          # macro / e2e sequence engine + Playwright fixture
+pnpm add -D acture-test-property           # fast-check property tests over the registry
+pnpm add -D eslint-plugin-acture-migration  # ESLint rules: stale wrapMutation, .describe() discipline
 ```
 
-> The 13 sub-packages publish unscoped as `acture-*` — the `@acture` npm scope was unavailable. `acture` is reserved on npm and PyPI; a real Python companion is post-v1.
+Python:
+
+```bash
+pip install acture  # MCP client facade — Mapping[str, Command] over any acture-mcp-server
+```
+
+> The 18 sub-packages publish unscoped as `acture-*` — the `@acture` npm scope was unavailable. The MCP adapter is published as `acture-mcp-server` because the unscoped `acture-mcp` collided with an unrelated project. `acture` is the single namespace on both npm (the core registry) and PyPI (the Python MCP client).
 
 ## Status
 
-**v1.6 — core positioning-alignment review (2026-05-14).** Audited `acture` core against the canonical positioning. Core stays the minimal primitive: `enableTierWarnings` (dispatch instrumentation, not a primitive) moved to `acture-devtools`. New `docs/hand-written-registry.md` — a ~80-line, zero-dependency registry+dispatcher reference — and the `acture-greenfield` skill make the dev-tool-first promise reproducible in code. `CommandRecord` unchanged (15 fields). See [`docs/core-review-reflection.md`](docs/core-review-reflection.md).
-
-**v1.5 — repositioning + namespace migration (2026-05-14).** Fifteen packages ship in the workspace. v1.5 clarified the canonical positioning ([`docs/positioning.md`](docs/positioning.md)), added the `acture-consumer-integration` skill, and renamed all 13 sub-packages from `@acture/*` to unscoped `acture-*`. `acture@1.1.0` and `eslint-plugin-acture-migration@1.0.0` are live on npm; the 13 renamed packages publish next under their new names.
+**v1.13 — chain end (2026-05-15).** 19 npm packages live + 1 PyPI package (`acture`, the Python MCP client). 489 npm package tests + 41 example tests + 23 Python tests, all green. 26 agent skills + 7 reproducibility docs. Phases 0–4 of the original v1 plan are complete; work since has been small, tracked increments. See [`docs/roadmap.md`](docs/roadmap.md) for the live status and the three remaining post-v1 candidates (`acture-state-jotai`, `acture-state-valtio`, `acture-sandbox`).
 
 | Package | Role |
 | --- | --- |
 | [`acture`](packages/core) | core registry, dispatcher, when-clause DSL, schema bridge, state-adapter interface |
 | [`acture-state-zustand`](packages/state-zustand) | StateAdapter for zustand+immer |
 | [`acture-state-redux`](packages/state-redux) | StateAdapter for Redux Toolkit |
-| [`acture-palette-react`](packages/palette-react) | command palette with parameterized-command UX |
+| [`acture-palette-react`](packages/palette-react) | command palette with parameterized-command UX (on cmdk) |
 | [`acture-hotkeys`](packages/hotkeys) | tinykeys-backed keyboard bindings |
 | [`acture-forms-autoform`](packages/forms-autoform) | Zod-native form adapter |
 | [`acture-forms-rjsf`](packages/forms-rjsf) | JSON-Schema form adapter (rjsf) |
-| [`acture-mcp-server`](packages/mcp) | MCP server projection |
+| [`acture-mcp-server`](packages/mcp) | MCP server projection (published as `acture-mcp-server`; `acture-mcp` was taken) |
 | [`acture-ai-vercel`](packages/ai-vercel) | Vercel AI SDK tool definitions |
 | [`acture-migration`](packages/migration) | strangler-fig primitives: `wrapMutation`, `actureMiddleware`, `createDomInterceptor`, `chooseImplementation`, `shadowCompare` |
-| [`acture-build-tier`](packages/build-tier) | build-step plugin that mirrors `@stable`/`@experimental`/`@internal`/`@deprecated` JSDoc into runtime `tier`; regex default + AST mode polish |
+| [`acture-telemetry`](packages/telemetry) | observe every dispatch via a sink; optional pass-through `redact` / `sampler` |
+| [`acture-undo`](packages/undo) | patch-based undo/redo over a `PatchCapableAdapter`; transactions; `onEffect` host callback |
+| [`acture-build-tier`](packages/build-tier) | build-step `@stable`/`@experimental`/`@internal`/`@deprecated` JSDoc → runtime `tier` mirror; regex + AST modes |
 | [`acture-cli`](packages/cli) | `acture compare-schemas` (CI gating, deep nested diffs) + `acture snapshot` (registry → JSON) |
 | [`acture-devtools`](packages/devtools) | embeddable `<Inspector />`, `instrumentRegistry` dispatch log, `enableTierWarnings` |
-| [`acture-codemods`](packages/codemods) | Codemod CLI: all five research-4 §B.5 codemods now shipped (`wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`). `--dry-run` + `--json` for agents |
-| [`eslint-plugin-acture-migration`](packages/eslint-plugin-acture-migration) | ESLint rule `acture/no-stale-wrap-mutation` — flags `wrapMutation(...)` wrappers whose result is never used (the migration has graduated; author with `defineCommand`) |
+| [`acture-codemods`](packages/codemods) | five research-4 §B.5 codemods (`wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`); `--dry-run` + `--json` for agents |
+| [`acture-e2e-playwright`](packages/e2e-playwright) | pure sequence engine (`recordSequence` / `replaySequence` / `replayTest`) + Playwright fixture; substrate for macros + e2e + property tests |
+| [`acture-test-property`](packages/test-property) | fast-check arbitraries over the registry; random `CommandSequence`s replayed end-to-end with invariant assertions |
+| [`eslint-plugin-acture-migration`](packages/eslint-plugin-acture-migration) | `acture/no-stale-wrap-mutation` + `acture/require-param-describe` |
+| [`acture` (PyPI)](python) | thin MCP-client facade — `Mapping[str, Command]` over any `acture-mcp-server`; errors-as-data preserved across the language boundary |
 
 Worked examples:
 
-- [`examples/greenfield/graph-editor/`](examples/greenfield/graph-editor) — greenfield path. Now wires `acture-devtools`.
+- [`examples/greenfield/graph-editor/`](examples/greenfield/graph-editor) — greenfield path; wires `acture-devtools`.
 - [`examples/drop-in/`](examples/drop-in) — 5-minute bolt-on path.
-- [`examples/migration/zustand-wrap/`](examples/migration/zustand-wrap) — strangler-fig path with side-by-side [`before/`](examples/migration/zustand-wrap/before) and [`after/`](examples/migration/zustand-wrap/after) apps. 6 wrapped commands + 2 graduated.
-- [`examples/migration/redux-wrap/`](examples/migration/redux-wrap) — **new in v1.2.** Redux Toolkit cart with `actureMiddleware` end-to-end. UI dispatch and palette dispatch converge on the same store, observed as one stream.
+- [`examples/migration/zustand-wrap/`](examples/migration/zustand-wrap) — strangler-fig path with side-by-side [`before/`](examples/migration/zustand-wrap/before) and [`after/`](examples/migration/zustand-wrap/after) apps; 6 wrapped commands + 2 graduated.
+- [`examples/migration/redux-wrap/`](examples/migration/redux-wrap) — Redux Toolkit cart with `actureMiddleware` end-to-end. UI dispatch + palette dispatch converge on the same store, observed as one stream.
 
-Agent skills live under [`.claude/skills/`](.claude/skills/): five migration-track skills (`migration-diagnose` → `migration-plan` → `migration-scaffold` → `migration-wrap` → `migration-graduate`), the `acture-consumer-integration` foundation for building consumers in a target project, plus the architecture / tier / schema / hard-don'ts dev-skill primers.
+Agent skills live under [`.claude/skills/`](.claude/skills/): 21 `acture-*` (dev / foundation / per-consumer-surface) + 5 `migration-*` (strangler-fig workflow: `migration-diagnose` → `migration-plan` → `migration-scaffold` → `migration-wrap` → `migration-graduate`). Reproducibility references for each major package live under `docs/hand-written-*.md`.
 
-What's new in v1.5 (repositioning + namespace migration):
+### What's new since v1.5
 
-- **Canonical positioning.** [`docs/positioning.md`](docs/positioning.md) states what acture is — a dev-tool-first way to get AI-agentic help with command dispatch — and the two flexibility dimensions (core vs strangler-fig; agent-written vs package-reuse). It governs every user-facing word.
-- **`acture-consumer-integration` skill.** The foundational pattern for building a consumer (palette, hotkeys, MCP, AI, e2e, …) in a target project: the agent-written path is always viable, packages are an opt-in accelerator, and tool-library choices belong to the user. Dev skills now load it whenever a task touches a consumer.
-- **Namespace migration.** All 13 `@acture/*` packages renamed to unscoped `acture-*`.
+- **v1.13** — `acture` on PyPI graduated from name-reservation placeholder to a real thin MCP-client facade per research-6. `ActureClient` (a `Mapping[str, Command]`), `Command`, `ActureError`, `stdio_transport` / `http_transport`. Cross-language semver is lockstep (driven by `scripts/sync-python-version.mjs`).
+- **v1.12** — `acture-test-property`. fast-check arbitraries; random `CommandSequence`s replayed through the v1.7 sequence engine; invariants asserted end-of-sequence; shrunk counter-examples replayable verbatim.
+- **v1.11** — `acture-telemetry` and `acture-undo`. Telemetry observes every dispatch via a configurable sink (optional `redact` / `sampler`). Undo is patch-based over a `PatchCapableAdapter`, transactions group N dispatches, `onEffect` routes effect lifecycle to the host.
+- **v1.10** — `acture/require-param-describe` lint rule (Zod params missing `.describe()`) and an MCP spec-version pin test.
+- **v1.9** — `acture-codemods` CLI/README polish + `docs/ai-codemod-recipe.md`; greenfield agent-track skills (`acture-greenfield-state-model`, `acture-greenfield-bootstrap`).
+- **v1.8** — per-surface consumer skills for hotkeys, MCP, and AI.
+- **v1.7** — `acture-e2e-playwright`; macros + e2e tooling under the same sequence engine (`docs/hand-written-command-sequence.md`).
+- **v1.6** — core positioning review; `enableTierWarnings` moved to `acture-devtools`; `docs/hand-written-registry.md` + `acture-greenfield` skill.
+- **v1.5** — repositioning + namespace migration (all `@acture/*` → unscoped `acture-*`).
 
-What's new in v1.4 (release-readiness theme):
-
-- **`eslint-plugin-acture-migration`.** One rule, `acture/no-stale-wrap-mutation`: flags `wrapMutation(...)` calls whose result is never used — the strangler-fig wrapper has graduated and should become a `defineCommand`. Single-file, conservative detection. +16 tests. Closes a research-4 backlog item carried since v1.1.
-- **Fresh-agent release-gate test.** A fresh agent drove `acture-codemods` from its README alone. The codemod engine + CLI passed; the README's pre-publish `npx` invocation and undocumented `--option` keys did not. Full assessment in [`docs/fresh-agent-test-results.md`](docs/fresh-agent-test-results.md); fixes carried to v1.5.
-
-What's new in v1.3:
-
-- **Codemod set complete.** Three new codemods finish research-4 §B.5: `redux-action-to-command` (RTK action calls → registry.dispatch), `usestate-mutation-to-command` (setX-only handlers → wrapMutation), `rtk-thunk-to-command` (`createAsyncThunk` → `defineCommand`). +30 tests; manifest now has zero `status: 'planned'` entries.
-
-What's new in v1.2:
-
-- **`acture-codemods` package.** `npx acture-codemods <name>` with two shipped transforms (`wrap-handler-with-mutation`, `extract-onclick-to-command`), a manifest of planned ones, and `--dry-run` + `--json` so agents can preview before applying.
-- **`createDomInterceptor`.** Companion to `actureMiddleware` — a delegated DOM listener routes `data-acture-command` events through the registry. Plain TS, works in any framework, opt-in scoping per root.
-- **RTK worked example.** `examples/migration/redux-wrap/` closes the documentation gap for `actureMiddleware`. UI dispatch + palette dispatch converge on the same store, observed as one event stream.
-- **AST mode for `acture-build-tier`.** Second entry point at `acture-build-tier/ast` uses ts-morph for projects where the regex's 4000-char lookahead is insufficient. ts-morph is an optional peer dep.
-- **Deep nested diffs in `compare-schemas`.** The classifier now recurses through nested object properties and array `items`. Change paths read `inputSchema.properties.user.properties.email` instead of stopping at the top level.
-
-Previously in v1.0 / v1.1:
-
-- **Tier system enforced.** Mark a command `@experimental`, `@internal`, or `@deprecated <reason>` in JSDoc; the build step mirrors the tag into runtime metadata. `registry.list({ tiers })` and the MCP / AI / palette projections filter accordingly. `@internal` commands carry a module-scoped Symbol token and reject cross-module `dispatch`.
-- **`acture compare-schemas`.** Diff two registry snapshots, classify per research-5 §6.1, gate CI with `--fail-on major`. Description changes are MAJOR by default; downgradable per-invocation via `--allow-description-edits`.
-- **`acture snapshot`.** Load a registry config (`./registry.mjs` default-exporting the registry) and emit a JSON snapshot suitable for `compare-schemas`.
-- **`<Inspector registry={...} />`.** Embeddable React dev-tool with a command list (tier-filterable), dispatch log, and live when-clause evaluator. Mount it behind a toggle in any greenfield app.
-- **`enableTierWarnings(registry)`.** Once-per-process `console.warn` on first dispatch of each `@experimental` command. Suppress with `ACTURE_SUPPRESS_EXPERIMENTAL_WARNINGS=1`. (Ships in `acture-devtools` as of the core positioning-alignment review — it is dispatch instrumentation, not a core primitive.)
-
-What's next: see [`docs/roadmap.md`](docs/roadmap.md) for the forward plan and [`docs/next_session.md`](docs/next_session.md) for the immediate next step (macros + e2e testing tooling).
+What's next: see [`docs/roadmap.md`](docs/roadmap.md) for the forward plan and [`docs/next_session.md`](docs/next_session.md) for the active handoff.
 
 ## Two flexibility dimensions
 
@@ -118,7 +112,7 @@ acture adapts along two independent axes — and the agent keeps both open rathe
 - **Forward plan + status:** [`docs/roadmap.md`](docs/roadmap.md) — what's done, what's next, what's deferred.
 - **Design synthesis:** [`docs/redesign_takeaways.md`](docs/redesign_takeaways.md) — opinionated commitments and hard "don'ts."
 - **v1 plan (historical):** [`docs/v1_plan.md`](docs/v1_plan.md) / [`docs/implementation_plan.md`](docs/implementation_plan.md) — phases 0–4, all complete.
-- **Research:** [`docs/research/`](docs/research/) — six research findings (1–6) that informed the plan (research-6: the cross-language TypeScript ↔ Python story).
+- **Research:** [`docs/research/`](docs/research/) — six filed research findings (1–6) that informed the plan, plus a drafted Prompt 7 (extension sandboxing) gated on user opt-in.
 - **Patterns:** [`docs/parameterized_command_palette_guide.md`](docs/parameterized_command_palette_guide.md) — implementation patterns.
 - **For agents:** [`AGENTS.md`](AGENTS.md) and [`.claude/skills/`](.claude/skills/).
 

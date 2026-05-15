@@ -8,7 +8,7 @@ acture is **a place developers (human or AI agent) go to get AI-agentic help bui
 
 It is delivered primarily as **skills, patterns, and codemods**; the `acture-*` npm packages are an **optional accelerator**, not the product. **`docs/positioning.md` is canonical — read it before writing any user-facing text or designing any package or skill.**
 
-Acture is the successor to `wrapex` (npm `command-wrapex`). That name carried migration-only framing that didn't fit acture's scope. `acture` is reserved on npm and PyPI; the 13 sub-packages publish unscoped as `acture-*` (the `@acture` npm scope was unavailable).
+Acture is the successor to `wrapex` (npm `command-wrapex`). That name carried migration-only framing that didn't fit acture's scope. `acture` is the single namespace on both npm (the core registry) and PyPI (the Python MCP client); the 18 sub-packages publish unscoped as `acture-*` (the `@acture` npm scope was unavailable). The MCP adapter is published as `acture-mcp-server` — the unscoped `acture-mcp` collided with an unrelated project.
 
 ## Positioning — the two flexibility dimensions
 
@@ -49,16 +49,28 @@ Skills are how you load focused context. Each is a self-contained primer for one
 
 | Skill | When to load |
 | --- | --- |
+| **Dev / foundation** | |
 | `acture-architecture-primer` | Always, for any non-trivial task. The conceptual model + positioning in 5 minutes. |
+| `acture-hard-donts` | Read before every non-trivial PR. The merge checklist of anti-patterns. |
 | `acture-consumer-integration` | **Whenever a task touches a consumer surface or a consumer-specific `acture-*` package.** The dev-tool-first build pattern: agent-written vs package-reuse, tool-library choices belong to the user. |
-| `acture-greenfield` | When standing up command dispatch in a **new** target project: state model, then hand-write the registry primitive or install `acture` core — a deliberate per-project choice. Backed by `docs/hand-written-registry.md`. |
+| `acture-greenfield` + `acture-greenfield-state-model` + `acture-greenfield-bootstrap` | When standing up command dispatch in a **new** target project: state model first, then hand-write the registry primitive or install `acture` core. Backed by `docs/hand-written-registry.md`. |
 | `acture-command-record-shape` | When defining or modifying the `CommandRecord` interface or its fields. |
 | `acture-schema-bridge` | When working on Zod → JSON Schema projection, MCP tool emission, or AI tool definitions. |
-| `acture-palette-design` | When building or modifying the command palette UI, especially parameterized commands. |
 | `acture-state-adapter` | When building or modifying a state adapter (zustand, redux, etc.) or the `StateAdapter<S>` interface. |
-| `acture-migration-package` | When working on `acture-migration` (wrapMutation, actureMiddleware, chooseImplementation, shadowCompare) or the migration-track skills. |
 | `acture-tier-system` | When working on the @stable / @experimental / @internal / @deprecated tier system or `acture compare-schemas`. |
-| `acture-hard-donts` | Read before every non-trivial PR. The merge checklist of anti-patterns. |
+| `acture-migration-package` | When working on `acture-migration` (`wrapMutation`, `actureMiddleware`, `chooseImplementation`, `shadowCompare`) or the migration-track skills. |
+| **Per-surface consumer skills** (build on `acture-consumer-integration`) | |
+| `acture-palette-design` | When building or modifying the command palette UI, especially parameterized commands. |
+| `acture-hotkeys` | When wiring keyboard shortcuts through the registry. |
+| `acture-mcp` | When projecting the registry as an MCP server. |
+| `acture-ai` | When projecting the registry as LLM tool definitions. |
+| `acture-macros` | When recording / replaying command sequences as macros. |
+| `acture-e2e` | When testing through the registry (Playwright, Cypress, vitest browser). |
+| `acture-telemetry` | When observing dispatch via a sink. |
+| `acture-undo` | When wiring patch-based undo/redo over a `PatchCapableAdapter`. |
+| `acture-test-property` | When running fast-check property tests over the registry. |
+| `acture-python` | When calling an `acture-mcp-server` from Python via the PyPI `acture` client. |
+| **Migration workflow (strangler-fig, in order)** | |
 | `migration-diagnose` | First step in adopting acture in an existing codebase: scan source for command candidates. |
 | `migration-plan` | Second step: turn the diagnosis into a phased adoption backlog with explicit decisions. |
 | `migration-scaffold` | Third step: install acture into the host app and wire the registry + state adapter. |
@@ -84,30 +96,27 @@ Full discussion is in `docs/redesign_takeaways.md` §3 and the `acture-hard-dont
 
 ## What you are *not* doing in this session unless asked
 
-- Shipping undo, macros, telemetry, sandboxing, or the Python companion in v1.x. These are post-v1.
-- Generalizing beyond what `v1_plan.md` commits to. Rule of three.
+- Shipping `acture-state-jotai`, `acture-state-valtio`, or `acture-sandbox`. These are the three remaining post-v1 candidates; pull-forward requires explicit user direction. (`acture-sandbox` is also gated on a drafted-but-not-launched research-7 prompt — see `docs/research/acture_research_prompts.md`.)
+- Generalizing beyond what `docs/roadmap.md` commits to. For maintainer decisions, YAGNI applies; the rule of three is for acture *users* (per `docs/redesign_takeaways.md` §6).
 - Modifying the central paper (`docs/command_dispatch_journal_article.md`). It is canonical.
 
-## Current state (v1.6 — core positioning-alignment review, 2026-05-14)
+## Current state (v1.13 — chain end, 2026-05-15)
 
-**v1.6 (this increment):** audited `acture` core against the canonical positioning. Core stays the minimal primitive — `enableTierWarnings` was dispatch instrumentation, not a primitive, and moved to `acture-devtools`. The dev-tool-first promise is now reproducible in code: `docs/hand-written-registry.md` is a ~80-line zero-dependency registry+dispatcher reference, and the new `acture-greenfield` skill walks an agent through standing up the core primitive in a new project. `CommandRecord` unchanged (15 fields). See `docs/core-review-reflection.md`.
+**19 npm packages live + 1 PyPI package; 489 npm package tests + 41 example tests + 23 Python tests, all green.** Phases 0–4 of the original v1 plan are complete; work since has been small, tracked increments. The forward plan and full done/not-done tracking live in [`docs/roadmap.md`](docs/roadmap.md); the active handoff lives in [`docs/next_session.md`](docs/next_session.md).
 
-**v1.5:** the canonical positioning was clarified (`docs/positioning.md` — dev-tool-first, the two flexibility dimensions), the `acture-consumer-integration` skill was added and wired into the dev skills, and all 13 sub-packages were renamed from `@acture/*` to unscoped `acture-*` (the `@acture` npm scope was unavailable). `acture@1.1.0` and `eslint-plugin-acture-migration@1.0.0` are published on npm; the 13 renamed packages publish next under their new names. Forward plan and full done/not-done tracking live in `docs/roadmap.md`.
+- Core: `acture` — registry + dispatcher + when-clause DSL + schema bridge + state-adapter interface. Stays the minimal primitive.
+- State: `acture-state-zustand`, `acture-state-redux`. Both implement `PatchCapableAdapter`.
+- UI: `acture-palette-react`, `acture-hotkeys`, `acture-forms-autoform`, `acture-forms-rjsf`.
+- Cross-process surfaces: `acture-mcp-server`, `acture-ai-vercel`. Honour the tier filter and prepend `[DEPRECATED — <reason>]`.
+- Migration: `acture-migration` — `wrapMutation`, `actureMiddleware`, `createDomInterceptor`, `chooseImplementation`, `shadowCompare`.
+- Dispatch instrumentation: `acture-telemetry` (v1.11) — sink + optional `redact` / `sampler`. `acture-undo` (v1.11) — patch-based undo/redo, transactions, `onEffect` host callback. `acture-devtools` — `<Inspector />`, `instrumentRegistry`, `enableTierWarnings`.
+- Tooling: `acture-build-tier` (regex + AST), `acture-cli` (`compare-schemas` + `snapshot`), `acture-codemods` (five research-4 §B.5 codemods), `eslint-plugin-acture-migration` (`acture/no-stale-wrap-mutation` + `acture/require-param-describe`).
+- Testing: `acture-e2e-playwright` (v1.7) — sequence engine + Playwright fixture; substrate for macros + e2e + property tests. `acture-test-property` (v1.12) — fast-check arbitraries replayed through the sequence engine.
+- Python: `acture` on PyPI (v1.13) — thin MCP client, `ActureClient` as `Mapping[str, Command]`. ~300 LoC, depends only on the official `mcp` SDK.
 
-Fifteen packages ship in the workspace at versions ranging from v1.0.0 to v1.2.0:
+Hand-written equivalents (the dev-tool-first promise made reproducible) live at `docs/hand-written-{registry,command-sequence,telemetry,undo,test-property,python-client}.md` and `docs/ai-codemod-recipe.md`.
 
-- Core: `acture@1.1.0` — `deprecationReason`, `internalToken`, `DispatchOptions`. (Stays the minimal primitive: registry + dispatcher + when-clause DSL + schema bridge + state-adapter interface.)
-- State: `acture-state-zustand@1.0.0`, `acture-state-redux@1.0.0`.
-- UI: `acture-palette-react@1.0.0`, `acture-hotkeys@1.0.0`, `acture-forms-autoform@1.0.0`, `acture-forms-rjsf@1.0.0`.
-- Surfaces: `acture-mcp-server@1.0.0`, `acture-ai-vercel@1.0.0` — honour the tier filter and prepend `[DEPRECATED — <reason>]`.
-- Migration: `acture-migration@1.1.0` — `createDomInterceptor` for DOM-event interception.
-- Tooling: `acture-build-tier@1.1.0` (regex + AST mode), `acture-cli@1.2.0` (deep nested compare-schemas diffs), `acture-devtools@1.0.0` — `<Inspector />`, `instrumentRegistry`, `enableTierWarnings` (dispatch instrumentation lives here, not in core).
-- Codemods: `acture-codemods@1.1.0` — **research-4 §B.5 codemod set is complete** (5 codemods: `wrap-handler-with-mutation`, `extract-onclick-to-command`, `redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`).
-- Lint: `eslint-plugin-acture-migration@1.0.0` — **new in v1.4.** One rule, `acture/no-stale-wrap-mutation`: flags `wrapMutation(...)` calls whose result is never used (the migration has graduated; author with `defineCommand`).
-
-Four worked examples: `examples/greenfield/graph-editor/`, `examples/drop-in/`, `examples/migration/zustand-wrap/{before,after}/`, `examples/migration/redux-wrap/` (RTK + `actureMiddleware` end-to-end).
-
-v1.4 ran the deferred fresh-agent release-gate test against `acture-codemods` — see `docs/fresh-agent-test-results.md`.
+Three remaining post-v1 candidates require explicit user direction: `acture-state-jotai`, `acture-state-valtio`, `acture-sandbox`. The last is also gated on `docs/research/acture_research_prompts.md` Prompt 7 (drafted, not launched).
 
 ## Working rhythm
 
