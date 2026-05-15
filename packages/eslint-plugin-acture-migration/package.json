@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-acture-migration",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ESLint rule for acture strangler-fig migrations. Flags stale wrapMutation(...) wrappers whose result is never used — the migration has graduated and the wrapper should become a defineCommand.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",
