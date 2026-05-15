@@ -487,7 +487,7 @@ Notes are organized thematically (VS Code core; AI / MCP / plugins; migration & 
 **Don'ts:**
 - Adding `if (mode === "X")` to a shared helper.
 - Defending an abstraction because of effort already spent.
-- Premature DRY before three concrete callers exist.
+- Premature DRY before concrete callers exist.
 
 **Direct relevance to acture design:**
 - Affects all three modes. The temptation: make `commandSchema` carry every possible field (palette, LLM, MCP, undo, telemetry, accessibility). When a new caller "almost fits," acture will be tempted to add `command.options.kind` flags — exactly the smell. **Prefer composition:** thin core `Command`, then `palettable(cmd, {...})`, `toolCallable(cmd, {...})`, `undoable(cmd, {...})` as separate small abstractions.

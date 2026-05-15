@@ -15,7 +15,7 @@ Decided in the v1.7 increment (see `docs/roadmap.md`): macros ship as a **patter
 
 - The recorder/player is ~60 lines (`docs/hand-written-command-sequence.md`) — the journal calls the macro layer "a thin consumer, not a new primitive."
 - The recorder is structurally identical to `acture-devtools`' `instrumentRegistry` — wrap `dispatch`, observe. Nothing novel to package.
-- The rule of three: no third concrete *package* caller exists. A package can come later if one does.
+- No real named need for a `acture-macros` package yet: the engine is so small (a doc the user adapts) that a package would be speculative infrastructure. A package can come later if a concrete need surfaces.
 
 So the **agent-written path is the path** for macros. You hand-write the engine into the target project from the reference doc. (The same engine *is* shipped, tested, inside `acture-e2e-playwright` — a project already depending on that package for e2e can import `recordSequence` / `replaySequence` from it rather than re-writing. That is the only "package-reuse" option, and only if the e2e dependency already exists for its own reasons.)
 
@@ -38,9 +38,9 @@ That is a complete macros tool. Adapt names and delete what the project doesn't 
 - **`stopOnError` defaults to true.** A macro is a unit — if step 3 fails, step 4 usually shouldn't run against broken state. A best-effort batch can opt out.
 - **The AI sequence is the same shape.** When an AI composes a multi-step response, its output *is* a macro (journal §3.2, §3.7). If the project also has an AI surface, the recorded-macro format and the AI-emitted format are one format — do not invent a second one.
 
-## What NOT to build (rule of three — wait for a real caller)
+## What NOT to build (wait for a real need)
 
-`docs/hand-written-command-sequence.md` §"What this reference deliberately omits" is the authority. In short: no DAG/branching sequences, no parallel replay, no recorder filter option, no schema-version validation of saved macros — until a concrete caller needs it. A linear sequence covers the overwhelming majority of macros.
+`docs/hand-written-command-sequence.md` §"What this reference deliberately omits" is the authority. In short: no DAG/branching sequences, no parallel replay, no recorder filter option, no schema-version validation of saved macros — until a concrete need surfaces in the project. A linear sequence covers the overwhelming majority of macros. This is YAGNI applied softly: add what your project actually uses, not what you might.
 
 ## Recording the choice
 

@@ -230,7 +230,8 @@ JSON Schema. Coercion belongs in `execute`, not the schema.
 
 The hand-written registry is the *primitive*. Everything below is something
 acture core ships that you would otherwise hand-write **only when a real need
-appears** (the rule of three — don't build it for a hypothetical):
+appears in your project** — YAGNI applied softly. Don't pre-build for a
+hypothetical consumer:
 
 - **The when-clause string DSL.** acture core parses `"editor.focused && !view.readonly"`.
   The hand-written version takes a function instead — `when: (ctx) => ctx.editor?.focused`.

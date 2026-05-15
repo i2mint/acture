@@ -78,7 +78,7 @@ The +3 exports are deliberately small. v1.1 was a polish increment — the struc
 
 1. **Did `enableTierWarnings` survive the design constraints?** Yes. Wrapping `dispatch` is the same idempotent-WeakMap technique `acture-devtools` already used; the disposer pattern means tests can install and uninstall cleanly. The opt-in (host calls it once at boot) is the right ergonomics — research-5 §7.3 says first-dispatch warning, not "automatic on every registry."
 
-2. **Was the `acture snapshot` subcommand worth shipping in v1.1?** Yes — three-callers test passes trivially: anyone who uses `compare-schemas` needs to produce snapshots, and the programmatic `snapshotRegistry(registry)` helper was a partial answer. The CLI subcommand closes the CI integration story. **Cost was lower than predicted** — about half a session, not a full one.
+2. **Was the `acture snapshot` subcommand worth shipping in v1.1?** Yes — concrete consumers were already named: anyone who uses `compare-schemas` needs to produce snapshots, and the programmatic `snapshotRegistry(registry)` helper was a partial answer. The CLI subcommand closes the CI integration story. **Cost was lower than predicted** — about half a session, not a full one.
 
 3. **Anything that should defer to v1.2 instead?** Yes (and listed in next_session.md): codemods, DOM-event interception, RTK worked example, AST mode for build-tier, deep nested diffs in compare-schemas. None block v1.1's release.
 

@@ -24,7 +24,7 @@ The Phase-4-reflection §5 gate, deferred through v1.0 → v1.3, finally ran. A 
 
 ## What v1.4 did NOT ship
 
-The two medium candidates from `docs/next_session.md`, deliberately not promoted (rule of three; the user authorized exactly #1 + #2):
+The two medium candidates from `docs/next_session.md`, deliberately not promoted (the user authorized exactly #1 + #2; scope discipline kept the others in the backlog):
 
 - **`.d.ts` mirror of resolved tier values.** Still optional polish. Deferred.
 - **Hypermod-style AI-generation recipe doc.** Still optional. Deferred.
@@ -68,13 +68,13 @@ CI green across the workspace; `npm pack --dry-run` clean for `eslint-plugin-act
 
 ## Pre-v1.5 reflection answers
 
-1. **Did the "one rule, one package" shape hold?** Yes. The package is ~140 lines of rule logic + a thin index that exposes the rule and a `recommended` flat config. No temptation toward a second rule appeared — the three-callers test for `no-stale-wrap-mutation` passed (research-4 named it; the `migration-graduate` skill now points at it; active migrations accumulate stale wrappers), but no second rule has three callers yet. If/when one does, it's a one-file addition to the same package.
+1. **Did the "one rule, one package" shape hold?** Yes. The package is ~140 lines of rule logic + a thin index that exposes the rule and a `recommended` flat config. No temptation toward a second rule appeared — the case for `no-stale-wrap-mutation` was concrete (research-4 named it; the `migration-graduate` skill now points at it; active migrations accumulate stale wrappers), but no second rule has a concrete named consumer yet. If/when one does, it's a one-file addition to the same package.
 
-2. **Is the rule's conservatism the right call?** Yes, but it has a known blind spot: a wrapper whose result is exported and then unused *cross-file* is not caught (ESLint rules are single-file). The honest framing — documented in the README's "Detection contract" — is that false negatives are expected and false positives should be rare. A type-aware / project-graph version could close the gap, but that's a much bigger lift and nobody has asked. Not promoting it without three callers.
+2. **Is the rule's conservatism the right call?** Yes, but it has a known blind spot: a wrapper whose result is exported and then unused *cross-file* is not caught (ESLint rules are single-file). The honest framing — documented in the README's "Detection contract" — is that false negatives are expected and false positives should be rare. A type-aware / project-graph version could close the gap, but that's a much bigger lift and nobody has asked — not promoting it without a concrete need.
 
 3. **What did the fresh-agent test actually prove?** That the codemod *engine* is release-ready and the codemod *README* is not. The gap is documentation drift (the README was written assuming a published package), not a design flaw — which is the good kind of finding for a release gate. v1.5's top candidate is the codemods README + CLI polish pass (see `docs/next_session.md`).
 
-4. **Should v1.4 have fixed the codemods README in-session?** No — `docs/next_session.md` explicitly scoped #2 as no-code-change, and honoring that kept the session to exactly two deliverables. But the temptation was real: several of the findings are trivial edits. Carrying them as a *named, scoped* v1.5 candidate (rather than scope-creeping v1.4) is the rule-of-three-respecting move.
+4. **Should v1.4 have fixed the codemods README in-session?** No — `docs/next_session.md` explicitly scoped #2 as no-code-change, and honoring that kept the session to exactly two deliverables. But the temptation was real: several of the findings are trivial edits. Carrying them as a *named, scoped* v1.5 candidate (rather than scope-creeping v1.4) is the scope-disciplined move.
 
 5. **Hard-don'ts audit.** Clean.
 

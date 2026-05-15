@@ -68,7 +68,8 @@ type CommandRecord<P = unknown, R = unknown> = {
   /** Free-text reason injected by the build step from @deprecated <reason>.
    *  Adapter packages (acture-mcp-server, acture-ai-vercel) prepend
    *  `[DEPRECATED — <reason>]` to the description; acture-devtools surfaces
-   *  it in the inspector. Added in v1.0 (Phase 4) under the rule of three. */
+   *  it in the inspector. Added in v1.0 (Phase 4) once three concrete
+   *  consumers (mcp, ai-vercel, devtools) needed it. */
   deprecationReason?: string;
 
   /** Module-scoped Symbol attached by the build step when a command is tagged
@@ -143,7 +144,7 @@ export function defineCommand<TParams, TResult>(
 
 Before adding ANY new field:
 
-1. Name three concrete callers (commands, adapters, or consumer surfaces) that need it.
+1. Name the concrete consumer(s) that need it — a specific command, adapter, or consumer surface. "What if someone wanted…" is not enough; a real named need is. (One named consumer can be enough if the use case is irreducible; more is fine but the test is *concrete*, not a count — see `docs/redesign_takeaways.md` §6 on why a numeric callers gate is the wrong framing.)
 2. Confirm it cannot be done by composition (a wrapper function like `palettable(cmd, ...)` or `toolCallable(cmd, ...)`).
 3. Confirm it doesn't introduce conditional logic into metadata (inner platform effect).
 4. Write the migration story: how does v1 code adopt the new field without breaking?

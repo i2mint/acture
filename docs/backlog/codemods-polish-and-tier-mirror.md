@@ -62,7 +62,7 @@ These remain `docs/v1_plan.md` §"Post-v1 (deferred, not committed)":
 - `acture/state-jotai`, `acture/state-valtio`.
 - Python companion (research-6 not executed).
 
-Do NOT promote any of these without explicit user direction AND three concrete callers.
+Do NOT promote any of these without explicit user direction. (Earlier drafts of this file also gated post-v1 promotion on "three concrete callers" — that was a misapplication of the rule of three; see `docs/redesign_takeaways.md` §6. Post-v1 items pull forward on user direction plus the standard maintainer principles.)
 
 ## Step 4 — Hard-don'ts still in force
 

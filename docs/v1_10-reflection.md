@@ -4,7 +4,7 @@
 
 ## The scope decision
 
-`docs/next_session.md` flagged the named backlog as "nearly drained" and laid out four directions. Surfaced via `AskUserQuestion`; user picked **"smaller backlog items (autonomous)"** — the disciplined pick over pulling a post-v1 item forward (Python companion / `acture-undo` / `acture-telemetry`) without explicit user direction and three concrete callers. The two items are independent, both research-6 follow-ups, both autonomous.
+`docs/next_session.md` flagged the named backlog as "nearly drained" and laid out four directions. Surfaced via `AskUserQuestion`; user picked **"smaller backlog items (autonomous)"** — the disciplined pick over pulling a post-v1 item forward (Python companion / `acture-undo` / `acture-telemetry`) without explicit user direction. The two items are independent, both research-6 follow-ups, both autonomous.
 
 ## Item 1 — `acture/require-param-describe` schema-quality lint rule
 
@@ -12,7 +12,7 @@ Why this matters: Zod → JSON Schema is lossy. A bare `z.string()` projects to 
 
 ### The plugin-location decision
 
-The roadmap suggested "a future `eslint-plugin-acture` schema-quality rule." Creating a *new* one-rule plugin would be a god-package-of-one — exactly the speculative infrastructure the rule of three guards against (v1.7 declined `acture-sequence` on the same ground; v1.9 declined the `.d.ts` tier mirror). Renaming the existing `eslint-plugin-acture-migration` package is breaking for any consumer pinning the name.
+The roadmap suggested "a future `eslint-plugin-acture` schema-quality rule." Creating a *new* one-rule plugin would be a god-package-of-one — exactly the speculative infrastructure hard-don't #2 (no god-package) and YAGNI guard against (v1.7 declined `acture-sequence` on adjacent grounds; v1.9 declined the `.d.ts` tier mirror). Renaming the existing `eslint-plugin-acture-migration` package is breaking for any consumer pinning the name.
 
 **Decision:** add the rule to the existing `eslint-plugin-acture-migration` plugin, keep the package name (the historical `-migration` suffix is reality, not a deception — renaming is a breaking change that would yield zero functional improvement), and update the plugin's intro to clarify scope: the plugin hosts both migration-specific and schema-quality rules under the `acture/` prefix.
 
@@ -54,7 +54,7 @@ Ran `.claude/skills/acture-hard-donts/SKILL.md` against the v1.10 increment.
 9. **No marketing on category.** ✅ Both items lead with the concrete user win: the lint message names the field; the MCP test header names the upgrade checklist.
 10. **No assuming the LLM's chosen function is authorization.** ✅ N/A.
 
-**Rule of three (merge-ritual #3 + the primer).** Applied twice this increment: (a) declined to create `eslint-plugin-acture` for a single rule, and (b) the lint rule itself was scoped to top-level fields only — nested-object descent waits for a real caller. Adding the rule to the existing plugin is *not* a rule-of-three violation: the existing plugin already shipped, the new rule is a concrete capability with concrete value, and the package's broadened scope is documented honestly rather than papered over.
+**Scope discipline (hard-don't #2 + YAGNI).** Applied twice this increment: (a) declined to create `eslint-plugin-acture` for a single rule (god-package-of-one), and (b) the lint rule itself was scoped to top-level fields only — nested-object descent waits for a concrete need. Adding the rule to the existing plugin is the right call: the existing plugin already shipped, the new rule is a concrete capability with concrete value, and the package's broadened scope is documented honestly rather than papered over. (See `docs/redesign_takeaways.md` §6: the rule of three is a *user-facing* heuristic for application developers, not a maintainer-side gate; previous wording here invoked it incorrectly and has been replaced with the actual principles.)
 
 **Positioning check (merge-ritual #6).** Could a developer get this value without an `acture-*` package? **Yes for both items.** The lint rule is an ESLint plugin — entirely a dev-tool, never a runtime dependency, exactly what the dev-tool-first principle calls for. The MCP spec-version pin is internal to `acture-mcp-server` — a developer using the hand-written MCP path (`docs/hand-written-registry.md` style) doesn't even encounter it. The dev-tool-first principle holds.
 

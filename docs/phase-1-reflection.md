@@ -16,7 +16,7 @@ This file answers the six questions from `docs/implementation_plan.md` §"Phase 
 - `aliases`, `icon`, `defaultScore`, `follow` — never reached for. The graph editor isn't large enough to need them. They're cheap to leave in the surface as Phase 2 inputs and have known consumers (`aliases` for palette ranking, `icon` for VS Code-style affordances).
 - `kind` — the field exists but Phase 1's palette ignores it (parameter-free commands are implicitly atomic). Phase 2 will exercise it via the picker chain. **Leave as-is.**
 
-**Fields I wanted to add but resisted:** none in Phase 1. The rule of three held: any "I wish there were a `confirmBeforeExecute` field" temptation was correctly defused by realizing confirmation is a middleware concern.
+**Fields I wanted to add but resisted:** none in Phase 1. Closed-surface discipline held: any "I wish there were a `confirmBeforeExecute` field" temptation was correctly defused by realizing confirmation is a middleware concern.
 
 **One subtle finding** that should propagate to the docs: `CommandRecord<P, R>` with `AnyCommandRecord = CommandRecord<unknown, unknown>` causes contravariance pain when a typed `CommandRecord<{x:number}, string>` is passed to `registerAll(cmds: AnyCommandRecord[])`. I switched `AnyCommandRecord` to `CommandRecord<any, any>` (with a comment explaining why). The user-facing types stay precise (`defineCommand<P, R>` still infers P, R); only the erased-storage type uses `any`. **This is a TypeScript-variance concession, not a design change.** Documented in `types.ts`.
 
@@ -100,7 +100,7 @@ Ran the merge checklist from `.claude/skills/acture-hard-donts/SKILL.md`. Going 
 
 **Non-blocking observations the user may want to weigh in on later:**
 
-1. **`patches`/`effects` reserved hooks survived Phase 1.** Phase 2 should not consume them; Phase 4+ may. If the user wants to push undo into v1.0 instead of post-v1, the hooks are ready. (Recommendation: stay on post-v1 trajectory; the rule-of-three hasn't fired.)
+1. **`patches`/`effects` reserved hooks survived Phase 1.** Phase 2 should not consume them; Phase 4+ may. If the user wants to push undo into v1.0 instead of post-v1, the hooks are ready. (Recommendation: stay on post-v1 trajectory; no concrete need has surfaced yet.)
 2. **The internal `app.dev.resetState` command is a pragmatic test affordance**, not a load-bearing pattern. Phase 3's migration package or Phase 4's devtools may want a more principled "snapshot/restore" mechanism. Not urgent.
 3. **The `Patch.op` enum is currently `'add' | 'remove' | 'replace'`** — RFC 6902 also has `'copy'`, `'move'`, `'test'`. Immer doesn't produce them. Don't grow the enum until someone asks. (See also §2.)
 4. **The graph-editor's palette overlay closes on parameterized-command select.** This is a Phase-2 stand-in. Phase 2 will replace it with the picker chain; the host doesn't need to change anything except register the new palette behavior.

@@ -23,12 +23,12 @@ Listed as v1.3 candidates in the previous next-session prompt:
 
 ---
 
-## Codemod-set completion: the rule-of-three retrospective
+## Codemod-set completion: the scope-discipline retrospective
 
-The previous (v1.2) reflection asked whether the user's "ship all five" authorization had been sound for that session. v1.3 doubled down: the user authorized the *whole codemod set*. Three concrete callers exist for each:
+The previous (v1.2) reflection asked whether the user's "ship all five" authorization had been sound for that session. v1.3 doubled down: the user authorized the *whole codemod set*. Each codemod has concrete named callers:
 
-- `redux-action-to-command` — every Redux/RTK adoption path. Three-callers test passes: the migration track skills explicitly mention this transform; research-4 §B.3 names the `azizhk/dispatch-your-reducer` gist as structurally identical.
-- `usestate-mutation-to-command` — research-4 §B.5 row 3. Three-callers test: every React app that wraps useState mutations as commands.
+- `redux-action-to-command` — every Redux/RTK adoption path. Named consumers: the migration track skills explicitly mention this transform; research-4 §B.3 names the `azizhk/dispatch-your-reducer` gist as structurally identical.
+- `usestate-mutation-to-command` — research-4 §B.5 row 3. Named consumer: every React app that wraps useState mutations as commands.
 - `rtk-thunk-to-command` — research-4 §B.5 row 5. Three-callers test: every RTK adoption that has async data flows.
 
 Each is a one-file addition that drops into the existing manifest. The CLI, runner, diff formatter, and test harness from v1.2 all carried through without modification — which validates the abstraction shape.
@@ -73,7 +73,7 @@ The +30 codemod tests bring the total package test count to 380. CI green across
 
 1. **Did the codemod abstraction shape (Codemod interface + MANIFEST + runner + CLI) survive the three-new-codemod increment?** Yes. Each new codemod is a one-file addition with a `Codemod` export. The CLI didn't change. The runner didn't change. The diff formatter didn't change. The tests follow the same `withFile` / `cleanup` pattern. This validates the v1.2 design choice to ship the manifest + 2 codemods rather than just an ad-hoc transform.
 
-2. **What's the next codemod that wants to be written?** Probably **`extract-store-listener-to-command`** — find `store.subscribe((s) => …)` patterns and lift the side-effect block into a registered command. Not in research-4 §B.5; would be a v1.4 candidate IF three concrete callers asked for it. Not promoting without that signal.
+2. **What's the next codemod that wants to be written?** Probably **`extract-store-listener-to-command`** — find `store.subscribe((s) => …)` patterns and lift the side-effect block into a registered command. Not in research-4 §B.5; would be a v1.4 candidate if a concrete need surfaces. Not promoting without that signal.
 
 3. **Is `--option` syntax enough, or do agents need a config-file fallback?** Probably enough for now. Across all five codemods, the longest `--option` chain we've documented is two flags. If a real migration drives users past that, a `--config <json>` flag is a one-line addition.
 

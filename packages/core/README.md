@@ -57,7 +57,7 @@ if (result.ok) {
 
 ## CommandRecord shape
 
-The metadata surface is **closed** for v1 — new fields require three concrete callers. The fields below are exhaustive:
+The metadata surface is **closed** for v1 — adding a field is a deliberate scope decision, not a casual addition (see `docs/redesign_takeaways.md` §3 / hard-don't #1, inner platform effect). The fields below are exhaustive:
 
 | Field           | Type                                          | Required | Notes |
 | --------------- | --------------------------------------------- | -------- | ----- |

@@ -102,7 +102,8 @@ primitive stands alone.
   `Map.get`; an unknown id fails closed. This is the prompt-injection
   guardrail — see `acture-hard-donts` #5.
 - **Don't build the DSL, schema bridge, or tier system speculatively.** Add
-  each only when a real consumer needs it (rule of three).
+  each only when a real consumer in your project needs it — YAGNI applied
+  softly.
 
 ## Checklist before you finish
 

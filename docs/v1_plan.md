@@ -140,7 +140,7 @@ type Result<R> =
 
 **Fields the wrapex implementation had that are NOT in this record** (audit-of-record):
 - `inputComponent?: unknown` — removed. UI components live in palette adapter config, not on commands.
-- `metadata: PolicyMetadata` (with `readOnly`, `idempotent`, `riskLevel`, `requiresConfirmation`) — removed as a single bag. `readOnly` and `requiresConfirmation` if needed are added as top-level optional fields by composition only when three callers ask. `riskLevel` and `idempotent` reduce to query-vs-mutation classification (the `kind` field already captures part; the rest is middleware concern).
+- `metadata: PolicyMetadata` (with `readOnly`, `idempotent`, `riskLevel`, `requiresConfirmation`) — removed as a single bag. `readOnly` and `requiresConfirmation` if needed are added as top-level optional fields by composition only when a concrete consumer needs them. `riskLevel` and `idempotent` reduce to query-vs-mutation classification (the `kind` field already captures part; the rest is middleware concern).
 - `tags?: string[]` — removed in favor of `category` + `tier` covering the use cases.
 - `isVisible?` and `isEnabled?` callbacks — removed; folded into `when` (with the function escape hatch).
 - `requiresConfirmation` at top level — removed. Confirmation is a middleware concern, gated by `kind` and tier, not a per-command boolean.

@@ -116,7 +116,7 @@ The before/after examples are the load-bearing part. A codemod is only as good a
 Two ways, matching the two flexibility dimensions:
 
 - **Throwaway script (agent-written, zero dependency).** The agent's `Codemod` object plus a ~15-line driver that globs files and calls `run({ files, dryRun })`. Nothing installed; the script is deleted after the migration. Best for a genuinely one-time transform.
-- **Drop into `acture-codemods` (package-reuse).** Add the file under `packages/codemods/src/codemods/`, register it in `manifest.ts`, and it gets `--list` / `--manifest` / `--dry-run` / `--json` for free. Best if the shape recurs or other repos need it — at which point, per the rule of three, consider proposing it as a shipped codemod.
+- **Drop into `acture-codemods` (package-reuse).** Add the file under `packages/codemods/src/codemods/`, register it in `manifest.ts`, and it gets `--list` / `--manifest` / `--dry-run` / `--json` for free. Best if the shape recurs or other repos would benefit — at which point, consider proposing it upstream as a shipped codemod.
 
 Either way the codemod is the same object. The interface is the portable part; where it runs is your call.
 

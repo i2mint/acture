@@ -27,7 +27,7 @@ A new doc: when none of the five shipped codemods fit a handler shape, have an a
 
 ### `.d.ts` tier mirror — deliberately NOT built
 
-This was the third item in the codemods/tier backlog file. **Decision: do not build it.** It has been deferred v1.2 → v1.8 with *zero concrete callers*; tier filtering happens at runtime (`registry.list({ tiers })` — the MCP/AI adapters), and nothing in the codebase consumes tier at the type level. Building a `.d.ts` post-process pass now would be speculative infrastructure — exactly what the rule of three guards against, and consistent with how v1.7 declined the `acture-sequence` substrate and v1.8 declined the no-package consumer skills. Instead the `acture-build-tier` README's caveat was rewritten to make the deferral explicit-with-rationale rather than an implicit TODO. (The user's "fix what's fixable" framing applies: the `.d.ts` mirror is not *broken* — its absence is a documented, deliberate limitation.)
+This was the third item in the codemods/tier backlog file. **Decision: do not build it.** It has been deferred v1.2 → v1.8 with *no concrete type-level consumer*; tier filtering happens at runtime (`registry.list({ tiers })` — the MCP/AI adapters), and nothing in the codebase consumes tier at the type level. Building a `.d.ts` post-process pass now would be speculative infrastructure — exactly what YAGNI guards against, and consistent with how v1.7 declined the `acture-sequence` substrate and v1.8 declined the no-package consumer skills. Instead the `acture-build-tier` README's caveat was rewritten to make the deferral explicit-with-rationale rather than an implicit TODO. (The user's "fix what's fixable" framing applies: the `.d.ts` mirror is not *broken* — its absence is a documented, deliberate limitation.)
 
 ### Bonus fix — `.changeset/README.md`
 
@@ -57,7 +57,7 @@ Ran `.claude/skills/acture-hard-donts/SKILL.md` against the v1.9 increment.
 9. **No marketing on category.** ✅ The codemods README leads with the concrete CLI; the greenfield skills lead with the concrete sequence.
 10. **No assuming the LLM's chosen function is authorization.** ✅ N/A.
 
-**Rule of three (merge-ritual #3 + the primer).** The headline of this increment: the `.d.ts` tier mirror was *declined* on rule-of-three grounds — zero callers, speculative. Nothing was added to `CommandRecord`; no package was created; no feature was built ahead of a caller.
+**Scope discipline (YAGNI + hard-don't #2).** The headline of this increment: the `.d.ts` tier mirror was *declined* on YAGNI grounds — no concrete type-level consumer, speculative. Nothing was added to `CommandRecord`; no package was created; no feature was built ahead of a named need. (See `docs/redesign_takeaways.md` §6: previous drafts invoked the "rule of three" here, which is a user-facing heuristic — not a maintainer-side gate. Same decision, correct framing.)
 
 **Positioning check (merge-ritual #6).** `acture-codemods` is dev/build-time tooling — never a runtime dependency (the README's standing note). The AI-codemod-recipe doc is explicitly the dev-tool-first path: a one-off codemod the project owns, zero acture dependency, with installing `acture-codemods` framed as the opt-in accelerator. The greenfield skills inherit the foundation's dev-tool-first framing — the registry, the state adapter, and each consumer are each a hand-write-vs-install choice. The principle holds.
 

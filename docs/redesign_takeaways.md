@@ -226,13 +226,29 @@ acture-devtools          # Inspector: registry contents, dispatch log, when-clau
 
 ---
 
-## 6. The "rule of three" applied to acture itself
+## 6. Where the "rule of three" applies — and where it doesn't
 
-The article's own §6.2 rule of three, turned inward: **don't ship a acture feature until three real usage paths demand it.** Concretely, for v1:
+**The rule of three is a soft heuristic for the *application developer using acture*, not a meta-rule for acture maintainers.** This was previously misapplied: earlier drafts of this section turned the article's §6.2 rule "inward" — "don't ship an acture feature until three real usage paths demand it" — which was wrong. The rule belongs in the user's hands, not in the maintainer's scope-decision process.
 
-- ✅ Ship: registry, dispatch, palette, hotkeys, MCP adapter, AI adapter, schema bridge. (All have ≥3 surfaces or are the SSOT layer the article identifies as load-bearing.)
-- ⏸ Defer until 3 callers want them: undo, macros, telemetry middleware, sandboxed extensions, devtools beyond a basic inspector, schema-versioning CLI, CQRS query primitives.
-- ❌ Never (architecture-astronaut traps): a config DSL inside command metadata, a custom wire format faster than JSON, a "general-purpose" middleware framework, a built-in form-rendering UI kit.
+**For acture *users* (application developers):** the rule of three is a soft check on premature abstraction. When you find yourself wondering whether some operation should be formalized as a `defineCommand` entry, the heuristic says: wait until that operation is triggered from ~3 surfaces (button click, keyboard shortcut, AI tool call, MCP, test, macro, …) before paying the cost of formalization. It is a *softening* of YAGNI suited to multi-surface frontends — not a hard gate, and not a count to enforce. The journal article's own §6.2 already nuances it: because acture amortizes formalization cost across multiple surfaces, the threshold is reached sooner and more naturally than under ad-hoc integration. Skills surfaces tell users this softly, where it's helpful.
+
+**For acture *maintainers* (us):** the rule of three does NOT apply. We are building tooling that *helps* application developers stand up command-dispatch architectures; deferring our own work on a numeric-callers gate would defeat the point. The principles that actually govern what acture ships are:
+
+- **YAGNI / wait for a concrete need.** Don't build infrastructure for hypothetical consumers — but the test is "is there a real need we can name and shape," not "are there exactly three of them."
+- **Hard-don't #2 (no god-package).** A new acture package must be a single accelerator, not a bundle. This is what guards against the speculative-package-creation drift, not a callers count.
+- **Architecture-astronaut avoidance (journal §6.4).** Every increment ships user-facing value; if it doesn't, that's the red flag.
+- **The dev-tool-first principle (§`docs/positioning.md`).** Every new acture artifact has a documented agent-written path; speculative infrastructure is impossible to defend if the same value is reachable by hand.
+
+Together these are stricter and more honest than a callers count. They name *why* a feature is or isn't worth shipping, rather than asking "are there three of something yet."
+
+Historical note: a number of past scope decisions invoked the rule of three when they should have invoked one of the principles above. The decisions themselves still hold (declining `acture-sequence`, the `.d.ts` tier mirror, a one-rule new ESLint plugin); the *framing* in those reflections is stale — they were correct calls for adjacent reasons (god-package risk, no concrete consumer, YAGNI), not because a numeric gate failed. New work should use the correct framing.
+
+### What this section still says about specific shapes
+
+Independent of the rule-of-three rescope, the categorical shapes below still hold and reflect the central paper's risk analysis:
+
+- ❌ Architecture-astronaut traps to never ship: a config DSL inside command metadata, a custom wire format faster than JSON, a "general-purpose" middleware framework, a built-in form-rendering UI kit.
+- The decision between shipping a new feature in v1.x and deferring to a later release is *deliberate scope*, not a count.
 
 ---
 
@@ -264,7 +280,7 @@ These remain genuinely undecided after reading. Discuss before committing:
 1. **State model substrate:** zustand (current default) vs. allowing Redux Toolkit, Jotai, MobX, Valtio adapters. zustand+immer matches [ref_24]'s undo recipe well. Locking in is opinionated; staying agnostic is harder.
 2. **Async story for `execute`:** sync-first with optional async [ref_03] is best for ergonomics, but most realistic commands hit a network. Decide whether `execute` returns `Result | Promise<Result>` (current sketch) or always `Promise<Result>` (simpler, slightly worse for ergonomics).
 3. **Context-key store:** plain object updated imperatively (VS Code style [ref_10]) vs. a reactive zustand slice (matches the rest of the stack). The latter is more idiomatic JS but more coupling.
-4. **Schema versioning and breaking-change CLI:** [ref_45] argues strongly for a `acture compare-schemas` CLI. But this is a rule-of-three deferral candidate.
+4. **Schema versioning and breaking-change CLI:** [ref_45] argues strongly for a `acture compare-schemas` CLI. Worth deferring until a concrete need is named.
 5. **Recursive parameter types:** [ref_08, ref_42] both flag recursion as a sharp edge. Decide whether to support it in v1 (and constrain how) or defer.
 
 These questions are worth a separate discussion thread or a deep-research pass — see the companion file [`research_prompts.md`](research_prompts.md).

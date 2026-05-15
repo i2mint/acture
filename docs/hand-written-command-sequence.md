@@ -270,8 +270,8 @@ varies by adapter. That is the whole value of testing through the command layer.
 
 ## What this reference deliberately omits
 
-The rule of three applies here as everywhere — add these only when a real need
-appears, not for a hypothetical:
+YAGNI applied softly — add these only when a real need appears in your project,
+not for a hypothetical:
 
 - **Schema-version validation of saved sequences.** Journal §3 notes a saved
   macro can be checked against current command schemas. Additive — wire it up

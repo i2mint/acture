@@ -54,8 +54,8 @@ Also added `acture-example-redux-wrap` to the changeset `ignore` list (the only 
 
 ## What v1.7 did NOT ship
 
-- **No `acture-sequence` / `acture-macros` package.** The Step 1 decision. A macros package can come later if the rule of three is met.
-- **No DAG/branching sequences, no parallel replay, no recorder filter, no schema-version validation of saved sequences.** All named in the reference doc's "deliberately omits" section — rule of three, wait for a real caller. A linear sequence covers the overwhelming majority of macros and e2e tests.
+- **No `acture-sequence` / `acture-macros` package.** The Step 1 decision. A macros package can come later if a concrete need surfaces; today the doc + skill cover the surface without a package.
+- **No DAG/branching sequences, no parallel replay, no recorder filter, no schema-version validation of saved sequences.** All named in the reference doc's "deliberately omits" section — YAGNI, wait for a real need in the user's project. A linear sequence covers the overwhelming majority of macros and e2e tests.
 - **No worked example app.** The package's 23 tests (including the in-page bridge exercised against `globalThis`) and the README's worked snippets carry the legibility; a full example app would have been a Playwright-runner harness for its own sake. Reconsidered if the e2e surface grows.
 - **`CommandRecord` unchanged** — still closed at 15 fields. The sequence layer is composition *above* the registry; the registry stays flat (journal §3 "Macros as composition, not a third granularity").
 

@@ -143,7 +143,7 @@ When this reflection note is committed, Phase 0 is done.
 
 Before Phase 2:
 
-1. **Did the command record shape feel right?** Were there fields you wanted to add but resisted (good — that's the rule of three working)? Were there fields you found yourself never using (consider deletion)? Document in `docs/phase-1-reflection.md`.
+1. **Did the command record shape feel right?** Were there fields you wanted to add but resisted (good — that's the closed-surface discipline working: a new field needs a concrete named consumer)? Were there fields you found yourself never using (consider deletion)? Document in `docs/phase-1-reflection.md`.
 2. **Did the StateAdapter interface stretch to cover the zustand case cleanly?** Specifically: did `setState(updater)` accept both `(s) => S` and `(s) => void` (Immer-style) cleanly? If you found friction, what would Phase 2 want different before RTK adapter is added?
 3. **Was the when-clause DSL parser worth the complexity?** Estimate LOC. If it's over 200, ask: is the DSL pulling weight against a `(ctx) => boolean` everywhere?
 4. **Did the second-agent test surface any docs gaps?** Specifically: did the second agent need to read source instead of docs? Where? Patch docs before Phase 2.

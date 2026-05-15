@@ -2,7 +2,7 @@
 
 **Authored:** 2026-05-13 by the v1.2 implementing agent. All previous tests still pass; **350 package tests** (was 288 at end of v1.1; +62 across one new package and three augmented packages). Plus 41 example tests (was 36; +5 from the new RTK fixture). Every package and example typechecks and builds via tsup / vite.
 
-The v1.2 backlog from `docs/next_session.md` named five candidates. The user authorized all five (an explicit override of the "pick at most TWO" rule of three guideline, which was a planning safety net rather than a hard merge gate). Everything in scope shipped:
+The v1.2 backlog from `docs/next_session.md` named five candidates. The user authorized all five (an explicit override of the "pick at most TWO" planning guideline, which was a scope safety net rather than a hard merge gate). Everything in scope shipped:
 
 - **#1: `acture-codemods` package** (research-4 §B.5). Two of five planned codemods + the manifest pattern + a CLI runner + 23 tests. The other three (`redux-action-to-command`, `usestate-mutation-to-command`, `rtk-thunk-to-command`) are tracked in `manifest.ts` and `migrations.json` as `status: 'planned'` so users can see what's coming.
 - **#2: DOM-event interception middleware** (research-4 §A.5). `createDomInterceptor(registry, options)` lives in `acture-migration` alongside the existing `actureMiddleware`. Plain TS (no React import — hard-don't #6), works in any framework, opt-in scoping per root. 14 tests using jsdom.
@@ -96,8 +96,8 @@ The +12 exports break down: 5 from codemods (`runCodemod`, `MANIFEST`, `findCode
 
 1. **Did the closed CommandRecord surface hold through a five-deliverable session?** Yes. Zero new fields. The reflex check ("is this composable into the handler?") shut down two temptations: an `eventBindings` field for the DOM interceptor (composable via `data-acture-command`) and a `codemodFingerprint` field for the codemods (the codemod's `notes` field on `FileChange` covers it).
 
-2. **Did the rule of three break?** Technically yes — the user authorized all five candidates in one session. But each individual deliverable still meets the three-callers test:
-   - Codemods: research-4 §B.5 explicitly lists 5 planned codemods; the v1.2 ship is 2 of those 5, leaving the other 3 in the manifest as planned. Three-callers test is "do agents driving migrations need a CLI to run AST transforms on N files?" — yes, the entire research-4 case study is about this.
+2. **Did scope discipline hold?** Yes — the user authorized all five candidates in one session, and each individual deliverable has a concrete named consumer:
+   - Codemods: research-4 §B.5 explicitly lists 5 planned codemods; the v1.2 ship is 2 of those 5, leaving the other 3 in the manifest as planned. Named consumer: agents driving migrations need a CLI to run AST transforms on N files — the entire research-4 case study is about this.
    - DOM interception: research-4 §A.5 splits Event Interception into store + DOM halves; the store half shipped in v1; this completes the matching half.
    - RTK example: phase-3 + phase-4 reflections both flagged the missing fixture for `actureMiddleware`; this closes that gap.
    - AST mode: phase-4 reflection §1 caveat 1 named this. The regex's 4000-char window + template substitutions are real but rare failure modes.

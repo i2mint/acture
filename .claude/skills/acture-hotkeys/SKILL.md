@@ -42,9 +42,9 @@ The same positioning applies inward (per `acture-consumer-integration` §"When y
 - The package **translates** the registry to tinykeys bindings; it holds no business logic and makes no architectural decisions (hard-don't #3). First-registered-wins is a documented registry-order rule, not adapter cleverness.
 - `$mod` is preserved through to tinykeys (Meta on macOS, Ctrl elsewhere) — the binder normalizes whitespace, nothing more.
 
-## What NOT to build (rule of three)
+## What NOT to build (wait for a real need)
 
-No chord-recording UI, no user-remapping persistence layer, no visual keybinding-conflict resolver, no per-command keybinding-priority field on `CommandRecord` — wait for a concrete caller. The `keybinding` field is closed (see `acture-command-record-shape`); first-registered-wins covers conflict resolution without new metadata. A flat key→command binding with a `when` filter covers the overwhelming majority of shortcut needs.
+No chord-recording UI, no user-remapping persistence layer, no visual keybinding-conflict resolver, no per-command keybinding-priority field on `CommandRecord` — wait until a concrete need surfaces in the project. The `keybinding` field is closed (see `acture-command-record-shape`); first-registered-wins covers conflict resolution without new metadata. A flat key→command binding with a `when` filter covers the overwhelming majority of shortcut needs. YAGNI applied softly.
 
 ## See also
 

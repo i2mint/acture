@@ -3,8 +3,9 @@
  *
  * The CommandRecord shape is the canonical contract — see
  * `docs/v1_plan.md` §4 and the `acture-command-record-shape` skill.
- * The metadata surface is CLOSED; adding fields requires three-caller
- * validation per the rule of three.
+ * The metadata surface is CLOSED; adding fields is a deliberate scope
+ * decision that requires a concrete named consumer and a hard-don'ts
+ * audit (see `docs/redesign_takeaways.md` §3).
  */
 
 import type { ZodType } from 'zod';

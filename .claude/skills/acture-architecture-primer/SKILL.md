@@ -1,6 +1,6 @@
 ---
 name: acture-architecture-primer
-description: Load the conceptual model of acture's command-dispatch architecture. Use this skill at the start of ANY non-trivial task in the acture repository — it covers the three primitives (state model, command registry, schema bridge), the eight consumer surfaces, acture's dev-tool-first positioning and its two flexibility dimensions, and the rule of three. Triggers on phrases like "what is acture", "how does the architecture work", "the three primitives", "the consumer surfaces", or when starting a new phase. Do NOT use this for narrow API/typing questions — load `acture-command-record-shape` or another targeted skill instead.
+description: Load the conceptual model of acture's command-dispatch architecture. Use this skill at the start of ANY non-trivial task in the acture repository — it covers the three primitives (state model, command registry, schema bridge), the eight consumer surfaces, and acture's dev-tool-first positioning with its two flexibility dimensions. Triggers on phrases like "what is acture", "how does the architecture work", "the three primitives", "the consumer surfaces", or when starting a new phase. Do NOT use this for narrow API/typing questions — load `acture-command-record-shape` or another targeted skill instead.
 ---
 
 # acture architecture primer
@@ -43,13 +43,13 @@ Every engagement sits on **two independent dimensions** — keep both open, neve
 
 **Standing rule:** whenever your task touches a consumer surface or a consumer-specific `acture-*` package, also load the **`acture-consumer-integration`** skill. It operationalises the positioning above; this primer only states it. When the task is standing up command dispatch in a *new* target project, load **`acture-greenfield`** — it operationalises the same positioning for the core primitive itself, backed by the `docs/hand-written-registry.md` reference (the registry is ~80 lines a project can own outright, with zero `acture-*` dependency).
 
-## The rule of three
+## The rule of three — for users, not for us
 
-> An operation should only be formalized as a command when it is triggered from at least three surfaces.
+> Soft heuristic for the application developer: an operation only earns formalization as a `defineCommand` entry once it is triggered from roughly three surfaces.
 
-Per the central paper §6.2 — but with a nuance: because the cost of formalizing a command is amortized across all surfaces it serves (palette, AI, MCP, macros, tests), the threshold is reached sooner than under ad-hoc integration. Use the rule as the guard against premature abstraction, not as a rigid count.
+This is the central paper §6.2's heuristic, scoped correctly: it is guidance for the *application developer using acture* — a softening of YAGNI suited to multi-surface frontends. The journal nuances it already: because acture amortizes formalization across surfaces (palette, AI, MCP, macros, tests), the threshold is reached sooner and more naturally than under ad-hoc integration. Treat it as a guard against premature abstraction in *the user's app*, not as a rigid count and not as a gate inside acture.
 
-Applied internally to acture itself: **do not add a library feature until three real callers need it.** Undo, macros, telemetry, codemods all wait for three-caller validation.
+**This rule does NOT apply to acture maintainers.** Earlier drafts of acture's own docs (and several historical reflections) turned the rule "inward" — "don't ship an acture feature until three real callers exist" — which is wrong: acture is the *tooling* that helps developers build command-dispatch architectures, so a callers-count gate would defeat the point. For what acture maintainers ship, the actual principles are YAGNI / wait for a concrete need, hard-don't #2 (no god-package), architecture-astronaut avoidance (§risks below), and the dev-tool-first principle. See [`docs/redesign_takeaways.md`](../../docs/redesign_takeaways.md) §6 for the canonical statement.
 
 ## The four risks (and mitigations)
 
@@ -57,7 +57,7 @@ From the central paper §6:
 
 1. **Inner Platform Effect** — command metadata becoming a mini-language. *Mitigation:* keep the `CommandRecord` surface closed and small (see `acture-command-record-shape` skill). Metadata is data, not code.
 
-2. **Premature generalization** — building extension points for hypothetical consumers. *Mitigation:* rule of three. About 1/3 of features actually improve metrics (Microsoft data).
+2. **Premature generalization** — building extension points for hypothetical consumers. *Mitigation:* YAGNI / wait for a concrete named need; about 1/3 of features actually improve metrics (Microsoft data). For acture *users* this surfaces as the soft rule-of-three heuristic above; for acture *maintainers* it is enforced by hard-don't #2 (no god-package) and by the dev-tool-first principle — see [`docs/redesign_takeaways.md`](../../docs/redesign_takeaways.md) §6.
 
 3. **Performance overhead** — dispatch indirection at hot paths. *Mitigation:* bifurcate. Dispatch is for human-frequency operations (ms–s); render-frequency operations (16ms frame budget) stay as direct calls.
 

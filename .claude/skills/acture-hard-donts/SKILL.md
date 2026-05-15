@@ -104,7 +104,7 @@ Before merging:
 
 1. Run through the 10 items above. Was anything new in this PR a temptation toward one of them?
 2. Re-read `docs/v1_plan.md` §3 (package layout) and confirm the PR doesn't bloat any package beyond its charter.
-3. If the PR added a field to `CommandRecord`: did three concrete callers ask for it? (See `acture-command-record-shape`.)
+3. If the PR added a field to `CommandRecord`: is there a concrete named consumer that needs it (one is enough; "what if someone…" is not)? Closed-surface discipline guards against inner-platform creep — see `acture-command-record-shape` for the closed-surface principle and `docs/redesign_takeaways.md` §6 for why a numeric callers gate is the wrong framing here.
 4. If the PR added a runtime check or middleware: is it the dispatcher's concern, or did it leak into an adapter?
 5. If the PR added a "mode" branch anywhere: stop. Refactor into composition.
 6. **Positioning check** (`docs/positioning.md`): could a developer accomplish what this PR enables *without* installing an `acture-*` package? If the honest answer is "no", the dev-tool-first principle is violated — the agent-written path must stay viable and documented. If the PR adds or touches a consumer surface, the `acture-consumer-integration` skill's checklist also applies.

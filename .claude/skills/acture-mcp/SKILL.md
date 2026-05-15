@@ -48,9 +48,9 @@ The same positioning applies inward (per `acture-consumer-integration` §"When y
 - The package **translates** the registry to MCP shape; it holds no business logic and makes no architectural decisions (hard-don't #3).
 - Pin the MCP spec version in CI and treat protocol upgrades as semver-major (a standing backlog item — `docs/roadmap.md`).
 
-## What NOT to build (rule of three)
+## What NOT to build (wait for a real need)
 
-No per-user / per-client tool-visibility logic in the adapter (that is business logic — push it into a `when`-clause or core middleware), no auth layer in the adapter, no custom transport abstraction over the SDK's, no MCP *resources* / *prompts* projection — wait for a concrete caller. The registry → `tools/list` + `tools/call` projection covers the overwhelming majority of MCP needs.
+No per-user / per-client tool-visibility logic in the adapter (that is business logic — push it into a `when`-clause or core middleware), no auth layer in the adapter, no custom transport abstraction over the SDK's, no MCP *resources* / *prompts* projection — wait until a concrete need surfaces in the project. The registry → `tools/list` + `tools/call` projection covers the overwhelming majority of MCP needs. YAGNI applied softly.
 
 ## See also
 

@@ -55,9 +55,9 @@ The same positioning applies inward (per `acture-consumer-integration` §"When y
 - It passes `record.params` (Zod) through directly rather than re-projecting — because the Vercel SDK accepts Zod. A JSON-Schema-wanting SDK adapter would project through `toJsonSchema` instead; that difference is per-SDK, not a core change.
 - No agent loop, no orchestration, no prompt construction — those belong to the host. The package emits tool definitions and nothing more.
 
-## What NOT to build (rule of three)
+## What NOT to build (wait for a real need)
 
-No per-surface trust fast-path (hard-don't #10), no prompt-engineering or description-rewriting beyond the deprecation banner (that is business logic — hard-don't #3), no agent loop / multi-step orchestration in the adapter (the host owns that — `maxSteps` is the SDK's, not acture's), no acture-authored system prompt. Wait for a concrete caller. The registry → tool-definitions projection covers the overwhelming majority of AI-tool-calling needs.
+No per-surface trust fast-path (hard-don't #10), no prompt-engineering or description-rewriting beyond the deprecation banner (that is business logic — hard-don't #3), no agent loop / multi-step orchestration in the adapter (the host owns that — `maxSteps` is the SDK's, not acture's), no acture-authored system prompt. Wait until a concrete need surfaces in the project. The registry → tool-definitions projection covers the overwhelming majority of AI-tool-calling needs. YAGNI applied softly.
 
 ## See also
 

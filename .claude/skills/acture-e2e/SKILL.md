@@ -61,9 +61,9 @@ The same positioning applies inward (per `acture-consumer-integration` §"When y
 - `@playwright/test` is a peer dependency, framed as the user's tool choice — named, not sold.
 - If you change an exported shape (`SequenceStep`, `CommandSequence`, `recordSequence`, `replaySequence`, `TestSequence`, `replayTest`), update `docs/hand-written-command-sequence.md` to match — the faithfulness note there is a standing commitment.
 
-## What NOT to build (rule of three)
+## What NOT to build (wait for a real need)
 
-Per `docs/hand-written-command-sequence.md` §"What this reference deliberately omits": no DAG/branching test sequences, no parallel step execution, no schema-version validation of saved sequences — until a concrete caller needs it. A linear sequence covers the overwhelming majority of e2e tests.
+Per `docs/hand-written-command-sequence.md` §"What this reference deliberately omits": no DAG/branching test sequences, no parallel step execution, no schema-version validation of saved sequences — until a concrete need surfaces in the test suite. A linear sequence covers the overwhelming majority of e2e tests. YAGNI applied softly.
 
 ## See also
 
