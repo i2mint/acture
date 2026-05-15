@@ -88,7 +88,7 @@ Two small, autonomous backlog items surfaced by research-6 (the user picked "sma
 
 ## Next
 
-**Pick the next increment from Deferred / backlog.** No item is pre-selected. The named backlog is now genuinely small — every concrete autonomous item from research-6 has been picked up. What remains: the **telemetry / undo / extensions consumer skills** (still gated on those packages existing — agent-written-path-only until then) and **deeper greenfield or migration skills** if practice surfaces a gap. The substantive fork is whether to **pull a post-v1 item forward** — the Python companion is unblocked and specified, `acture-undo` and `acture-telemetry` are spec'd. Each needs explicit user direction *and* the rule-of-three callers gate. Surface the options when this increment is scheduled; do not pull a post-v1 item forward unilaterally.
+**v1.11 — settled with the user on 2026-05-15:** pull two post-v1 items forward — **`acture-telemetry`** first (smaller; reuses `acture-devtools`'s `instrumentRegistry` hook), then **`acture-undo`** (larger; consumes `PatchCapableAdapter`, both state adapters already implement it). Full scope and the one remaining discipline gate (the rule-of-three callers per item) are in `docs/next_session.md`. Each item ships as a new package with a `docs/hand-written-*.md` reference doc and a consumer skill (the dev-tool-first promise is non-negotiable).
 
 ---
 
