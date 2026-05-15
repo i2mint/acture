@@ -53,6 +53,7 @@ Almost every consumer rests on *some* third-party library:
 | Macros (record/replay) | none — registry only                         | *none — pattern + `acture-macros` skill* |
 | Telemetry           | structured logger, OpenTelemetry, network beacon, custom | `acture-telemetry` (one reference `consoleSink`; user's sink is the user's) |
 | Undo / redo         | any `PatchCapableAdapter` (zustand+immer, RTK, MST) | `acture-undo` |
+| Python consumption  | official `mcp` SDK, FastMCP, hand-rolled JSON-RPC | `acture` on PyPI (dict-like MCP-client facade) |
 
 **This dependency belongs to the user's consumer code, and the choice of tool is theirs.** acture does not mandate cmdk or Playwright or the Vercel SDK. The per-tool `acture-*` packages each bundle *one* known-good integration with *one* tool — useful if the user already chose that tool, irrelevant if they chose another. Name the realistic options; respect the user's pick; never imply acture's choice is the only choice.
 
@@ -89,4 +90,4 @@ The same positioning applies inward:
 - `docs/positioning.md` — the canonical positioning this skill enforces.
 - `acture-architecture-primer` — the eight consumer surfaces and the three primitives.
 - `acture-hard-donts` — the merge checklist; #2 (no god-package) and #3 (adapters translate) are the ones this skill operationalises.
-- Per-surface skills — `acture-palette-design`, `acture-hotkeys`, `acture-mcp`, `acture-ai`, `acture-macros`, `acture-e2e`, `acture-test-property`, `acture-telemetry`, `acture-undo` — for the specifics of each surface.
+- Per-surface skills — `acture-palette-design`, `acture-hotkeys`, `acture-mcp`, `acture-ai`, `acture-macros`, `acture-e2e`, `acture-test-property`, `acture-telemetry`, `acture-undo`, `acture-python` — for the specifics of each surface.

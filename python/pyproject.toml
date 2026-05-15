@@ -5,24 +5,41 @@ build-backend = "hatchling.build"
 [project]
 name = "acture"
 dynamic = ["version"]
-description = "Typed schema-driven command dispatch — placeholder Python distribution. The library itself lives on npm (https://www.npmjs.com/package/acture)."
+description = "Python client for an acture MCP server — a dict-like facade over the Model Context Protocol. The acture library itself lives on npm (https://www.npmjs.com/package/acture)."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Thor Whalen" }]
-keywords = ["acture", "command-dispatch", "placeholder"]
+keywords = ["acture", "command-dispatch", "mcp", "model-context-protocol", "agent", "tools"]
 classifiers = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 4 - Beta",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Libraries",
+  "Framework :: AsyncIO",
+]
+dependencies = [
+  # Official Model Context Protocol Python SDK. Pinned to a floor that
+  # ships streamable-HTTP + structuredContent (added in mcp >=1.10).
+  "mcp >= 1.10",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest >= 8",
+  "pytest-asyncio >= 0.24",
 ]
 
 [project.urls]
 Homepage = "https://github.com/thorwhalen/acture"
 Repository = "https://github.com/thorwhalen/acture"
 Issues = "https://github.com/thorwhalen/acture/issues"
+"npm package" = "https://www.npmjs.com/package/acture"
 
 [tool.hatch.version]
 path = "acture/__init__.py"
@@ -32,3 +49,7 @@ packages = ["acture"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/acture", "/README.md"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

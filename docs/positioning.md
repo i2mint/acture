@@ -14,6 +14,7 @@ It is delivered as two things, and the order matters:
 
 1. **A body of skills, patterns, and codemods** — the *primary* surface. This is how an agent learns the command-dispatch architecture well enough to write it *into your project*, adapted to your stack, your constraints, and your preferences.
 2. **A set of npm packages** — the *optional* surface. Tested, ready-made implementations of the pieces an agent would otherwise hand-write, so it doesn't have to.
+3. **A small Python distribution on PyPI** (`acture`) — a thin MCP-client facade so Python programs can call an `acture-mcp-server` the same way an LLM agent does. Same positioning: optional, agent-written equivalent is documented and supported.
 
 acture is a **development tool first**. The packages are an accelerator, not the product.
 

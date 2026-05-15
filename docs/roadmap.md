@@ -4,17 +4,17 @@ The live forward-planning surface. `docs/v1_plan.md` and `docs/implementation_pl
 
 **How work proceeds:** phases are over. Work is small, tracked increments. Each picks one or two items from "Next" or "Deferred", ships them, updates this file, and replaces `docs/next_session.md` with the following handoff.
 
-Last updated: **2026-05-15** (v1.12 — `acture-test-property` pull-forward from Post-v1).
+Last updated: **2026-05-15** (v1.13 — Python companion pull-forward from Post-v1; chain end).
 
 ---
 
 ## Status snapshot
 
-- **19 packages** in the workspace. **`acture-test-property`** is new this increment (v1.12), pulled forward from Post-v1. Pending changeset: `acture-test-property` (`minor` at debut).
-- **489 package tests + 41 example tests** green (+29 from `acture-test-property`); all packages and examples build + typecheck.
+- **19 npm packages** in the workspace + **1 PyPI package** (`acture` — graduated this increment from name-reservation placeholder to real Python MCP client). Pending changeset: `acture` (`patch` to drive the version-sync to PyPI).
+- **489 package tests + 41 example tests** (npm) green; +23 Python tests covering the `ActureClient` facade, error unwrapping, transport helpers. All packages and examples build + typecheck; the Python distribution builds + passes `twine check`.
 - Canonical positioning is now written down (`docs/positioning.md`) and wired into the skills. **Rule-of-three rescoped** (`docs/redesign_takeaways.md` §6): the soft heuristic applies to acture *users* deciding when to formalize a command, not to acture *maintainers* deciding what to ship.
-- **25 skills**: 20 `acture-*` (dev / foundation / consumer-surface — palette / hotkeys / MCP / AI / macros / e2e / telemetry / undo / **test-property** consumer skills + `acture-greenfield` and its two sub-skills) and 5 `migration-*`.
-- Six reproducibility / recipe docs: `hand-written-registry.md`, `hand-written-command-sequence.md`, `hand-written-telemetry.md`, `hand-written-undo.md`, **`hand-written-test-property.md`**, and `ai-codemod-recipe.md`.
+- **26 skills**: 21 `acture-*` (dev / foundation / consumer-surface — palette / hotkeys / MCP / AI / macros / e2e / telemetry / undo / test-property / **python** consumer skills + `acture-greenfield` and its two sub-skills) and 5 `migration-*`.
+- Seven reproducibility / recipe docs: `hand-written-registry.md`, `hand-written-command-sequence.md`, `hand-written-telemetry.md`, `hand-written-undo.md`, `hand-written-test-property.md`, **`hand-written-python-client.md`**, and `ai-codemod-recipe.md`.
 
 ---
 
@@ -102,11 +102,20 @@ New package pulled forward from Post-v1 as part of the autonomous v1.12 + v1.13 
 - **No god-package.** One fast-check binding only. No Vitest/Jest matchers, no HTML report, no CI integration, no per-step invariants, no `fc.commands` stateful-model surface — each is its own future package if real demand surfaces (hard-don't #2).
 - **Consistency updates:** roadmap status snapshot updated; this section added; `acture-test-property` skill registered as the eighth-and-a-half consumer surface variant (it does not add a 9th surface — it is the e2e surface's property-test variant).
 
+### v1.13 — Python companion pull-forward — complete (this increment, chain end)
+New PyPI distribution (graduated from name-reservation placeholder) pulled forward from Post-v1 as the second half of the autonomous v1.12 + v1.13 chain. Full write-up: `docs/v1_13-reflection.md`.
+
+- **`acture` on PyPI** — graduated from the placeholder that reserved the name to a real, thin MCP-client facade per `docs/research/acture_research_6`. Surface: `ActureClient` (a `Mapping[str, Command]`), `Command` (callable; `__call__` returns `structuredContent`, `call_raw` returns the full `CallToolResult`), `ActureError` (errors-as-data across the language boundary — code, message, command_id, details), `stdio_transport` / `http_transport` helpers. ~300 LoC, dict-like in the `dol`/`py2mcp` idiom. **No Pydantic dependency** — agents read JSON Schema and `description` directly; Pydantic-codegen is optional, out-of-package, deliberately post-v1. **No OpenAPI emitter** — MCP already speaks JSON Schema. **One dependency**: the official `mcp` SDK (≥ 1.10). +23 tests using the SDK's in-memory transport. Hand-written equivalent: `docs/hand-written-python-client.md` (~50 lines). Consumer skill: `acture-python`.
+- **Cross-language semver = lockstep, today.** `scripts/sync-python-version.mjs` was already in place; the v1.13 release rides the existing `patch`-bump-of-npm-`acture` mechanism to drive the PyPI version + publish. Decoupling is a deliberate future decision, not made in this increment.
+- **Server side unchanged.** `acture-mcp-server` already shipped; the Python client consumes its `tools/list` + `tools/call` shape verbatim, including the `formatToolResponse` error envelope (`isError: true` with a JSON-stringified `CommandError` in a text content block).
+- **Shape decisions (settled autonomously per next_session.md):** package name = `acture` (already PyPI-reserved by the existing placeholder; verified by inspection of `python/`'s state). API = `ActureClient` as `Mapping[str, Command]` per research-6 §"v1 scope" sketch. Pydantic = optional, NOT a hard dep. OpenAPI = out of scope. Test substrate = the SDK's in-memory transport (`create_connected_server_and_client_session`), not a Node subprocess — same wire, no flakiness, no JS-build dependency in pytest. Errors-as-data = typed exception `ActureError` (the convenient form) + `call_raw` returning the raw `CallToolResult` (the dict form), so callers can pick whichever ergonomics they prefer.
+- **One escalation that didn't fire:** the version-lockstep question (should PyPI `acture` decouple from npm `acture`?) was flagged in advance as a possible escalation; investigation showed the existing `sync-python-version.mjs` infrastructure handles the cross-language semver cleanly for v1, and decoupling is reversible later. Kept the lockstep, documented the choice in the changeset and `acture-python` skill.
+
 ---
 
 ## Next
 
-**Pick the next increment from Deferred / backlog or the remaining Post-v1 list.** No item is pre-selected. With test-property shipped, the remaining Post-v1 items are: the **Python companion** (research-6 spec'd, unblocked — scheduled as v1.13), **`acture-sandbox`** (membrane-pattern third-party extension sandboxing), and additional state adapters (`acture-state-jotai`, `acture-state-valtio`). The deferred-but-not-rejected backlog has only the `.d.ts` tier mirror and the per-surface skills for extensions (no package yet). Pull-forward decisions are the user's; surface options when this increment is scheduled.
+**The autonomous v1.12 + v1.13 chain is complete.** The remaining post-v1 items need user direction; the rewritten `docs/next_session.md` surfaces them. The candidates are: **`acture-state-jotai`** (atom-tree ↔ flat-state bridge is non-trivial per research-3; the adapter may not implement `PatchCapableAdapter` cleanly), **`acture-state-valtio`** (proxy-to-patch translation is non-trivial), **`acture-sandbox`** (membrane-pattern extension sandboxing — needs design / research before code). Pull-forward decisions are the user's; surface options with honest trade-offs when scheduled.
 
 ---
 
@@ -129,7 +138,7 @@ Per `docs/v1_plan.md` §"Post-v1" — none ship without explicit user direction.
 - **`acture-sandbox`** — membrane-pattern third-party extension sandboxing.
 - ~~**`acture-test-property`** — fast-check arbitraries derived from command param schemas; random command sequences asserting state invariants.~~ ✅ Shipped v1.12.
 - **`acture-state-jotai`, `acture-state-valtio`** — additional reference `StateAdapter<S>` implementations.
-- **Python companion** — **research-6 is done** (`docs/research/acture_research_6 …`) and gives this a tight, ready shape: a *thin MCP-client facade* package (`acture` on PyPI if available, else `acture-client`), ~300 LoC, dict-like in the `dol`/`py2mcp` idiom, zero hard Pydantic dependency. **The server side already ships** as `acture-mcp-server` — only the thin Python *client* remains. Explicitly **not** a Pydantic-codegen SDK or OpenAPI emitter in v1 (those are post-companion, for human — not agent — consumers). No longer blocked on research — pull forward whenever wanted. Note: research-6 was written against an assumed `StableCommand` name; map it to the real `CommandRecord` / `defineCommand`.
+- ~~**Python companion** — thin MCP-client facade.~~ ✅ Shipped v1.13 as the `acture` PyPI package, graduating from the name-reservation placeholder. See `docs/v1_13-reflection.md`. Out of scope and explicitly post-v1.13: Pydantic-codegen SDK, OpenAPI emitter, inverse-direction skill kit (Python authors registering commands that acture surfaces back through MCP).
 
 ### Smaller items surfaced by research-6 — both now shipped
 
@@ -174,4 +183,4 @@ Explicit done/not-done for everything raised in conversation, so nothing is lost
 | `acture-undo`, `acture-telemetry` | ✅ Shipped v1.11 — see `docs/v1_11-reflection.md` |
 | `acture-sandbox` | 🔒 Post-v1 |
 | Research-6 (cross-language story) | ✅ Done — filed at `docs/research/acture_research_6 …` |
-| Python companion | 🔓 Post-v1 but **unblocked & specified** — thin MCP-client facade; server side (`acture-mcp-server`) already ships |
+| Python companion | ✅ Shipped v1.13 — `acture` on PyPI, graduated from placeholder; thin MCP-client facade per research-6; see `docs/v1_13-reflection.md` |
