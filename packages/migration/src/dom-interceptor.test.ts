@@ -277,6 +277,55 @@ describe('createDomInterceptor', () => {
     unmount();
   });
 
+  it('onMalformedAttribute fires when params JSON fails to parse, without breaking dispatch', async () => {
+    const registry = createRegistry();
+    const execute = vi.fn(() => ok({}));
+    registry.register(
+      defineCommand({ id: 'app.j.m', title: 'M', execute }),
+    );
+    const onMalformed = vi.fn();
+
+    const root = newRoot();
+    root.innerHTML = `<button data-acture-command="app.j.m" data-acture-params="{ not json }">m</button>`;
+    const unmount = createDomInterceptor(registry, {
+      onMalformedAttribute: onMalformed,
+    })(root);
+
+    (root.querySelector('button')! as HTMLButtonElement).click();
+    await Promise.resolve();
+    expect(onMalformed).toHaveBeenCalledTimes(1);
+    const [raw, el, err] = onMalformed.mock.calls[0]!;
+    expect(raw).toBe('{ not json }');
+    expect((el as Element).getAttribute('data-acture-command')).toBe('app.j.m');
+    expect(err).toBeInstanceOf(SyntaxError);
+    // Dispatch still proceeded with undefined params (existing behavior preserved).
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect((execute.mock.calls[0] as unknown[])[0]).toBeUndefined();
+    unmount();
+  });
+
+  it('an onMalformedAttribute that throws does not break dispatch', async () => {
+    const registry = createRegistry();
+    const execute = vi.fn(() => ok({}));
+    registry.register(
+      defineCommand({ id: 'app.j.t', title: 'T', execute }),
+    );
+
+    const root = newRoot();
+    root.innerHTML = `<button data-acture-command="app.j.t" data-acture-params="{nope}">t</button>`;
+    const unmount = createDomInterceptor(registry, {
+      onMalformedAttribute: () => {
+        throw new Error('observer boom');
+      },
+    })(root);
+
+    (root.querySelector('button')! as HTMLButtonElement).click();
+    await Promise.resolve();
+    // Dispatch still ran despite the observer throwing.
+    expect(execute).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
   it('onDispatch fires with id + params for every routed event', async () => {
     const registry = createRegistry();
     registry.register(
