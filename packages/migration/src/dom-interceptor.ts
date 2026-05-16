@@ -77,6 +77,16 @@ export interface DomInterceptorOptions {
   capture?: boolean;
   /** Called on every dispatch result. Useful for telemetry / audit. */
   onDispatch?: (id: string, params: unknown) => void;
+  /** Called when `data-acture-params` (or the configured params attribute)
+   *  contains malformed JSON. The interceptor still proceeds with
+   *  `params = undefined` — this hook only exists to make the swallow
+   *  observable for debugging. Receives the raw attribute value, the
+   *  resolved element, and the underlying parse error. */
+  onMalformedAttribute?: (
+    raw: string,
+    element: Element,
+    error: unknown,
+  ) => void;
 }
 
 /** Returned by `createDomInterceptor`. Call to start watching a root node;
@@ -119,6 +129,7 @@ export function createDomInterceptor(
   const requireRegistered = options.requireRegistered ?? true;
   const capture = options.capture ?? false;
   const onDispatch = options.onDispatch;
+  const onMalformedAttribute = options.onMalformedAttribute;
   const userPreventDefault = options.preventDefault;
   const userParamsFrom = options.paramsFrom;
 
@@ -137,7 +148,7 @@ export function createDomInterceptor(
         params = userParamsFrom(event, el);
       }
       if (params === undefined) {
-        params = readJsonAttribute(el, paramsAttribute);
+        params = readJsonAttribute(el, paramsAttribute, onMalformedAttribute);
       }
 
       // Fire-and-forget. `registry.dispatch` returns a Promise<Result>;
@@ -182,15 +193,28 @@ function findAncestorWithAttribute(
   return null;
 }
 
-function readJsonAttribute(el: Element, attribute: string): unknown {
+function readJsonAttribute(
+  el: Element,
+  attribute: string,
+  onMalformed?: (raw: string, element: Element, error: unknown) => void,
+): unknown {
   const raw = el.getAttribute(attribute);
   if (raw === null || raw === '') return undefined;
   try {
     return JSON.parse(raw);
-  } catch {
+  } catch (e) {
     // Malformed JSON in a data-attribute is a user error. We swallow it
     // and pass `undefined` rather than crash the event handler. Hosts
-    // who want strict behavior should validate at write time.
+    // who want strict behavior should validate at write time, or pass
+    // `onMalformedAttribute` to observe these cases.
+    if (onMalformed) {
+      try {
+        onMalformed(raw, el, e);
+      } catch {
+        // Observer errors must not break dispatch. Same rule as the
+        // registry's listener-error path.
+      }
+    }
     return undefined;
   }
 }

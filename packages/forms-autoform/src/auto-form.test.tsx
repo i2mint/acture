@@ -124,4 +124,26 @@ describe('<AutoForm />', () => {
     );
     expect((document.querySelector('input') as HTMLInputElement).value).toBe('seeded');
   });
+
+  it('fails soft when command.params bypasses the ZodType<unknown> type via cast', async () => {
+    // Simulate a caller that bypassed the schema type (e.g., passed a
+    // plain object via `as ZodType<unknown>`). Without the runtime
+    // guard the code would crash with `safeParse is not a function`.
+    const onSubmit = vi.fn();
+    const cmd = {
+      id: 'app.t.bypass',
+      title: 'Bypass',
+      params: { /* not a Zod schema */ } as unknown as z.ZodTypeAny,
+      execute: () => ok({}),
+    } as unknown as Parameters<typeof AutoForm>[0]['command'];
+
+    render(<AutoForm command={cmd} onSubmit={onSubmit} onCancel={() => {}} />);
+    const form = document.querySelector('form')!;
+    await act(async () => {
+      fireEvent.submit(form);
+    });
+    expect(onSubmit).toHaveBeenCalledOnce();
+    // Values are passed through; the dispatcher's own `params.safeParse`
+    // will produce the canonical error envelope.
+  });
 });

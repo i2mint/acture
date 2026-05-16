@@ -24,13 +24,26 @@ export function AutoForm(props: AutoFormProps): React.ReactElement {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function handleSubmit(): void {
-    const schema = command.params as z.ZodTypeAny | undefined;
+    const schema = command.params as { safeParse?: unknown } | undefined;
     if (!schema) {
       onSubmit({});
       return;
     }
-    const result = (schema as unknown as { safeParse: (v: unknown) => { success: boolean; data?: unknown; error?: { issues?: { path: (string | number)[]; message: string }[] } } })
-      .safeParse(values);
+    // Duck-typed Zod check. `command.params` is typed `ZodType<unknown>`
+    // upstream by `defineCommand`, but callers can bypass that with a
+    // cast. If `safeParse` isn't a function we can't validate, so pass
+    // values straight through and let the dispatcher's own
+    // `params.safeParse(...)` reject them with a clean error envelope.
+    if (typeof schema.safeParse !== 'function') {
+      onSubmit(values);
+      return;
+    }
+    type SafeParseFn = (v: unknown) => {
+      success: boolean;
+      data?: unknown;
+      error?: { issues?: Array<{ path: ReadonlyArray<string | number>; message: string }> };
+    };
+    const result = (schema.safeParse as SafeParseFn)(values);
     if (!result.success) {
       const next: Record<string, string> = {};
       for (const issue of result.error?.issues ?? []) {
