@@ -119,3 +119,18 @@ acture adapts along two independent axes — and the agent keeps both open rathe
 ## License
 
 Apache-2.0.
+
+## What does "acture" mean?
+
+[Acture](https://www.oed.com/dictionary/acture_n) is primarily known as an obsolete term from the early 1600s that means 
+action or the state of doing something. 
+
+> "Love made them not; with acture they may be,
+> Where neither party is nor true nor kind."
+> 
+> — William Shakespeare, *A Lover's Complaint* (line 185)
+
+It has also been adopted in specialized movement fields to describe dynamic readiness.
+
+The term "acture" was famously coined by [Moshe Feldenkrais](https://feldenkrais.com/about-moshe-feldenkrais/), the founder of the Feldenkrais Method, as a direct [critique of the traditional, static concept of "posture."](https://kinesophics.ca/freedom_and_maturity/)
+In the context of the Feldenkrais Method and movement science, "acture" represents the [transition from viewing the body as a structure held in a fixed position](https://feldenkrais.com/posture-or-acture/) to viewing it as a system constantly prepared for action.
