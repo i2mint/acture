@@ -3,6 +3,10 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# npm artifacts (this is a pnpm monorepo — only pnpm-lock.yaml is tracked)
+package-lock.json
+npm-debug.log*
+
 # Python build artifacts (python/ stub)
 __pycache__/
 *.egg-info/
