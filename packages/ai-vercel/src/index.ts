@@ -2,15 +2,17 @@
  * `acture-ai-vercel` — project an acture registry as Vercel AI SDK
  * tool definitions.
  *
- * The Vercel AI SDK's `tool({ description, parameters, execute })`
- * accepts Zod schemas directly, so this adapter passes `record.params`
- * through without re-projection — preserving validators that JSON
- * Schema would silently drop (e.g., `z.refine` predicates).
+ * Each command's Zod `params` schema is converted to a JSON Schema (with
+ * Zod 4's native `z.toJSONSchema()`) and handed to the AI SDK via
+ * `jsonSchema()` — see `toParameterSchema` for why the conversion cannot
+ * be left to the SDK. Runtime validation is unaffected: `registry.dispatch`
+ * still validates against the original Zod schema, so refinements a JSON
+ * Schema cannot express (e.g. `z.refine` predicates) are still enforced.
  *
  * Tier filter and deprecation banners mirror `acture-mcp-server`.
  */
 
-import { tool } from 'ai';
+import { jsonSchema, tool } from 'ai';
 import type { Tool } from 'ai';
 import { z } from 'zod';
 import type {
@@ -62,18 +64,37 @@ export function toAITools(
   return out;
 }
 
+/**
+ * Project a command's Zod `params` to a JSON Schema the AI SDK can send
+ * to the model.
+ *
+ * The AI SDK's `tool({ parameters })` *accepts* a Zod schema, but `ai`
+ * v4 converts it internally with `zod-to-json-schema`, which understands
+ * only Zod **v3**'s internals. Given a Zod **v4** schema it silently
+ * emits an empty `{}` — the model then sees a tool with no parameters
+ * and cannot supply arguments. So we convert up front with Zod 4's
+ * native `z.toJSONSchema()` and hand the SDK a ready JSON Schema via
+ * `jsonSchema()`. A command with no `params` projects to an empty object
+ * schema.
+ */
+function toParameterSchema(
+  params: AnyCommandRecord['params'],
+): ReturnType<typeof jsonSchema> {
+  const zodParams = (params ?? z.object({})) as z.ZodType<unknown>;
+  return jsonSchema(
+    z.toJSONSchema(zodParams) as Parameters<typeof jsonSchema>[0],
+  );
+}
+
 function projectCommand(
   registry: Registry,
   cmd: AnyCommandRecord,
   options: ToAIToolsOptions,
 ): Tool {
   const description = applyDeprecationPrefix(cmd, cmd.description);
-  // The AI SDK requires a parameters schema. Use an empty object schema
-  // when the command takes no params.
-  const parameters = (cmd.params ?? z.object({})) as z.ZodTypeAny;
   return tool({
     description: description ?? cmd.title,
-    parameters,
+    parameters: toParameterSchema(cmd.params),
     execute: async (args: unknown) => {
       const result = await registry.dispatch(cmd.id, args, options.context);
       options.onDispatched?.(cmd, result);
