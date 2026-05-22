@@ -86,4 +86,33 @@ describe('toAITools', () => {
     );
     expect(onDispatched).toHaveBeenCalledOnce();
   });
+
+  it('projects Zod v4 params to a non-empty JSON Schema', () => {
+    // Regression: `ai` v4 converts a passed-through Zod schema with
+    // `zod-to-json-schema` (Zod v3 only) and silently yields an empty
+    // `{}` for a Zod v4 schema — the model then sees no parameters. The
+    // adapter must convert via `z.toJSONSchema()` itself.
+    const { registry } = setup();
+    const tools = toAITools(registry);
+    const params = (
+      tools['app.search'] as unknown as {
+        parameters: {
+          jsonSchema?: { type?: string; properties?: Record<string, unknown> };
+        };
+      }
+    ).parameters;
+    expect(params.jsonSchema?.type).toBe('object');
+    expect(params.jsonSchema?.properties ?? {}).toHaveProperty('query');
+  });
+
+  it('projects a param-less command to an empty object schema', () => {
+    const { registry } = setup();
+    const tools = toAITools(registry, { tiers: ['stable', 'experimental'] });
+    const params = (
+      tools['app.exp.thing'] as unknown as {
+        parameters: { jsonSchema?: { type?: string } };
+      }
+    ).parameters;
+    expect(params.jsonSchema?.type).toBe('object');
+  });
 });
