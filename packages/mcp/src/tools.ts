@@ -11,7 +11,12 @@ import type {
   Result,
   Tier,
 } from 'acture';
-import { isFunctionWhen, toJsonSchema } from 'acture';
+import {
+  buildToolNameToIdMap,
+  commandIdToToolName,
+  isFunctionWhen,
+  toJsonSchema,
+} from 'acture';
 
 /** MCP tool envelope as understood by `tools/list`. The SDK's exact
  *  type lives in `@modelcontextprotocol/sdk/types.js`; we mirror the
@@ -63,7 +68,11 @@ function projectCommand(cmd: AnyCommandRecord): McpToolDescriptor {
   const envelope = toJsonSchema(cmd);
   const description = applyDeprecationPrefix(cmd, envelope.description);
   const out: McpToolDescriptor = {
-    name: envelope.name,
+    // MCP tool names share the OpenAI/Anthropic constraint
+    // `^[a-zA-Z0-9_-]{1,64}$`; dotted command ids like `app.search.run`
+    // would be rejected by strict MCP clients. Sanitize at the wire
+    // boundary (refs #24); dispatch (`callTool`) translates back.
+    name: commandIdToToolName(cmd.id),
     inputSchema: envelope.inputSchema,
   };
   if (description !== undefined) out.description = description;
@@ -100,6 +109,13 @@ export interface CallToolResponse {
  * Dispatch a registered command and return an MCP-shaped response.
  * Errors are reported as `isError: true` content (errors-as-data per
  * `acture-architecture-primer` §"errors as data").
+ *
+ * `name` may be either the canonical `cmd.id` (e.g. `'app.search.run'`)
+ * or the sanitized wire tool name {@link buildToolsList} emits
+ * (`'app_search_run'`). The latter is what MCP clients send back on
+ * `tools/call` for commands with dotted ids (refs #24). When neither
+ * form resolves, the dispatch returns the registry's usual
+ * unknown-command error result.
  */
 export async function callTool(
   registry: Registry,
@@ -107,8 +123,16 @@ export async function callTool(
   args: unknown,
   ctx?: Context,
 ): Promise<CallToolResponse> {
-  const result = await registry.dispatch(name, args, ctx);
+  const dispatchId = resolveDispatchId(registry, name);
+  const result = await registry.dispatch(dispatchId, args, ctx);
   return formatToolResponse(result);
+}
+
+/** Direct id wins; sanitized name falls back to the inverse map. */
+function resolveDispatchId(registry: Registry, name: string): string {
+  if (registry.has(name)) return name;
+  const map = buildToolNameToIdMap(registry.list({ tiers: 'all' }).map((c) => c.id));
+  return map[name] ?? name;
 }
 
 /** Build an MCP response from an arbitrary acture Result. Exposed for
