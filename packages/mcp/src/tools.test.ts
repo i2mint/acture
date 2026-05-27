@@ -47,25 +47,37 @@ function setup() {
 }
 
 describe('buildToolsList', () => {
-  it('includes only stable commands by default', () => {
+  it('includes only stable commands by default, with sanitized tool names', () => {
     const { registry } = setup();
     const tools = buildToolsList(registry);
     const names = tools.map((t) => t.name);
-    expect(names).toContain('app.search');
-    expect(names).not.toContain('app.exp.thing');
+    // Sanitized (dots replaced); raw dotted id is NOT emitted (refs #24).
+    expect(names).toContain('app_search');
+    expect(names).not.toContain('app.search');
+    expect(names).not.toContain('app_exp_thing');
+  });
+
+  it('every name matches the MCP/OpenAI/Anthropic tool-name regex (refs #24)', () => {
+    const TOOL_NAME = /^[a-zA-Z0-9_-]{1,64}$/;
+    const { registry } = setup();
+    const tools = buildToolsList(registry, { tiers: 'all' });
+    expect(tools.length).toBeGreaterThan(0);
+    for (const t of tools) {
+      expect(t.name).toMatch(TOOL_NAME);
+    }
   });
 
   it('includes experimental when explicitly opted-in', () => {
     const { registry } = setup();
     const tools = buildToolsList(registry, { tiers: ['stable', 'experimental'] });
     const names = tools.map((t) => t.name);
-    expect(names).toContain('app.exp.thing');
+    expect(names).toContain('app_exp_thing');
   });
 
   it('prefixes [DEPRECATED — <reason>] when deprecationReason is set', () => {
     const { registry } = setup();
     const tools = buildToolsList(registry, { tiers: ['stable', 'deprecated'] });
-    const dep = tools.find((t) => t.name === 'app.old.thing');
+    const dep = tools.find((t) => t.name === 'app_old_thing');
     expect(dep).toBeDefined();
     expect(dep!.description).toMatch(
       /^\[DEPRECATED — use app\.new\.thing instead\] Original description\.$/,
@@ -75,7 +87,7 @@ describe('buildToolsList', () => {
   it('falls back to bare [DEPRECATED] when no reason is set', () => {
     const { registry } = setup();
     const tools = buildToolsList(registry, { tiers: ['stable', 'deprecated'] });
-    const dep = tools.find((t) => t.name === 'app.bare.deprecated');
+    const dep = tools.find((t) => t.name === 'app_bare_deprecated');
     expect(dep).toBeDefined();
     expect(dep!.description).toMatch(/^\[DEPRECATED\] No reason given\.$/);
   });
@@ -83,7 +95,7 @@ describe('buildToolsList', () => {
   it('excludes commands with function-form when by default', () => {
     const { registry } = setup();
     const tools = buildToolsList(registry);
-    expect(tools.find((t) => t.name === 'app.fn.gated')).toBeUndefined();
+    expect(tools.find((t) => t.name === 'app_fn_gated')).toBeUndefined();
   });
 
   it('inputSchema is always an object schema', () => {
@@ -96,13 +108,21 @@ describe('buildToolsList', () => {
 });
 
 describe('callTool', () => {
-  it('returns MCP content array on success', async () => {
+  it('returns MCP content array on success when called with the raw cmd.id', async () => {
     const { registry } = setup();
     const response = await callTool(registry, 'app.search', { query: 'foo' });
     expect(response.content).toHaveLength(1);
     expect(response.content[0]!.type).toBe('text');
     expect(JSON.parse(response.content[0]!.text)).toEqual({ hits: ['hit-for-foo'] });
     expect(response.isError).toBeUndefined();
+  });
+
+  it('also accepts the sanitized wire tool name (refs #24)', async () => {
+    // What an MCP client sends back on tools/call for a dotted command id.
+    const { registry } = setup();
+    const response = await callTool(registry, 'app_search', { query: 'bar' });
+    expect(response.isError).toBeUndefined();
+    expect(JSON.parse(response.content[0]!.text)).toEqual({ hits: ['hit-for-bar'] });
   });
 
   it('returns isError: true for invalid params (errors-as-data)', async () => {

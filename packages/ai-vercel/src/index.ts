@@ -9,6 +9,16 @@
  * still validates against the original Zod schema, so refinements a JSON
  * Schema cannot express (e.g. `z.refine` predicates) are still enforced.
  *
+ * **Tool-name sanitization.** The returned record is keyed by a wire-safe
+ * tool name (per OpenAI / Anthropic's shared `^[a-zA-Z0-9_-]{1,64}$`
+ * constraint), produced by `commandIdToToolName(cmd.id)`. Dotted ids like
+ * `app.search.run` therefore reach the model as `app_search_run` — the
+ * raw form is rejected by both providers (refs #24). Each tool's
+ * `execute` closes over the original `cmd.id`, so dispatch and any
+ * `onDispatched` callback always see the canonical id; only the name on
+ * the wire is rewritten. Use {@link toToolNameMap} to recover the
+ * `cmd.id` from a tool-call's reported name (for traces / macros / UI).
+ *
  * Tier filter and deprecation banners mirror `acture-mcp-server`.
  */
 
@@ -21,7 +31,12 @@ import type {
   Registry,
   Tier,
 } from 'acture';
-import { isFunctionWhen, isOk } from 'acture';
+import {
+  buildToolNameToIdMap,
+  commandIdToToolName,
+  isFunctionWhen,
+  isOk,
+} from 'acture';
 
 /** See `acture-mcp-server` tools.ts: identical banner format. */
 const DEPRECATION_PREFIX_BARE = '[DEPRECATED]';
@@ -38,30 +53,63 @@ export interface ToAIToolsOptions {
   excludeFunctionWhen?: boolean;
   /** Static context forwarded to every dispatch. */
   context?: Context;
-  /** Called after each dispatch — useful for logging tool-call results. */
+  /** Called after each dispatch — useful for logging tool-call results.
+   *  Receives the original `AnyCommandRecord` (with the canonical `cmd.id`,
+   *  not the sanitized tool name). */
   onDispatched?: (cmd: AnyCommandRecord, result: unknown) => void;
 }
 
 /**
  * Project the registry into `Record<string, Tool>` ready for
  * `streamText({ tools: ... })`.
+ *
+ * Keys are wire-safe tool names (see module doc / refs #24). Use
+ * {@link toToolNameMap} to recover the original `cmd.id` from a tool-call's
+ * reported name. Both functions apply the same tier + when filter so a key
+ * present in the record always has a corresponding entry in the map.
  */
 export function toAITools(
   registry: Registry,
   options: ToAIToolsOptions = {},
 ): Record<string, Tool> {
-  const excludeFn = options.excludeFunctionWhen ?? true;
-  const listOpts: Parameters<Registry['list']>[0] = options.tiers !== undefined
-    ? { tiers: options.tiers }
-    : undefined;
-  const list = registry.list(listOpts);
-
   const out: Record<string, Tool> = {};
-  for (const cmd of list) {
-    if (excludeFn && isFunctionWhen(cmd.when)) continue;
-    out[cmd.id] = projectCommand(registry, cmd, options);
+  for (const cmd of selectCommands(registry, options)) {
+    out[commandIdToToolName(cmd.id)] = projectCommand(registry, cmd, options);
   }
   return out;
+}
+
+/**
+ * Build a `{ toolName: cmd.id }` map for the same commands {@link toAITools}
+ * would project under `options`.
+ *
+ * When the model dispatches a tool call by name, the AI SDK reports the
+ * **sanitized** wire name (e.g. `'app_search_run'`). Look it up here to
+ * recover the original `cmd.id` (`'app.search.run'`) for traces, the
+ * command palette, telemetry, or macro replay.
+ *
+ * @example
+ * const tools = toAITools(registry);
+ * const nameToId = toToolNameMap(registry);
+ * // …after streamText emits a tool-call event with `toolName`:
+ * const cmdId = nameToId[toolName] ?? toolName;
+ */
+export function toToolNameMap(
+  registry: Registry,
+  options: ToAIToolsOptions = {},
+): Record<string, string> {
+  return buildToolNameToIdMap(selectCommands(registry, options).map((c) => c.id));
+}
+
+function selectCommands(
+  registry: Registry,
+  options: ToAIToolsOptions,
+): readonly AnyCommandRecord[] {
+  const excludeFn = options.excludeFunctionWhen ?? true;
+  const listOpts: Parameters<Registry['list']>[0] =
+    options.tiers !== undefined ? { tiers: options.tiers } : undefined;
+  const list = registry.list(listOpts);
+  return excludeFn ? list.filter((cmd) => !isFunctionWhen(cmd.when)) : list;
 }
 
 /**
@@ -96,6 +144,9 @@ function projectCommand(
     description: description ?? cmd.title,
     parameters: toParameterSchema(cmd.params),
     execute: async (args: unknown) => {
+      // `cmd.id` (not the sanitized wire name) is what the registry
+      // dispatches on — sanitization is a wire-format concern, not a
+      // dispatch concern.
       const result = await registry.dispatch(cmd.id, args, options.context);
       options.onDispatched?.(cmd, result);
       // The AI SDK serializes whatever execute returns to JSON in the

@@ -56,6 +56,13 @@ export type {
 } from './schema-bridge.js';
 
 export {
+  commandIdToToolName,
+  buildToolNameToIdMap,
+  TOOL_NAME_PATTERN,
+  TOOL_NAME_MAX_LENGTH,
+} from './tool-name.js';
+
+export {
   ok,
   err,
   isOk,
