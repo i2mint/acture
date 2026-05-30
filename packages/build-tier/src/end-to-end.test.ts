@@ -91,23 +91,25 @@ describe('Phase 4 tier-mirror end-to-end', () => {
     const registry = transformAndEvalRegistry();
     const tools = buildToolsList(registry);
     const names = tools.map((t) => t.name);
-    expect(names).toContain('app.a');
-    expect(names).not.toContain('app.b');
-    expect(names).not.toContain('app.c');
-    expect(names).not.toContain('app.d');
+    // buildToolsList emits sanitised wire names (commandIdToToolName:
+    // dots -> underscores; refs #24), not the dotted command ids.
+    expect(names).toContain('app_a');
+    expect(names).not.toContain('app_b');
+    expect(names).not.toContain('app_c');
+    expect(names).not.toContain('app_d');
   });
 
   it('AC3: buildToolsList({ tiers: [stable, experimental] }) includes the @experimental command', () => {
     const registry = transformAndEvalRegistry();
     const tools = buildToolsList(registry, { tiers: ['stable', 'experimental'] });
     const names = tools.map((t) => t.name);
-    expect(names).toContain('app.b');
+    expect(names).toContain('app_b');
   });
 
   it('AC4: deprecated description starts with [DEPRECATED — <reason>]', () => {
     const registry = transformAndEvalRegistry();
     const tools = buildToolsList(registry, { tiers: ['stable', 'deprecated'] });
-    const dep = tools.find((t) => t.name === 'app.c');
+    const dep = tools.find((t) => t.name === 'app_c');
     expect(dep?.description).toMatch(/^\[DEPRECATED — use app\.a instead\]/);
   });
 
