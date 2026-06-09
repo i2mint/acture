@@ -1,6 +1,6 @@
 {
   "name": "acture-sandbox",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "acture sandbox — the isolation seam for an extension system: one ExtensionRunner port plus an in-process transport. Swap in Worker / iframe / QuickJS / isolated-vm transports when authors are untrusted.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",
