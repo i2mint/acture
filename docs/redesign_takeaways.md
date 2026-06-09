@@ -88,9 +88,9 @@ Every surface — palette, hotkey, AI tool call, MCP, test, macro replay — cal
 
 Performance carve-out (per article §6.3): render-frequency operations stay as direct function calls. Dispatch is for **human-frequency** operations. Document this loudly to head off "but my game loop" objections.
 
-### 1.5 Owner-scoped lifecycle (Disposable pattern)
+### 1.5 Owner-scoped lifecycle (unregister-thunk pattern)
 
-Every `register*` call returns a `Disposable` (`{ dispose(): void }`) [ref_11]. Owners group disposables; `owner.dispose()` removes everything they registered. This is the right pattern; the existing implementation (commit `bb9a790`) keeps it. Do **not** generalize beyond what two real callers need [ref_27: YAGNI].
+Every `register*` call returns a bare `() => void` unregister thunk — **not** a `Disposable` object (`{ dispose(): void }`) [ref_11]. `register(cmd)` returns a thunk that removes that one command; `registerAll(cmds)` returns a single thunk that unregisters the whole group **atomically** — that group thunk *is* the owner-scoped unload primitive (there is no separate `owner.dispose()` object). `onCommandsChanged(listener)` likewise returns an unsubscribe thunk. This is the right pattern; shipped core (`packages/core/src/registry.ts`) implements it. Do **not** generalize beyond what two real callers need [ref_27: YAGNI].
 
 ### 1.6 Two-tier API per UI primitive
 

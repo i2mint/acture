@@ -123,7 +123,7 @@ Notes are organized thematically (VS Code core; AI / MCP / plugins; migration & 
 - `engines.vscode` pins the API version, enabling forward-compatible types.
 
 **Dos:**
-- Every registration returns a `Disposable` (`{ dispose(): void }`); group them under an owner so `cleanup()` is one call.
+- Tie every registration's lifetime to an owner so cleanup is one call. acture realizes this lesson with bare `() => void` unregister thunks rather than `Disposable` objects — `registerAll` returns a single thunk that unloads a group atomically.
 - Implicit activation: declaring a command in the manifest should be enough for acture to know about it; runtime handler binding can be deferred until first invocation.
 - Version the registry API surface (`engines.acture: "^1.0"`) so consumers can pin and acture can deprecate cleanly.
 

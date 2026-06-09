@@ -22,7 +22,7 @@ These are now-locked commitments from the user, the takeaways doc, and the five 
 | Undo subsystem | **Post-v1.** Reserve `execute` return shape (`Result<R>` with optional `patches?` and `effects?`) so adding `acture-undo` later is non-breaking. | User |
 | Schema as SSOT | JSON Schema as wire format; Zod is recommended authoring layer; Standard Schema accepted at boundary. Keep command param schemas in the JSON-Schema-representable subset (no `z.transform`, `z.date`, `z.bigint`, `z.set`, `z.map`, `z.custom` in params; validate at registration time). | Takeaways §1.3 + research-5 |
 | Single dispatch entry point | `dispatch(id, args, ctx?)` for all surfaces. Performance carve-out: render-frequency operations stay as direct function calls. | Takeaways §1.4 |
-| Owner-scoped lifecycle | **Disposable pattern.** Every `register*` returns a disposable. | Takeaways §1.5 |
+| Owner-scoped lifecycle | **Unregister-thunk pattern.** Every `register*` returns a bare `() => void` (not a `Disposable` object); `registerAll` returns one thunk that unloads the whole group atomically. | Takeaways §1.5 |
 | Errors as data | Discriminated-union `Result<R>`; no thrown exceptions across consumer boundaries. | Takeaways §1.8 |
 | Keybindings | **First-class field on `CommandRecord`** (research-1's missing-convergent-field finding). Shape: `string | string[]` using the tinykeys DSL (`"$mod+K"`, `"g i"`, `"$mod+([0-9])"`). Documented as a *suggestion* the user can override. | Research-1 + takeaways §1.7 |
 | Sandboxing | Not in v1. Trusted-extension model; add membrane later if a real third-party ecosystem emerges. | Takeaways §2.6 |
