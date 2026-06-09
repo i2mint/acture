@@ -53,7 +53,7 @@ __all__ = [
     '__version__',
 ]
 
-__version__ = "1.2.1"
+__version__ = "1.3.0"
 """Version. Auto-synced to the npm ``acture`` package's version by
 ``scripts/sync-python-version.mjs`` at release time. Cross-language
 lockstep is the suite's existing convention; loosen it only with a

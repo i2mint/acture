@@ -1,6 +1,6 @@
 {
   "name": "acture-ai-vercel",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Project an acture registry as Vercel AI SDK tool definitions. Tier-filtered; errors-as-data; passes Zod schemas through directly.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",

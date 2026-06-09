@@ -1,6 +1,6 @@
 {
   "name": "acture-capture",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Drive a command-dispatch app through a narrated journey, screenshot before/after each command, and emit a manifest — an illustrated manual / narrated video from the acture command registry.",
   "license": "Apache-2.0",
   "author": "Thor Whalen",
