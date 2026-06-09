@@ -35,13 +35,12 @@ Same shape as A, different substrate. Valtio is **proxy-based** — mutations lo
 - **Trade-off vs. alternatives:** Valtio is less popular than Jotai but has a dedicated user base. The proxy approach is incompatible with the JSON-serializable state constraint (`acture-greenfield-state-model`'s four hard constraints) only at the structural-clone boundary; not a blocker, but a thing to document.
 - **Recommended user-side decision:** "do we have a real Valtio consumer?" If no, defer.
 
-### Option C — `acture-sandbox` (membrane-pattern third-party extension sandboxing)
+### Option C — `acture-sandbox` ✅ shipped (the extension-system increment)
 
-The most architecturally interesting of the three. A sandbox isolates third-party extensions: an extension registers commands into a *child* registry that the host registry proxies through a security membrane. Hard-don't #5 (no eval of LLM strings) and the inverse-of-#5 (sandbox third-party code that the user couldn't otherwise audit) both apply.
+**Done.** The gating design is filed as research-9 (`docs/research/acture_research_9 -- Extensions and Plugin Systems.md`, the §7 brief); the maintainer overrode its honest no-named-user NO-GO to build the **isolation-only seam**. Shipped: the `acture-extensions` skill, `docs/hand-written-sandbox.md` (the ~15-line core-only host/loader pattern), and the `acture-sandbox` package — which ships *only* the `ExtensionRunner` port + an in-process transport.
 
-- **Effort:** **needs design work before code.** What's the threat model — adversarial extensions, supply-chain compromise, both? What's the membrane primitive — `Proxy`, iframe, WebContainer, full ECMAScript SES (`ses.endo.systems`)? Does the sandbox enforce CPU / memory / network quotas, or just JS-API isolation? What's the registration UX — a manifest, a runtime API, a build-time codemod? None of these are settled.
-- **Trade-off vs. A/B:** Sandboxing is *unique* — no other consumer surface covers it. A and B are "more reference adapters for substrates we already support." C is a new capability category.
-- **Recommended user-side decision:** "do we have a real extension-author / extension-host user, or are we speculating?" If speculating, this is research-7 territory, not v1.14 code.
+- **What's settled:** the trust-tier model (research-9 Axis A), effects-as-data, the host/loader as a pattern (the `CommandRecord` IS the manifest), and isolation as the one rung that earns a package.
+- **What stays deferred** (the genuine untrusted-author work): the real isolating transports (Worker / iframe / QuickJS-WASM / `isolated-vm`), CPU/memory quotas, and the capability/manifest/entitlement/marketplace layers — gated on a real untrusted-author user (research-9 §0).
 
 ### A fourth option — none of the above
 
@@ -52,12 +51,13 @@ Either the user has a different priority (a backlog item, a bug, a docs gap, a r
 When the user opens a session with "what's next" / "pick the next increment" / similar, ask via `AskUserQuestion`:
 
 - **Header:** `Next increment`
-- **Question:** "Three post-v1 options remain. Which (if any) should we schedule next?"
+- **Question:** "Two post-v1 state-adapter options remain. Which (if any) should we schedule next?"
 - **Options:**
   1. **`acture-state-jotai`** — Jotai adapter. Real implementation friction per research-3; needs a concrete consumer before pulling forward.
   2. **`acture-state-valtio`** — Valtio adapter. Same friction class as Jotai; same gate.
-  3. **`acture-sandbox`** — extension sandboxing. Architecturally interesting but **needs design / research before code**; would benefit from a research-7 first.
-  4. (Other — let the user type a backlog item or a fresh ask.)
+  3. (Other — let the user type a backlog item or a fresh ask.)
+
+  (`acture-sandbox` is no longer an option — its isolation-only seam shipped in the extension-system increment. The next sandbox work is gated on a real untrusted-author user.)
 
 If the user picks 1 or 2, run a normal increment (Step 1 = `AskUserQuestion` on adapter-specific design choices — the atom-tree-vs-flat-state choice for jotai, the diff-vs-proxy-subscribe choice for valtio). If the user picks 3, **do not write package code** — propose a research-7 prompt first.
 

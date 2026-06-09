@@ -43,7 +43,7 @@ pip install acture  # MCP client facade — Mapping[str, Command] over any actur
 
 ## Status
 
-**v1.13 — chain end (2026-05-15).** 19 npm packages live + 1 PyPI package (`acture`, the Python MCP client). 489 npm package tests + 41 example tests + 23 Python tests, all green. 26 agent skills + 7 reproducibility docs. Phases 0–4 of the original v1 plan are complete; work since has been small, tracked increments. See [`docs/roadmap.md`](docs/roadmap.md) for the live status and the three remaining post-v1 candidates (`acture-state-jotai`, `acture-state-valtio`, `acture-sandbox`).
+**v1.13 — chain end (2026-05-15).** 19 npm packages live + 1 PyPI package (`acture`, the Python MCP client). 489 npm package tests + 41 example tests + 23 Python tests, all green. 26 agent skills + 7 reproducibility docs. Phases 0–4 of the original v1 plan are complete; work since has been small, tracked increments. See [`docs/roadmap.md`](docs/roadmap.md) for the live status. Of the post-v1 candidates, the state adapters `acture-state-jotai` and `acture-state-valtio` remain; `acture-sandbox` now ships the isolation-only extension seam (the `ExtensionRunner` port + in-process transport), with the real isolating transports still deferred.
 
 | Package | Role |
 | --- | --- |
@@ -112,7 +112,7 @@ acture adapts along two independent axes — and the agent keeps both open rathe
 - **Forward plan + status:** [`docs/roadmap.md`](docs/roadmap.md) — what's done, what's next, what's deferred.
 - **Design synthesis:** [`docs/redesign_takeaways.md`](docs/redesign_takeaways.md) — opinionated commitments and hard "don'ts."
 - **v1 plan (historical):** [`docs/v1_plan.md`](docs/v1_plan.md) / [`docs/implementation_plan.md`](docs/implementation_plan.md) — phases 0–4, all complete.
-- **Research:** [`docs/research/`](docs/research/) — six filed research findings (1–6) that informed the plan, plus a drafted Prompt 7 (extension sandboxing) gated on user opt-in.
+- **Research:** [`docs/research/`](docs/research/) — filed research findings (1–9) that informed the plan, including research-9 (extension & plugin systems), the design behind the `acture-sandbox` isolation seam.
 - **Patterns:** [`docs/parameterized_command_palette_guide.md`](docs/parameterized_command_palette_guide.md) — implementation patterns.
 - **For agents:** [`AGENTS.md`](AGENTS.md) and [`.claude/skills/`](.claude/skills/).
 

@@ -115,7 +115,7 @@ New PyPI distribution (graduated from name-reservation placeholder) pulled forwa
 
 ## Next
 
-**The autonomous v1.12 + v1.13 chain is complete.** The remaining post-v1 items need user direction; the rewritten `docs/next_session.md` surfaces them. The candidates are: **`acture-state-jotai`** (atom-tree ↔ flat-state bridge is non-trivial per research-3; the adapter may not implement `PatchCapableAdapter` cleanly), **`acture-state-valtio`** (proxy-to-patch translation is non-trivial), **`acture-sandbox`** (membrane-pattern extension sandboxing — needs design / research before code). Pull-forward decisions are the user's; surface options with honest trade-offs when scheduled.
+**The autonomous v1.12 + v1.13 chain is complete.** The remaining post-v1 items need user direction; the rewritten `docs/next_session.md` surfaces them. The candidates are: **`acture-state-jotai`** (atom-tree ↔ flat-state bridge is non-trivial per research-3; the adapter may not implement `PatchCapableAdapter` cleanly), **`acture-state-valtio`** (proxy-to-patch translation is non-trivial). (**`acture-sandbox`** is no longer a candidate — its isolation-only seam shipped in the extension-system increment; see below.) Pull-forward decisions are the user's; surface options with honest trade-offs when scheduled.
 
 ---
 
@@ -135,7 +135,7 @@ Per `docs/v1_plan.md` §"Post-v1" — none ship without explicit user direction.
 
 - ~~**`acture-undo`** — patch-based undo, transactions, effect queue.~~ ✅ Shipped v1.11.
 - ~~**`acture-telemetry`** — middleware logging every dispatch.~~ ✅ Shipped v1.11.
-- **`acture-sandbox`** — membrane-pattern third-party extension sandboxing. Gating research prompt **drafted post-v1.13** in `docs/research/acture_research_prompts.md` (Prompt 7) — covers threat model, membrane primitive, resource quotas, registration UX, the hand-writable-equivalent question, and v1 scope. Not launched until the user opts into Option C from `docs/next_session.md`.
+- ~~**`acture-sandbox`** — third-party extension sandboxing.~~ ✅ **Isolation-only seam shipped** (the extension-system increment). Gating research filed as `docs/research/acture_research_9 -- Extensions and Plugin Systems.md` (the §7 brief): the host/loader is a core-only **pattern** (`docs/hand-written-sandbox.md` + the `acture-extensions` skill), and `acture-sandbox` ships *only* the `ExtensionRunner` port + an in-process transport. The real isolating transports (Worker / iframe / QuickJS-WASM / `isolated-vm`), the capability/manifest/entitlement layers, and a marketplace remain deferred until a real **untrusted-author** user (research-9 §0 — the maintainer overrode the no-named-user NO-GO to build the seam).
 - ~~**`acture-test-property`** — fast-check arbitraries derived from command param schemas; random command sequences asserting state invariants.~~ ✅ Shipped v1.12.
 - **`acture-state-jotai`, `acture-state-valtio`** — additional reference `StateAdapter<S>` implementations.
 - ~~**Python companion** — thin MCP-client facade.~~ ✅ Shipped v1.13 as the `acture` PyPI package, graduating from the name-reservation placeholder. See `docs/v1_13-reflection.md`. Out of scope and explicitly post-v1.13: Pydantic-codegen SDK, OpenAPI emitter, inverse-direction skill kit (Python authors registering commands that acture surfaces back through MCP).
@@ -174,13 +174,13 @@ Explicit done/not-done for everything raised in conversation, so nothing is lost
 | `.changeset/README.md` stale (`fixed` group, 0.x quirk) | ✅ Fixed (v1.9) — now describes independent versioning + post-1.0 semver |
 | Per-surface consumer skills — hotkeys / MCP / AI | ✅ Done (v1.8) — `acture-hotkeys`, `acture-mcp`, `acture-ai`; see `docs/v1_8-reflection.md` |
 | Per-surface consumer skills — telemetry / undo | ✅ Done (v1.11) — shipped alongside the packages; see `docs/v1_11-reflection.md` |
-| Per-surface consumer skills — extensions | ⏸️ Deferred — no `acture-extensions` / sandbox package yet |
+| Per-surface consumer skills — extensions | ✅ Done — `acture-extensions` skill + `docs/hand-written-sandbox.md` + `acture-sandbox` (isolation-only seam); see research-9 |
 | Greenfield agent-track skills | ✅ Done (v1.9) — `acture-greenfield-state-model` + `acture-greenfield-bootstrap` below the foundation; see `docs/v1_9-reflection.md` |
 | `.describe()` schema-lint rule | ✅ Done (v1.10) — `acture/require-param-describe` in `eslint-plugin-acture-migration`; `minor` changeset; see `docs/v1_10-reflection.md` |
 | Pin MCP spec version | ✅ Done (v1.10) — `packages/mcp/src/spec-version.test.ts` pins `2025-11-25`; `patch` changeset on `acture-mcp-server`; see `docs/v1_10-reflection.md` |
 | `acture-test-property` | ✅ Shipped v1.12 — see `docs/v1_12-reflection.md` |
 | `state-jotai`, `state-valtio` | 🔒 Post-v1 |
 | `acture-undo`, `acture-telemetry` | ✅ Shipped v1.11 — see `docs/v1_11-reflection.md` |
-| `acture-sandbox` | 🔒 Post-v1 — gating research prompt drafted (`docs/research/acture_research_prompts.md` Prompt 7, 2026-05-15); not launched without user direction |
+| `acture-sandbox` | ✅ Isolation-only seam shipped — `ExtensionRunner` port + in-process transport; design in research-9; isolating transports deferred until an untrusted-author user |
 | Research-6 (cross-language story) | ✅ Done — filed at `docs/research/acture_research_6 …` |
 | Python companion | ✅ Shipped v1.13 — `acture` on PyPI, graduated from placeholder; thin MCP-client facade per research-6; see `docs/v1_13-reflection.md` |
