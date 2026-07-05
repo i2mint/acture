@@ -496,9 +496,95 @@ Save the report as 'research_findings_prompt_7.md'.
 
 ---
 
+## Prompt 10 — End-user keyboard-shortcut customization
+
+*Status: launched and filed as `acture_research_10 -- End-User Keyboard-Shortcut Customization.md` (July 2026). Numbering follows the research-doc index; prompts for research_7 (PHP) and research_8 (C#/.NET) were run ad hoc and not templated here.*
+
+```
+=== CONTEXT ===
+
+acture ships a single default `keybinding` field per CommandRecord (a tinykeys DSL
+string/array, e.g. "$mod+K", "g i"), a `when` predicate, and the `acture-hotkeys`
+adapter (tinykeys) resolving same-key conflicts by first-registered-wins under
+matching `when`, at fire time (packages/hotkeys/src/bind.ts). The CommandRecord
+surface is deliberately CLOSED.
+
+=== THE QUESTION ===
+
+What is the state of the art in USER-facing keyboard-shortcut customization (letting
+an END USER, not just the developer, remap shortcuts and have it persist)? Survey
+VS Code / JetBrains / Sublime / Zed / Obsidian / Atom / Emacs / Vim / Figma / Linear
+/ Slack / Chrome-Firefox extension shortcuts / Blender / games. Cover: data model &
+storage; resolution & layering (default → user override → context/when; VS Code's
+last-defined-wins); chord/sequence capture UX & platform normalization; physical vs
+logical keys (event.code vs event.key, layout independence, getLayoutMap); conflict
+detection & resolution UX; presets/schemes & portability; accessibility & reserved
+keys (WCAG 2.1.4); web-specific constraints (browser-reserved combos, IME, keyup
+under ⌘, keydown vs keypress); and the JS hotkey-library landscape (which, if any,
+ship a persisted user-rebindable keymap with conflict detection).
+
+=== WHAT I NEED ===
+
+A 3000–4500-word report with a product×dimension table, LOVE/HATE UX patterns with
+citations, a recommended DATA MODEL (a sparse commandId→override map OUTSIDE the
+closed record) + RESOLUTION ALGORITHM + CAPTURE UX, a web-gotcha checklist, a
+library-capability comparison, and Vancouver references with URLs.
+```
+
+**Decision it unblocks:** whether acture ships a keymap-customization helper (package) or only a pattern (`docs/hand-written-keymap-override.md` + the `acture-hotkeys` skill customization section); the `bindHotkeys(registry, { keymap? })` extension point; removing customization from the hotkeys skill's "What NOT to build" list.
+
+**Project knowledge files:** `command_dispatch_journal_article.md`, `acture_research_1 -- Command-Dispatch Patterns …md`, `packages/hotkeys/src/bind.ts`, the `acture-hotkeys` skill.
+
+---
+
+## Prompt 11 — AI assistant operating a command-dispatch app
+
+*Status: launched and filed as `acture_research_11 -- AI Assistant Operating a Command-Dispatch App.md` (July 2026). Companion to `ai_assistants 03 -- From Command Dispatch to MCP …md`, which owns the write-side (command→MCP bridge, tool-format normalization, annotation taxonomy, HITL annotations).*
+
+```
+=== CONTEXT ===
+
+acture already projects the command registry to LLM tools (Vercel AI SDK) and MCP
+tools, routing through registry.dispatch with errors-as-data, tier filtering, and
+@deprecated banners. What's missing for an assistant that OPERATES the app (reads
+state + takes actions), not just a chatbot: (a) exposing current app STATE to the
+model (acture's MCP server emits tools only, no resources); (b) the runtime (chat UI
++ agent loop); (c) human-in-the-loop confirmation of destructive dispatch; (d) that
+an assistant's multi-step command chain is structurally a macro.
+
+=== THE QUESTION ===
+
+What is the state of the art for embedding an AI assistant that operates a web app,
+and what is the reference architecture for wiring a command-dispatch registry into
+one? Survey CopilotKit, assistant-ui, Vercel AI SDK, AG-UI, LangGraph, OpenAI
+Agents SDK, Anthropic (tool use / MCP / computer use), Microsoft Agent Framework,
+Pydantic AI, Mastra, Thesys C1 — and MCP deeply (tools vs resources vs prompts vs
+elicitation). Cover: state exposure (read-side) patterns and trade-offs; action
+exposure (write-side best practice); the agent loop (where it runs); human-in-the-
+loop confirmation; generative UI (render-in-chat vs act-on-app); the assistant-chain
+= macro tie-in (undo/replay, and whether frameworks treat runs as replayable);
+guardrails; observability; chat-UI layer.
+
+=== WHAT I NEED ===
+
+A 3500–5000-word report with a framework×capability table, a REFERENCE ARCHITECTURE
+for an assistant operating a command-dispatch app, a concrete recommendation on how
+to expose app STATE (MCP resources vs a getState tool vs readable-context vs
+system-prompt snapshot), a human-in-the-loop confirmation pattern for destructive
+dispatch, the assistant-chain=macro tie-in with undo/replay integration, a guardrails
+checklist, library/tool recommendations (what acture builds vs what stays the app's
+choice), and Vancouver references with URLs.
+```
+
+**Decision it unblocks:** whether the `ViewRegistry` + read-side projections (MCP resources + `getState` tool) and the `requiresConfirmation` gate ship as package additions (`acture-mcp` resources; a state-side `createViewRegistry`) or as hand-written references (`docs/hand-written-view-registry.md`, `docs/hand-written-assistant-runtime.md`); whether `requiresConfirmation`/`sideEffect` become CommandRecord fields (closed-surface change) or middleware+convention; the new `acture-ai-assistant` bridge skill.
+
+**Project knowledge files:** `command_dispatch_journal_article.md`, `positioning.md`, `ai_assistants 03 -- From Command Dispatch to MCP …md`, the `acture-ai` / `acture-mcp` / `acture-state-adapter` skills, `packages/mcp/src/tools.ts`.
+
+---
+
 ## Recommended order
 
-Prompts 1–6 all completed during the v1 phase and Post-v1 chain; their findings are filed alongside this file as `acture_research_{1..6} -- *.md`. Prompt 7 was drafted post-v1.13 (2026-05-15) as the gating prerequisite for `acture-sandbox`; it is independent of 1–6 and only runs if the user opts into Option C from `docs/next_session.md`.
+Prompts 1–6 all completed during the v1 phase and Post-v1 chain; their findings are filed alongside this file as `acture_research_{1..6} -- *.md`. Prompt 7 was drafted post-v1.13 (2026-05-15) as the gating prerequisite for `acture-sandbox`; it is independent of 1–6 and only runs if the user opts into Option C from `docs/next_session.md`. Prompts 10 and 11 (July 2026) fill the two remaining consumer-support gaps — end-user keybinding customization and the app-operating AI assistant — and are filed as `acture_research_10` / `acture_research_11`.
 
 | Order | Prompt | Status | Depends on |
 | --- | --- | --- | --- |
@@ -509,6 +595,8 @@ Prompts 1–6 all completed during the v1 phase and Post-v1 chain; their finding
 | **5** | 5 — Schema versioning | ✅ Filed | Lightly: P1's findings on what shipped products do |
 | **6** | 6 — Cross-language story | ✅ Filed | Lightly: P5's findings on schema versioning |
 | **7** | 7 — Extension sandboxing | ⏸️ Drafted, not launched (user-gated, Option C) | — |
+| **10** | 10 — End-user keybinding customization | ✅ Filed (research_10) | Lightly: research_1 (keybinding conventions) |
+| **11** | 11 — AI assistant operating an app | ✅ Filed (research_11) | Cross-refs `ai_assistants 03` (write-side) |
 
 ### Parallelism
 

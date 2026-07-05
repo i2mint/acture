@@ -22,8 +22,8 @@ Acture is built on three interlocking primitives. They are not optional layers �
 A single `CommandRecord` simultaneously serves:
 
 1. **Command palette** (`acture-palette-react` + the `acture-palette-design` skill) + **keyboard shortcuts** (`acture-hotkeys` + the `acture-hotkeys` skill)
-2. **AI tool calling** (`acture-ai-vercel` + the `acture-ai` skill) — schema → JSON Schema (or Zod pass-through) for LLM function calling
-3. **MCP server** (`acture-mcp-server` + the `acture-mcp` skill) — `{name, description, inputSchema}` tool emission
+2. **AI tool calling** (`acture-ai-vercel` + the `acture-ai` skill) — schema → JSON Schema (or Zod pass-through) for LLM function calling. Composing this into a full assistant that *operates* the app — the **read side** (a view registry → MCP resources + a `getState` tool), human-in-the-loop confirmation at the dispatch boundary, and dispatch-chain capture — is the **`acture-ai-assistant`** skill (references: `docs/hand-written-view-registry.md`, `docs/hand-written-assistant-runtime.md`; evidence: research-11)
+3. **MCP server** (`acture-mcp-server` + the `acture-mcp` skill) — `{name, description, inputSchema}` tool emission (tools; the read-side `resources` projection is covered by `acture-ai-assistant`)
 4. **End-to-end testing** (`acture-e2e-playwright` + the `acture-e2e` skill) — same `dispatch(id, params)` used by tests at unit/component/E2E levels; an e2e test is a macro with assertions
 5. **Telemetry** (`acture-telemetry` + the `acture-telemetry` skill) — observe every dispatch; configurable sink with optional sampler/redact
 6. **Undo/redo** (`acture-undo` + the `acture-undo` skill) — patch-based history over a `PatchCapableAdapter`; transactions group N dispatches; host callback for effect lifecycle
