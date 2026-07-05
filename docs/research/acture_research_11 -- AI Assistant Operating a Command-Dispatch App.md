@@ -10,7 +10,7 @@
 
 acture already projects the *command registry* (actions) to two write-side agent surfaces — Vercel AI SDK tools (`toAITools`) and MCP tools (`buildToolsList`/`createMcpServer`) — routing every call through `registry.dispatch`, returning errors-as-data, tier-filtering `internal`, and rewriting `@deprecated` to a banner (`acture-ai`, `acture-mcp` skills). An assistant that *operates* the app needs four things acture does **not** yet provide. The survey's headline is that acture is **structurally closer to a best-in-class "operate my app" substrate than any surveyed framework**, because it already owns the typed state model and typed action registry the frameworks each only half-have — so the remaining work is **projection and documentation, not new architecture**.
 
-1. **Close the read side with a `ViewRegistry` — the read-side dual of the command registry.** A *view* is a named, described, tier-tagged, sensitivity-scoped, typed **selector over state** (the dual of a command's action). Project one `ViewRegistry` to three read channels exactly as the schema bridge projects one command to palette/AI/MCP: **(a)** MCP **resources** (the semantically-correct, app-driven representation), **(b)** a universal read-only **`getState` tool** annotated `readOnlyHint:true` (the portable hedge for tools-only hosts like Cursor), and **(c)** an optional **AG-UI `STATE_SNAPSHOT`/`STATE_DELTA` bridge** that reuses `PatchCapableAdapter`'s RFC-6902 patches for free. **Do both resources and the tool** — the spec says resources, host reality says tools.
+1. **Close the read side with a `ViewRegistry` — the read-side dual of the command registry.** A *view* is a named, described, tier-tagged, sensitivity-scoped, typed **selector over state** (the dual of a command's action). Project one `ViewRegistry` to three read channels exactly as the schema bridge projects one command to palette/AI/MCP: **(a)** MCP **resources** (the semantically-correct, app-driven representation), **(b)** a universal read-only **`getState` tool** annotated `readOnlyHint:true` (the portable hedge for tools-only hosts like Cursor), and **(c)** an optional **AG-UI `STATE_SNAPSHOT`/`STATE_DELTA` bridge**: `PatchCapableAdapter`'s patches are **RFC-6902-*compatible*** (the Immer-subset shape — `path` is a segment array, not a JSON-Pointer string), so a trivial `path`-segments→JSON-Pointer transform feeds `STATE_DELTA` — near-free, not an identity pass-through. **Do both resources and the tool** — the spec says resources, host reality says tools.
 2. **Gate destructive dispatch with declarative `requiresConfirmation` middleware at the dispatch boundary** — *not* in UI code. "The model proposes; the **registry** disposes." Confirmation returns a *proposal* as errors-as-data (`code: 'confirmation_required'`, with `{command, params, preview}`), which the runtime turns into the industry-standard *propose → pause → approve/deny/edit → resume* HITL beat. Derive MCP tool `annotations` (`readOnlyHint`/`destructiveHint`) from a `sideEffect` class.
 3. **Do not ship a runtime; ship a bridge doc.** Every serious runtime runs the agent loop **server-side**; only rendering/voice is client-side. acture is right to ship no loop. The owed artifact is a worked recipe (`hand-written-assistant-runtime.md`) for the backend-loop and frontend-loop shapes, plus wiring that feeds the *existing* macro/undo layer.
 4. **Capture the dispatch chain as a macro — not the reasoning trace.** An assistant turn is structurally `{commandId, params}[]` — acture's existing macro/replay format. This gives undo (concatenated inverse patches), replay (save-as-command), and test fixtures for free. **Load-bearing caveat:** the *dispatch chain* is a deterministic macro; the *LLM reasoning trace* is not (LangGraph's own "time travel" re-executes forward nodes, firing fresh model calls). Capture the deterministic slice.
@@ -56,7 +56,7 @@ Two structural reads matter for acture. **(1)** The read-side column is mostly e
 
 ### 3.2 Recommendation — one `ViewRegistry`, three projections
 
-acture's state model is the ideal source: `StateAdapter<S>` gives `getState()`/`subscribe()`, and `PatchCapableAdapter` emits **RFC-6902 patches** — *the same wire format* AG-UI uses for `STATE_DELTA` and MCP uses conceptually for resource updates. Define **one read-side projection primitive** — a *view* (the read-side dual of a command) — and project it to all three read channels.
+acture's state model is the ideal source: `StateAdapter<S>` gives `getState()`/`subscribe()`, and `PatchCapableAdapter` emits **RFC-6902-*compatible* patches** (the Immer-subset shape; `path` is a segment array, not a JSON-Pointer string) — near-identical to what AG-UI's `STATE_DELTA` and MCP resource-updates use, a trivial `path`→JSON-Pointer transform away. Define **one read-side projection primitive** — a *view* (the read-side dual of a command) — and project it to all three read channels.
 
 ```ts
 // Read-side dual of a CommandRecord — lives beside the registry.
@@ -82,7 +82,7 @@ Then project the view registry to each read channel with thin adapters symmetric
 
 - **MCP resources** — map views to `{ uri: 'app://state/<id>', name, description, mimeType:'application/json' }`; `resources/read` returns `JSON.stringify(v.select(getState()))`; declare `resources.subscribe:true` and wire `adapter.subscribe(...)` to emit `notifications/resources/updated` for changed URIs. Use RFC-6570 templates for parameterized views (`app://state/node/{id}`). The *correct, app-controlled* representation.
 - **A universal `getState` tool** — one read-only `app.getState({ view: enum(viewIds) })` (or per-view `get_<id>` tools) annotated `readOnlyHint:true, openWorldHint:false, idempotentHint:true`, routing through the same `views` registry. The **pragmatic hedge for tools-only hosts**.
-- **AG-UI / readable-context bridge** — for an in-app assistant, wire `PatchCapableAdapter` patches straight into `STATE_DELTA` (same RFC-6902 format) and `getState()` into `STATE_SNAPSHOT`. Live, structured, delta-based sync essentially for free.
+- **AG-UI / readable-context bridge** — for an in-app assistant, map `PatchCapableAdapter` patches into `STATE_DELTA` (a trivial `path`-segments→JSON-Pointer transform — acture's `path` is an array, AG-UI's a string pointer) and `getState()` into `STATE_SNAPSHOT`. Live, structured, delta-based sync from one small adapter.
 
 **Selective exposure & leakage** — the `sensitivity` field + tiers: `internal`/`secret` views are never projected (mirroring `internal` command filtering); `redacted` passes through a documented redactor. **Token budget** — views are *narrow by design* (a selector, not the tree), plus MCP `priority` annotations and the just-in-time pull. **Freshness** — `subscribe`/patches (push) on capable hosts; re-pull on the rest.
 
@@ -121,17 +121,19 @@ Verified instantiations: Vercel `toolApproval` → `addToolApprovalResponse` [30
 Because acture carries per-command metadata and a central dispatcher, the gate belongs at the **dispatch boundary, driven by declarative command metadata** — not scattered in UI code. "The model proposes; the **registry** disposes."
 
 1. **Declare risk on the command**, projected to MCP annotations: a `sideEffect: 'query' | 'additive' | 'destructive'` (deriving `readOnlyHint`/`destructiveHint`) plus an explicit `requiresConfirmation?: boolean` override. A `destructive` command defaults to requiring confirmation.
-2. **Gate as dispatch middleware, not a caller check:**
+2. **Gate by wrapping `dispatch`, not a caller check** (the `recordSequence` reassignment idiom — `Middleware` below is a local alias for the dispatch-wrapper shape; acture exports no middleware pipeline)**:**
 
 ```ts
 // Confirmation is a dispatch-boundary concern, uniform across surfaces.
+// `risk(id)` is the §12 metadata lookup — a convention map (or record fields, if
+// you open the closed surface): { requiresConfirmation?, sideEffect?, preview? }.
 const confirmGate: Middleware = (next) => async (cmd, args, ctx) => {
-  const rec = registry.get(cmd);
-  if (rec?.requiresConfirmation && ctx.channel === 'assistant' && !ctx.approvedToken) {
+  const meta = risk(cmd);
+  if (meta.requiresConfirmation && ctx.channel === 'assistant' && !ctx.approvedToken) {
     return { ok: false, error: {
       code: 'confirmation_required',
-      message: `"${rec.description}" is destructive and needs approval.`,
-      details: { command: cmd, params: args, preview: rec.previewEffect?.(args) },
+      message: `"${registry.get(cmd)?.description ?? cmd}" is destructive and needs approval.`,
+      details: { command: cmd, params: args, preview: meta.preview?.(args) },
     }};
   }
   return next(cmd, args, ctx);   // approved (or non-destructive) → dispatch
@@ -140,13 +142,13 @@ const confirmGate: Middleware = (next) => async (cmd, args, ctx) => {
 
 3. **The runtime turns `confirmation_required` into a HITL pause** — the chat UI renders `{command, params, preview}` as an approve/deny/edit card (assistant-ui `respondToApproval`, Vercel `addToolApprovalResponse`, CopilotKit HITL); on approve, the runtime re-dispatches with `ctx.approvedToken` — a **one-use token bound to the exact `{command, params}` hash**, so approval can't be replayed against different args.
 
-This keeps the gate **caller-independent and schema-validated at the dispatcher regardless of surface** (acture's existing invariant), makes confirmation **declarative** (one field, not per-action UI), and reuses **errors-as-data** as the pause channel — so the same mechanism works on MCP (as `elicitation` or an `isError` proposal), Vercel, CopilotKit, or a hand-written loop. The `previewEffect` can call a *view* (§3) to show *what will change* — read-before-you-write made concrete.
+This keeps the gate **caller-independent and schema-validated at the dispatcher regardless of surface** (acture's existing invariant), makes confirmation **declarative** (one field, not per-action UI), and reuses **errors-as-data** as the pause channel — so the same mechanism works on MCP (as `elicitation` or an `isError` proposal), Vercel, CopilotKit, or a hand-written loop. The `preview` (from the risk metadata) can call a *view* (§3) to show *what will change* — read-before-you-write made concrete.
 
 ## 7. The assistant's dispatch chain is a macro — undo/replay
 
 An assistant operating the app emits a chain of tool calls; each, routed through the registry, is a `{commandId, params}` pair. **A completed assistant turn is structurally a macro** — the exact shape acture already uses (`acture-ai` §"AI multi-step sequence IS a macro"; `docs/hand-written-command-sequence.md`). *Do not invent a second format.* Three capabilities fall out once the assistant's dispatches are captured:
 
-- **Undo** — every dispatch through `PatchCapableAdapter` yields `{patches, inversePatches}`; a whole turn is undone by applying concatenated inverse patches in reverse. One "Undo AI action" over an arbitrarily long chain — *more* robust than any surveyed framework's undo story.
+- **Undo** — each state mutation via `PatchCapableAdapter.setStateWithPatches` yields `{patches, inversePatches}` (the dispatch `Result` carries only `patches?`, so undo-capture threads the adapter's return value); a whole turn is undone by applying concatenated inverse patches in reverse. One "Undo AI action" over an arbitrarily long chain — *more* robust than any surveyed framework's undo story.
 - **Replay / macro-ification** — a captured chain saves as a named macro and re-dispatches deterministically ("the assistant did a useful 8-step thing; save it as a one-click command").
 - **Test fixtures** — the captured chain + JSON-serializable state snapshots is a replayable e2e test; the assistant's own runs become regressions.
 
@@ -181,7 +183,7 @@ The registry is the single choke point, so *every* assistant dispatch is observa
 
 **What acture should build (small, projection-shaped, dev-tool-first):**
 - A **`ViewRegistry`** read-side primitive (§3) + projections: `toMcpResources(views)`, a `getState` tool projection, and an optional AG-UI `STATE_SNAPSHOT`/`STATE_DELTA` bridge reusing `PatchCapableAdapter` patches. The single highest-leverage addition — it closes the industry-wide read-side gap with machinery acture already owns.
-- A **`requiresConfirmation` dispatch-middleware** + the errors-as-data proposal shape (§6), plus MCP tool-annotation emission from `sideEffect`.
+- A **`requiresConfirmation` dispatch wrapper** (the `recordSequence`/`instrumentRegistry` reassignment idiom — acture has no formal middleware pipeline) + the errors-as-data proposal shape (§6), plus MCP tool-annotation emission from `sideEffect`.
 - **Docs, not packages, for the runtime** — `hand-written-assistant-runtime.md` (backend-loop + frontend-loop shapes) and capture-the-dispatch-chain wiring feeding the existing macro/undo layer (§7).
 
 **What stays the app's choice (name, don't sell):**

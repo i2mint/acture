@@ -24,8 +24,10 @@ exposing an app's *current state* to the model.** An assistant can *act* (tool
 calling — acture's write side, already shipped) but has no principled way to *see*
 what's on screen, what's selected, what mode the app is in. acture is unusually
 placed to close this because its state adapter already exposes `getState()` /
-`subscribe()` and (via `PatchCapableAdapter`) emits **RFC-6902 JSON Patches** — the
-same wire format AG-UI's `STATE_DELTA` and MCP resource-updates use.
+`subscribe()` and (via `PatchCapableAdapter`) emits **RFC-6902-*compatible* JSON
+Patches** (the Immer-subset shape — `path` is a segment array, not a JSON-Pointer
+string), near-identical to what AG-UI's `STATE_DELTA` and MCP resource-updates use —
+a trivial `path`→pointer transform away.
 
 A **view** is the read-side dual of a command: where a `CommandRecord` is a named,
 described, tier-tagged *action*, a `ViewRecord` is a named, described, tier-tagged,
@@ -44,7 +46,7 @@ delete what you don't need. It depends only on the state-adapter shape
 ```ts
 /* ── The view shape ─────────────────────────────────────────────────── */
 
-type Tier = 'stable' | 'experimental' | 'internal';
+type Tier = 'stable' | 'experimental' | 'internal' | 'deprecated'; // matches acture core
 
 /** The read-side dual of a CommandRecord: a named selector over state. */
 export interface ViewRecord<S = unknown, T = unknown> {
@@ -66,7 +68,9 @@ export interface ViewRecord<S = unknown, T = unknown> {
 
 interface StateSource<S> {
   getState(): S;
-  subscribe(listener: () => void): () => void; // returns unsubscribe
+  // acture's StateAdapter passes (state, previous); a bare () => void listener
+  // is assignable here (extra params are ignored). Returns unsubscribe.
+  subscribe(listener: (state: S, previous: S) => void): () => void;
 }
 
 /* ── The registry: register, list (tier-filtered), read ─────────────── */
@@ -174,9 +178,10 @@ export function getStateTool<S>(views: ViewRegistry<S>) {
 
 If the app runs an in-app assistant over AG-UI / CopilotKit / assistant-ui, wire the
 adapter's initial `getState()` into `STATE_SNAPSHOT` and — if the adapter is
-`PatchCapableAdapter` — its RFC-6902 patches **straight into `STATE_DELTA`** (same
-format). Live, structured, delta-based sync for free. No projection code beyond
-forwarding the patches you already emit.
+`PatchCapableAdapter` — map its **RFC-6902-*compatible* patches** into `STATE_DELTA`
+with a **trivial `path`-segments→JSON-Pointer transform** (acture's `path` is an
+array; AG-UI's is a string pointer). Live, structured, delta-based sync from one
+small adapter over the patches you already emit.
 
 ---
 
@@ -215,8 +220,9 @@ YAGNI applied softly — add these only when a real need appears:
 - **Per-view caching / memoized selectors.** Selectors are cheap and state is
   single-sourced; memoize only if profiling shows a hot view.
 - **A second wire format.** Don't invent a bespoke state-sync protocol — MCP
-  resources + AG-UI `STATE_DELTA` (RFC-6902, which `PatchCapableAdapter` already
-  emits) cover external and in-app assistants respectively.
+  resources + AG-UI `STATE_DELTA` (canonical RFC-6902; `PatchCapableAdapter` emits
+  the compatible Immer-subset form — a trivial `path`→pointer transform away) cover
+  external and in-app assistants respectively.
 
 ---
 

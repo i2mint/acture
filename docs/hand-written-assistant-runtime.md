@@ -43,7 +43,10 @@ the gate belongs at the **dispatch boundary, driven by declarative command
 metadata** — not scattered in UI code. *The model proposes; the registry disposes.*
 
 Declare risk on the command (a `sideEffect` class and an explicit
-`requiresConfirmation` override), then gate as dispatch middleware:
+`requiresConfirmation` override), then gate by **wrapping `registry.dispatch`** — the
+same reassignment idiom `recordSequence` uses (`docs/hand-written-command-sequence.md`).
+acture exposes **no formal middleware type**; `Dispatch` / `Middleware` below are
+local aliases for that wrapper shape, not acture exports.
 
 ```ts
 /* Command metadata (convention over the record, or record fields if you
@@ -51,11 +54,15 @@ Declare risk on the command (a `sideEffect` class and an explicit
 type SideEffect = 'query' | 'additive' | 'destructive';
 interface RiskMeta { sideEffect?: SideEffect; requiresConfirmation?: boolean }
 
+// Local aliases — the dispatch-wrapper shape, NOT an acture-exported pipeline.
+type Dispatch = (cmd: string, args: unknown, ctx?: any) => Promise<{ ok: boolean; [k: string]: unknown }>;
+type Middleware = (next: Dispatch) => Dispatch;
+
 /** Confirmation is a dispatch-boundary concern, uniform across surfaces.
  *  When a risky command arrives from an assistant WITHOUT an approval
  *  token, it does not execute — it returns a PROPOSAL as errors-as-data. */
-function confirmGate(getRisk: (id: string) => RiskMeta, previewOf?: (id: string, args: unknown) => unknown) {
-  return (next: Dispatch): Dispatch => async (cmd, args, ctx) => {
+function confirmGate(getRisk: (id: string) => RiskMeta, previewOf?: (id: string, args: unknown) => unknown): Middleware {
+  return (next) => async (cmd, args, ctx) => {
     const risk = getRisk(cmd);
     const needs = risk.requiresConfirmation ?? risk.sideEffect === 'destructive';
     if (needs && ctx?.channel === 'assistant' && !ctx?.approvedToken) {
@@ -68,6 +75,10 @@ function confirmGate(getRisk: (id: string) => RiskMeta, previewOf?: (id: string,
     return next(cmd, args, ctx);   // approved (or non-risky) → dispatch
   };
 }
+
+// Apply it exactly as recordSequence does — reassign dispatch in place:
+const original = registry.dispatch.bind(registry);
+registry.dispatch = confirmGate(getRisk, previewOf)(original) as typeof registry.dispatch;
 ```
 
 The runtime turns `confirmation_required` into a HITL pause — the chat UI renders
@@ -109,9 +120,11 @@ const macro = recording.steps;                 // {commandId, params}[] — save
 
 This yields three capabilities for free (research-11 §7):
 
-- **Undo** — every dispatch through a `PatchCapableAdapter` yields
-  `{patches, inversePatches}`; undo the whole turn by applying the concatenated
-  inverse patches in reverse. One "Undo AI action" over an arbitrarily long chain.
+- **Undo** — each state mutation via `PatchCapableAdapter.setStateWithPatches`
+  yields `{patches, inversePatches}` (the dispatch `Result` carries only `patches?`,
+  so capture the adapter's return value, not the dispatch result); undo the whole
+  turn by applying the concatenated inverse patches in reverse. One "Undo AI action"
+  over an arbitrarily long chain.
 - **Replay / macro-ification** — re-dispatch `macro` deterministically ("the
   assistant did a useful 8-step thing; save it as a one-click command").
 - **Test fixtures** — `macro` + JSON-serializable state snapshots is a replayable
@@ -158,13 +171,17 @@ read-side context (`useAssistantContext` / `useCopilotReadable` / AG-UI
 `STATE_SNAPSHOT`+`STATE_DELTA`).
 
 ```tsx
-// each command → a frontend tool; each executor routes through dispatch
-for (const cmd of registry.list({ tiers: ['stable'] })) {
-  useFrontendTool({
-    name: cmd.id, description: cmd.description, parameters: cmd.params,
-    handler: (args) => registry.dispatch(cmd.id, args, { channel: 'assistant' }),
-  });
-}
+// Build ONE tools config from the registry (plain data — NOT hooks in a loop,
+// which would violate the Rules of Hooks). Register it with your chat layer in a
+// single top-level call; the exact registration API is framework-specific.
+const tools = registry.list({ tiers: ['stable'] }).map((cmd) => ({
+  name: cmd.id,
+  description: cmd.description,
+  parameters: cmd.params,
+  handler: (args: unknown) => registry.dispatch(cmd.id, args, { channel: 'assistant' }),
+}));
+// e.g. assistant-ui / AG-UI: hand `tools` to the runtime; CopilotKit: register each
+// with useCopilotAction at the component top level (a fixed list, never in a loop).
 ```
 
 ---

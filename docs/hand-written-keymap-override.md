@@ -46,8 +46,9 @@ stands on its own regardless.
 ## The minimal keymap-override layer
 
 Complete. Copy into the target project (e.g. `src/keymap.ts`), adapt names, delete
-what you don't need. It depends only on the registry/record shape and reuses the
-existing `normalizeKeybinding` helper from your hotkeys binder (`packages/hotkeys/src/bind.ts`).
+what you don't need. It depends only on the registry/record shape; the ~3-line
+`normalizeKeybinding` below is hand-written — the binder's own copy in
+`packages/hotkeys/src/bind.ts` is module-private, so re-declare it, don't import it.
 
 ```ts
 /* ── The override shape ─────────────────────────────────────────────── */
@@ -129,8 +130,8 @@ interface ListingRegistry {
  */
 export function collectBindings(
   registry: ListingRegistry,
-  km: UserKeymap = EMPTY_KEYMAP,
   tiers?: readonly string[] | 'all',
+  km: UserKeymap = EMPTY_KEYMAP,
 ): Map<string, BindingDescriptor[]> {
   const table = new Map<string, BindingDescriptor[]>();
   const list = registry.list(tiers !== undefined ? { tiers } : undefined);
@@ -280,8 +281,9 @@ YAGNI applied softly — add these only when a real need appears:
 The shapes here — `UserKeymap`, `KeybindingOverride`, `resolveKeys`,
 `collectBindings`, `detectConflicts` — are deliberately the shapes an
 `acture-hotkeys` customization helper would export, and `collectBindings` is a
-superset of the one already in `packages/hotkeys/src/bind.ts` (add a `km`
-argument; default it to `EMPTY_KEYMAP` for full backward compatibility). An agent
+superset of the one already in `packages/hotkeys/src/bind.ts` (append a `km`
+argument *after* `tiers`; default it to `EMPTY_KEYMAP` so existing
+`collectBindings(registry, tiers)` calls are unaffected). An agent
 that hand-writes from this doc and later installs the helper finds the migration
 mechanical. If the package contract changes, this doc changes with it.
 

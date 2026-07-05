@@ -182,7 +182,7 @@ interface UserKeymap {
 Design notes:
 - **Sparse, id-keyed** (VS Code / JetBrains / Obsidian shape [1][15]) — survives registry churn; a removed command just leaves a dead entry that resolves to nothing.
 - **Three override kinds** cover replace / add-additional / remove — mirroring VS Code's `-command` and Zed's `null` [1][18].
-- **Tokens are tinykeys DSL strings** (`"$mod+K"`, `"g i"`), keeping `$mod` portable across OSes [12] and reusing acture's existing `parseKeybinding`.
+- **Tokens are tinykeys DSL strings** (`"$mod+K"`, `"g i"`), keeping `$mod` portable across OSes [12]. Per-token whitespace is trimmed by acture's exported `parseKeybinding`; the `string | string[]` normalizer is a ~3-line local helper (the binder's `normalizeKeybinding` is module-private, not importable).
 - **`when` is *not* user-overridable.** Users change *keys*, not *scope*; the effective binding inherits the record's `when`. This is the safe subset (it dodges VS Code's empty-`when` footgun) and keeps acture's fire-time `when` evaluation intact.
 - **Serialization**: JSON to `localStorage`/IndexedDB (web) or a per-user backend row; the `version` field enables migration. This is a `dol`-style `MutableMapping<commandId, KeybindingOverride>` facade over storage.
 
@@ -194,7 +194,7 @@ Introduce a pure function that composes record defaults with the user keymap int
 /** Effective keybindings for one command, given the user layer. */
 function resolveKeys(cmd: CommandRecord, km: UserKeymap): string[] {
   const o = km.overrides[cmd.id];
-  const base = normalizeKeybinding(cmd.keybinding); // existing helper
+  const base = normalizeKeybinding(cmd.keybinding); // ~3-line local helper (module-private in bind.ts)
   if (!o) return [...base];
   switch (o.kind) {
     case 'remove':  return [];

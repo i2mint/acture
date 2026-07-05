@@ -22,11 +22,11 @@ The seam: acture projects the registry (write) and state model (read) into whate
 
 ### 1. The read side — a `ViewRegistry` (the industry-wide gap acture is placed to close)
 
-No surveyed framework ships a first-class typed channel for exposing an app's *current state* to the model (research-11 §3). acture can, because its state adapter already exposes `getState()` / `subscribe()` and (via `PatchCapableAdapter`) emits RFC-6902 patches. Define a **view** — the read-side dual of a command: a named, described, tier-tagged, sensitivity-scoped selector over state — and project one `ViewRegistry` to three read channels, symmetric to how the schema bridge projects a command:
+No surveyed framework ships a first-class typed channel for exposing an app's *current state* to the model (research-11 §3). acture can, because its state adapter already exposes `getState()` / `subscribe()` and (via `PatchCapableAdapter`) emits RFC-6902-*compatible* patches (the Immer-subset shape — a trivial `path`→JSON-Pointer transform feeds AG-UI's canonical `STATE_DELTA`). Define a **view** — the read-side dual of a command: a named, described, tier-tagged, sensitivity-scoped selector over state — and project one `ViewRegistry` to three read channels, symmetric to how the schema bridge projects a command:
 
 - **MCP resources** (`app://state/<id>`, with `resources/subscribe` liveness) — the semantically correct, *application-driven* representation.
 - **A universal read-only `getState` tool** (`readOnlyHint: true`) — the portable hedge, because resources are the least-supported MCP primitive (Cursor and many hosts are tools-only).
-- **An AG-UI `STATE_SNAPSHOT`/`STATE_DELTA` bridge** — for an in-app assistant; reuses `PatchCapableAdapter` patches for free.
+- **An AG-UI `STATE_SNAPSHOT`/`STATE_DELTA` bridge** — for an in-app assistant; maps `PatchCapableAdapter` patches into `STATE_DELTA` (RFC-6902-compatible; a trivial `path`→pointer transform, not a raw pass-through).
 
 **Ship both resources and the tool**, from one registry (spec says resources, host reality says tools). Reproducible core: `docs/hand-written-view-registry.md`. Leakage control is `tier` + `sensitivity` (`internal`/`secret` never projected); token budget is *narrow selectors* + just-in-time pull.
 
@@ -61,7 +61,7 @@ Beyond the write-side guardrails in `acture-ai` / `acture-mcp` (dispatch-not-eva
 ## What NOT to build (wait for a real need)
 
 - **No agent loop, chat UI, or protocol inside acture** — hard-don't; these are the app's SDK choices. Bridge to them.
-- **No second state-sync format** — MCP resources (external) + AG-UI `STATE_DELTA` (in-app, RFC-6902 which `PatchCapableAdapter` already emits) cover it.
+- **No second state-sync format** — MCP resources (external) + AG-UI `STATE_DELTA` (in-app; `PatchCapableAdapter` emits the RFC-6902-compatible form, a trivial `path` transform away) cover it.
 - **No approval policy engine yet** — `requiresConfirmation` + `sideEffect` covers the common case; reach for allow/deny lists + `canUseTool` only for per-role, per-tool rules.
 - **No history/time-travel view, no per-view caching** until profiling or a concrete need demands it (research-11, view-registry doc "omits").
 
