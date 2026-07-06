@@ -1,6 +1,6 @@
 ---
 name: acture-hotkeys
-description: Build a keyboard-shortcut consumer surface in a target project — bind `keybinding` off every CommandRecord and dispatch through the registry on key match. Covers the tool-library choice (tinykeys / react-hotkeys-hook / custom), the agent-written vs `acture-hotkeys` package paths, first-registered-wins conflict resolution, fire-time when-clause evaluation, and the input-aware default. Use when adding keyboard shortcuts to a command-dispatch app, or when working ON the `acture-hotkeys` package. Triggers on "hotkeys", "keyboard shortcuts", "keybindings", "bind keys", "tinykeys", "Ctrl+K shortcut", "shortcut conflict", "modal-scoped shortcuts".
+description: Build a keyboard-shortcut consumer surface in a target project — bind `keybinding` off every CommandRecord and dispatch through the registry on key match, AND (new) let end users remap shortcuts. Covers the tool-library choice (tinykeys / react-hotkeys-hook / custom), the agent-written vs `acture-hotkeys` package paths, first-registered-wins conflict resolution, fire-time when-clause evaluation, the input-aware default, and end-user customization (persisted user keymap over the record default, press-to-record capture, conflict detection, physical-vs-logical keys, WCAG 2.1.4). Use when adding keyboard shortcuts to a command-dispatch app, when adding user-remappable shortcuts, or when working ON the `acture-hotkeys` package. Triggers on "hotkeys", "keyboard shortcuts", "keybindings", "bind keys", "tinykeys", "Ctrl+K shortcut", "shortcut conflict", "modal-scoped shortcuts", "customize keybindings", "remap shortcut", "rebind keys", "user keymap", "keybinding editor", "keymap preset".
 ---
 
 # acture hotkeys — keyboard shortcuts as a consumer surface
@@ -33,6 +33,20 @@ Whatever library and path, the binder must honour these — they are what makes 
 - **Input-aware by default.** Skip firing when the event target is an `<input>`, `<textarea>`, `<select>`, or `contentEditable` element — so a user typing `g` in a search box doesn't trigger the `g` command. Make this overridable (`shouldIgnoreEvent`).
 - **Scope via the bind target.** Document-wide by default; for a modal, bind to the modal's root element so the bindings auto-scope to its lifetime.
 
+## End-user customization — letting users remap shortcuts
+
+This is a distinct, *composed* layer on top of the binder above — added when a project wants **users** (not just developers) to rebind shortcuts and have the choice persist. It was deferred until a concrete need surfaced; that need now exists, so the pattern is documented. The full evidence base and design rationale is `docs/research/acture_research_10 -- End-User Keyboard-Shortcut Customization.md`; the reproducible, zero-dependency core is `docs/hand-written-keymap-override.md`. The load-bearing points:
+
+- **The user keymap lives OUTSIDE the closed `CommandRecord`.** The record's `keybinding` stays the *developer default*; the user layer is a separate, sparse, id-keyed override map (`commandId → { replace | add | remove }`) composed over it at bind time. No new record field — pure composition (research-10 §5.1). This keeps the closed-surface principle intact.
+- **Resolution is pure pre-processing of the existing binding table.** A `resolveKeys(cmd, keymap)` feeds a keymap-aware `collectBindings`, placing user-overridden bindings *before* record defaults. acture's existing fire-time rule ("first descriptor whose `when` matches wins") is **unchanged** — you get VS Code's "user override wins, scope still respected" semantics for free. `bindHotkeys` grows one optional `keymap` argument; default it to an empty keymap for full backward compatibility.
+- **Users override keys, never `when`.** The effective binding inherits the record's availability scope. This is the safe subset and dodges VS Code's empty-`when` shadowing footgun.
+- **Match mnemonic shortcuts on `event.key` (the tinykeys/acture default), positional ones on `event.code`.** Do NOT globally switch to `code`. The hard part is *display*: label bindings via `navigator.keyboard.getLayoutMap()` with a raw-token fallback so non-US layouts read correctly (research-10 §3.4).
+- **Conflict detection is the highest-value affordance and the one most products get wrong.** Warn *at assignment time* ("Already assigned to X — Reassign / Keep both / Cancel"), and treat two bindings on the same key as a non-conflict when their `when` clauses are mutually exclusive (acture already models this). A standing conflicts list is the JetBrains/Atom-resolver pattern.
+- **Press-to-record capture** is the loved UX (Obsidian/JetBrains/games): listen → build the tinykeys token → reject browser/OS-reserved combos (`Cmd+W`, `Ctrl+T`, …) → conflict-check → commit to the keymap store. Persist the `UserKeymap` as JSON (localStorage/IndexedDB/server row); `$mod` keeps tokens portable across a user's machines.
+- **WCAG 2.1.4 (Level A) is mandatory once you ship single-key bindings** (`"d"`, `"g i"`): ship a global "disable character-key shortcuts" toggle or default single-key bindings off/focus-scoped. This is a legal requirement, not a nicety (research-10 §3.7).
+
+**Agent-written vs package-reuse** applies here too, decided per-piece: the `UserKeymap` + `resolveKeys` + keymap-aware `collectBindings` + conflict pass is ~50 hand-writable lines (the reference doc) that a project can own outright; the UI-and-browser-bound pieces — the press-to-record capture component, the `getLayoutMap()` display layer, preset loaders — are where an `acture-hotkeys` helper would earn its keep *if one ships*. Surface that split; it's the user's call (dev-tool-first). Handle every item on the research-10 §5.4 web-gotcha checklist (IME composition, macOS ⌘ keyup, `keydown` not `keypress`, `preventDefault` discipline).
+
 ## When working ON `acture-hotkeys`
 
 The same positioning applies inward (per `acture-consumer-integration` §"When you are working ON a consumer-specific package"):
@@ -44,12 +58,19 @@ The same positioning applies inward (per `acture-consumer-integration` §"When y
 
 ## What NOT to build (wait for a real need)
 
-No chord-recording UI, no user-remapping persistence layer, no visual keybinding-conflict resolver, no per-command keybinding-priority field on `CommandRecord` — wait until a concrete need surfaces in the project. The `keybinding` field is closed (see `acture-command-record-shape`); first-registered-wins covers conflict resolution without new metadata. A flat key→command binding with a `when` filter covers the overwhelming majority of shortcut needs. YAGNI applied softly.
+End-user remapping (persisted user keymap, press-to-record capture, conflict resolver) is **no longer** on this list — a concrete need surfaced, so it is now a documented, composed layer (see "End-user customization" above + `docs/hand-written-keymap-override.md`). What remains deferred:
+
+- **No per-command keybinding-priority field on `CommandRecord`.** The `keybinding` field is closed (see `acture-command-record-shape`); user-touched-wins ordering in the resolved table plus first-registered-wins covers precedence without new record metadata. The customization layer lives *outside* the record precisely so the closed surface stays closed.
+- **No preset packs / cloud sync / rich resolver panel until asked.** `basePreset` is a seed field and a preset is just a `UserKeymap` to merge; syncing is a storage concern (`$mod` already makes tokens portable). Ship these when a project actually needs them, not before (research-10 §5 "deliberately omits").
+
+A flat key→command binding with a `when` filter still covers the overwhelming majority of shortcut needs; the customization layer is additive on top. YAGNI applied softly.
 
 ## See also
 
 - `acture-consumer-integration` — the foundational consumer pattern this builds on.
 - `acture-command-record-shape` — the `keybinding` field spec (the *field*; this skill is the *surface*).
+- `docs/hand-written-keymap-override.md` — the reproducible, zero-dependency user-customization layer (`UserKeymap`, `resolveKeys`, conflict detection, capture sketch).
+- `docs/research/acture_research_10 -- End-User Keyboard-Shortcut Customization.md` — the evidence base for customization (product survey, VS Code resolution semantics, web gotchas, WCAG 2.1.4).
 - `packages/hotkeys/src/bind.ts` — the tinykeys binding's source, a worked example to adapt for other key libraries.
 - `acture-palette-design` — the sibling input surface; palette and hotkeys both read the same `CommandRecord` set.
 - `docs/command_dispatch_journal_article.md` §3.1 — command palette and keyboard shortcuts.
