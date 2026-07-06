@@ -44,6 +44,30 @@ await connectStdio(server);
 
 The server registers `tools/list` and `tools/call` handlers, and fires `notifications/tools/list_changed` whenever the registry's tier-filtered view changes.
 
+## Read side — MCP resources (state exposure)
+
+Tools are the **write** side (actions). For an AI assistant that *operates* your app, the model also needs the **read** side: to *see* current state before it acts. MCP models read-only, application-driven context as **resources**. This package projects **views** — typed selectors over your state — as MCP resources, symmetric to how it projects commands as tools.
+
+A **view** is the read-side dual of a command. You supply a `ViewSource` (the same `list` / `read` / `onStateChanged` shape as the hand-written `ViewRegistry` — see [`docs/hand-written-view-registry.md`](https://github.com/thorwhalen/acture/blob/main/docs/hand-written-view-registry.md)); acture-mcp never touches your state library.
+
+```ts
+import { createMcpServer, connectStdio } from 'acture-mcp-server';
+
+const server = createMcpServer(registry, {
+  name: 'graph-editor',
+  version: '0.1.0',
+  views,                 // ← opt into the read side; omit for tools-only (default)
+  // resourceUriPrefix: 'app://state/',  // default
+});
+await connectStdio(server);
+```
+
+With `views`, the server advertises the `resources` capability and registers `resources/list`, `resources/read`, and `resources/subscribe` — firing `notifications/resources/updated` for subscribed URIs when the source's `onStateChanged` fires. Views project as `app://state/<id>` JSON resources; the same `tiers` filter applies (`internal` never projected).
+
+The pure functions are exported too, for non-stdio transports: `buildResourcesList(views, opts)` → resource descriptors, `readResource(views, uri)` → contents.
+
+> **Ship both resources and a `getState` tool.** MCP resources are the *correct*, app-driven representation, but they are the least-supported MCP primitive (some hosts are tools-only). For those hosts, also expose a read-only `getState` tool. See the `acture-ai-assistant` skill and research-11 §3.
+
 ## Tier semantics
 
 | Tier | In `tools/list` by default? | Notes |
