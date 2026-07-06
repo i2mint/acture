@@ -4,7 +4,7 @@ The live forward-planning surface. `docs/v1_plan.md` and `docs/implementation_pl
 
 **How work proceeds:** phases are over. Work is small, tracked increments. Each picks one or two items from "Next" or "Deferred", ships them, updates this file, and replaces `docs/next_session.md` with the following handoff.
 
-Last updated: **2026-07-06** (v1.15 — acture-mcp read side: MCP resources projection, the first v1.14-deferred accelerator pulled forward).
+Last updated: **2026-07-06** (v1.16 — acture-mcp read side completed with the portable `getState` tool; follows v1.15's resources projection).
 
 ---
 
@@ -133,6 +133,17 @@ The first of the v1.14-deferred package accelerators, pulled forward: the AI **r
 - **The pure/glue two-layer discipline held:** `resources.ts` has zero SDK dependency (the SDK's `ReadResourceResult` upcast happens only in `server.ts`), so non-stdio transports consume the projection unchanged (hard-don't #3, `acture-mcp` skill).
 - **Docs/skills:** `acture-mcp` skill gained a "The read side" section and dropped resources from its "What NOT to build" list; README gained a resources section; `docs/hand-written-view-registry.md` and `acture-ai-assistant` now note the shipped package path. Issue **#34** was verified stale (names sanitized on `main` via #24) and closed before this work.
 - **Still deferred:** the `getState`-tool hedge for tools-only hosts (companion to resources), the keymap-customization helper, and the `sideEffect`/`requiresConfirmation` closed-surface question — each awaits its own named need.
+
+---
+
+### v1.16 — acture-mcp read side: the `getState` tool (portable hedge) — complete (this increment)
+
+Completes the read side started in v1.15. MCP **resources** are the correct read side but the *least-supported* MCP primitive (some hosts — e.g. Cursor — are tools-only); a **`getState` tool** is the portable hedge that works on any tools-capable host, including a direct Anthropic/Vercel tool projection (research-11 §3.2, "ship both"). This directly serves the named consumer `reelee-web`, which consumes `buildToolsList` to feed **Anthropic** tools (not MCP) — so a pure `getState` tool descriptor slots straight into its flow.
+
+- **Pure (`resources.ts`):** `buildGetStateTool(views, opts)` → a wire-safe (`app_getState` default, `^[a-zA-Z0-9_-]{1,64}$`), `readOnlyHint` tool descriptor whose `view` param enumerates the listed view ids; `callGetState(views, args)` reads the requested view as errors-as-data (invalid `view` → `isError`; unknown/internal view → `null`). Feed the descriptor into a `tools/list` alongside `buildToolsList`, or straight into a non-MCP tool array.
+- **Server:** `createMcpServer(registry, { views, getStateTool: true })` merges the tool into `tools/list` and routes it in `tools/call`. Default off; requires `views`. Fully backward-compatible.
+- **`McpToolDescriptor` gained an optional `annotations` field** (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`) — the getState tool sets it. Additive; the command-tool projection is unchanged (deriving annotations from a command side-effect class stays deferred with the confirmation-gate work). +5 tests (28 total in the package); typecheck + build + workspace green. `minor` changeset (`acture-mcp-server` 1.2.0 → 1.3.0).
+- **Still deferred:** the keymap-customization helper (the second v1.14 accelerator) and the `sideEffect`/`requiresConfirmation` closed-surface question.
 
 ---
 

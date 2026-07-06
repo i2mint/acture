@@ -14,6 +14,7 @@
  */
 
 import type { Tier } from 'acture';
+import type { McpToolDescriptor } from './tools.js';
 
 /** A view descriptor as listed by a {@link ViewSource} — the read-side dual
  *  of an MCP tool descriptor. The selector and state live in the app's
@@ -116,4 +117,96 @@ export function readResource(
  *  {@link readResource}; used by the server to track subscribed URIs. */
 export function viewIdToUri(id: string, uriPrefix = DEFAULT_RESOURCE_PREFIX): string {
   return `${uriPrefix}${id}`;
+}
+
+/* ─────────────────────── getState tool (the portable hedge) ──────────────── */
+
+export interface GetStateToolOptions {
+  /** Tool name. Default `'app_getState'`. MUST be wire-safe
+   *  (`^[a-zA-Z0-9_-]{1,64}$`) — it is exposed to Anthropic/OpenAI/MCP hosts
+   *  verbatim (unlike command ids, which are sanitized) — and distinct from any
+   *  command tool name. */
+  name?: string;
+  /** Leading description text (the available-views list is appended). */
+  description?: string;
+  /** Tier filter for the advertised view ids. Default `['stable']`. */
+  tiers?: readonly Tier[] | 'all';
+}
+
+/** Default name for the getState tool. Wire-safe and app-namespaced. */
+export const DEFAULT_GET_STATE_TOOL_NAME = 'app_getState';
+
+/**
+ * Build a single read-only `getState` tool descriptor — the **portable hedge**
+ * (research-11 §3.2). MCP resources are the correct read side, but the
+ * least-supported MCP primitive; tools are universal. This one tool lets a model
+ * pull any listed view on **any** tools-capable host (tools-only MCP hosts like
+ * Cursor, or a direct Anthropic/Vercel projection). `readOnlyHint: true` lets
+ * well-behaved hosts auto-approve it without friction.
+ *
+ * Pure — returns an {@link McpToolDescriptor}. Feed it into a `tools/list`
+ * alongside {@link buildToolsList}, or straight into a non-MCP tool array. Pair
+ * with {@link callGetState} for dispatch.
+ */
+export function buildGetStateTool(
+  views: ViewSource,
+  options: GetStateToolOptions = {},
+): McpToolDescriptor {
+  const name = options.name ?? DEFAULT_GET_STATE_TOOL_NAME;
+  const tiers = options.tiers ?? ['stable'];
+  const ids = views.list({ tiers }).map((v) => v.id);
+  const base =
+    options.description ??
+    'Read the current value of one app-state view. Call before acting to see current state.';
+  return {
+    name,
+    description: `${base} Available views: ${ids.length > 0 ? ids.join(', ') : '(none)'}.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        view: {
+          type: 'string',
+          enum: ids,
+          description: 'Which state view to read.',
+        },
+      },
+      required: ['view'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
+  };
+}
+
+/** The response shape shared with `callTool` — errors-as-data on the wire. */
+export interface GetStateResponse {
+  content: Array<{ type: 'text'; text: string }>;
+  isError?: boolean;
+}
+
+/**
+ * Execute a getState call — read the requested view and return its JSON value
+ * as MCP tool-result content. Errors are **data** (never thrown): a missing /
+ * non-string `view` returns `isError: true`; an unknown / internal / secret
+ * view reads as `null` (the `ViewSource` enforces that, per {@link readResource}).
+ */
+export function callGetState(views: ViewSource, args: unknown): GetStateResponse {
+  const view = (args as { view?: unknown } | null | undefined)?.view;
+  if (typeof view !== 'string') {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            code: 'invalid_params',
+            message: 'getState requires a string "view" argument.',
+          }),
+        },
+      ],
+      isError: true,
+    };
+  }
+  const value = views.read(view);
+  return {
+    content: [{ type: 'text', text: JSON.stringify(value ?? null, null, 2) }],
+  };
 }

@@ -66,7 +66,23 @@ With `views`, the server advertises the `resources` capability and registers `re
 
 The pure functions are exported too, for non-stdio transports: `buildResourcesList(views, opts)` → resource descriptors, `readResource(views, uri)` → contents.
 
-> **Ship both resources and a `getState` tool.** MCP resources are the *correct*, app-driven representation, but they are the least-supported MCP primitive (some hosts are tools-only). For those hosts, also expose a read-only `getState` tool. See the `acture-ai-assistant` skill and research-11 §3.
+### The `getState` tool — portable read-side hedge
+
+MCP resources are the *correct*, app-driven read side, but they are the **least-supported** MCP primitive — some hosts (e.g. Cursor) are tools-only. So **ship both**: also expose a read-only `getState` **tool**, which works on any tools-capable host (including a direct Anthropic/Vercel tool projection).
+
+```ts
+const server = createMcpServer(registry, {
+  name: 'graph-editor',
+  version: '0.1.0',
+  views,
+  getStateTool: true,          // ← also expose a read-only getState tool
+  // getStateTool: { name: 'read_state', tiers: ['stable'] },  // or customize
+});
+```
+
+The model calls `getState({ view })` to pull one view's current value. The tool carries `readOnlyHint: true` so well-behaved hosts auto-approve it without friction; its `view` argument enumerates the listed view ids.
+
+The pure functions are exported for non-MCP hosts (a direct Anthropic tool array, say): `buildGetStateTool(views, opts)` → a wire-safe (`app_getState` by default) tool descriptor, `callGetState(views, args)` → errors-as-data result. See the `acture-ai-assistant` skill and research-11 §3.2.
 
 ## Tier semantics
 

@@ -25,6 +25,12 @@
  *     them via `createMcpServer(registry, { views })`, which adds
  *     `resources/list` + `resources/read` + `resources/subscribe`. Omit
  *     `views` for a tools-only server (unchanged).
+ *
+ *   - `buildGetStateTool(views, opts)` / `callGetState(views, args)` are the
+ *     portable read-side hedge — a single read-only `getState` tool for
+ *     tools-only hosts that don't support MCP resources (Cursor, or a direct
+ *     Anthropic/Vercel projection). Enable on the server via
+ *     `createMcpServer(registry, { views, getStateTool: true })`.
  */
 
 export {
@@ -35,6 +41,7 @@ export {
 export type {
   BuildToolsListOptions,
   McpToolDescriptor,
+  McpToolAnnotations,
   CallToolResponse,
 } from './tools.js';
 
@@ -48,7 +55,10 @@ export {
   buildResourcesList,
   readResource,
   viewIdToUri,
+  buildGetStateTool,
+  callGetState,
   DEFAULT_RESOURCE_PREFIX,
+  DEFAULT_GET_STATE_TOOL_NAME,
 } from './resources.js';
 export type {
   ViewSource,
@@ -56,4 +66,6 @@ export type {
   McpResourceDescriptor,
   BuildResourcesListOptions,
   ResourceContents,
+  GetStateToolOptions,
+  GetStateResponse,
 } from './resources.js';

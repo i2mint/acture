@@ -21,8 +21,12 @@ import type { Context, Registry, Tier } from 'acture';
 import { buildToolsList, callTool } from './tools.js';
 import {
   buildResourcesList,
+  buildGetStateTool,
+  callGetState,
   readResource,
+  DEFAULT_GET_STATE_TOOL_NAME,
   type BuildResourcesListOptions,
+  type GetStateToolOptions,
   type ViewSource,
 } from './resources.js';
 
@@ -46,6 +50,11 @@ export interface CreateMcpServerOptions {
   views?: ViewSource;
   /** URI scheme + prefix for state-resource URIs. Default `'app://state/'`. */
   resourceUriPrefix?: string;
+  /** Also expose a read-only `getState` **tool** (the portable hedge for
+   *  tools-only hosts that don't support MCP resources — research-11 §3.2).
+   *  Requires `views`. `true` uses defaults; pass `GetStateToolOptions` to
+   *  customize the name/description/tiers. Default: off. */
+  getStateTool?: boolean | GetStateToolOptions;
 }
 
 /**
@@ -69,13 +78,33 @@ export function createMcpServer(
     ? { tiers: options.tiers }
     : {};
 
+  // Optional read side. `views` also powers the getState TOOL below (the
+  // portable hedge for tools-only hosts) and the resources block further down.
+  const views = options.views;
+  const getStateOpts: GetStateToolOptions | null =
+    views && options.getStateTool
+      ? typeof options.getStateTool === 'object'
+        ? options.getStateTool
+        : {}
+      : null;
+  const getStateName = getStateOpts
+    ? getStateOpts.name ?? DEFAULT_GET_STATE_TOOL_NAME
+    : null;
+
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: buildToolsList(registry, listOptions),
+    tools:
+      views && getStateOpts
+        ? [...buildToolsList(registry, listOptions), buildGetStateTool(views, getStateOpts)]
+        : buildToolsList(registry, listOptions),
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const params = request.params as { name: string; arguments?: unknown };
     const args = params.arguments ?? {};
+    if (views && getStateName && params.name === getStateName) {
+      const gs = callGetState(views, args);
+      return { content: gs.content, ...(gs.isError ? { isError: true } : {}) };
+    }
     const response = await callTool(registry, params.name, args, options.context);
     return {
       content: response.content,
@@ -90,7 +119,6 @@ export function createMcpServer(
   });
 
   // ── Read side (optional) — resources/list + resources/read + subscribe ──
-  const views = options.views;
   if (views) {
     const listOpts: BuildResourcesListOptions = {};
     if (options.tiers !== undefined) listOpts.tiers = options.tiers;
