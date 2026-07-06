@@ -279,13 +279,16 @@ YAGNI applied softly — add these only when a real need appears:
 ## Faithfulness note
 
 The shapes here — `UserKeymap`, `KeybindingOverride`, `resolveKeys`,
-`collectBindings`, `detectConflicts` — are deliberately the shapes an
-`acture-hotkeys` customization helper would export, and `collectBindings` is a
-superset of the one already in `packages/hotkeys/src/bind.ts` (append a `km`
-argument *after* `tiers`; default it to `EMPTY_KEYMAP` so existing
-`collectBindings(registry, tiers)` calls are unaffected). An agent
-that hand-writes from this doc and later installs the helper finds the migration
-mechanical. If the package contract changes, this doc changes with it.
+`collectBindings`, `detectConflicts` — are deliberately the shapes
+**`acture-hotkeys` now exports** (`bindHotkeys({ keymap })`, `resolveKeys`,
+`detectConflicts`, plus the capture/display primitives `tokenFromEvent` /
+`isReservedCombo` / `formatKeybinding` / `layoutLabel`), and its `collectBindings`
+is a superset of this one (`collectBindings(registry, tiers?, keymap?)`; the
+`keymap` argument defaults to `EMPTY_KEYMAP` so existing
+`collectBindings(registry, tiers)` calls are unaffected). Hand-write from this
+doc, or install the package — the per-consumer choice (dev-tool-first). An agent
+that hand-writes and later installs finds the migration mechanical. If the
+package contract changes, this doc changes with it.
 
 ## See also
 

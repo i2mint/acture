@@ -45,11 +45,11 @@ export function useHotkeys(
       contextProvider: () => ctxRef.current,
     });
     return stop;
-    // We deliberately do NOT depend on `rest` keys individually; the
-    // surface is small enough that callers who change `target` or
-    // `tiers` mid-flight should remount.
+    // Re-bind on `keymap` identity change so a live end-user remap UI takes
+    // effect (research-10). Other options (`target`, `tiers`) are static —
+    // callers who change those mid-flight should remount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registry, enabled]);
+  }, [registry, enabled, options.keymap]);
 }
 
 export type { BindHotkeysOptions, HotkeyDispatchListener };
