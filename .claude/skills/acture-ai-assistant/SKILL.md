@@ -32,7 +32,14 @@ No surveyed framework ships a first-class typed channel for exposing an app's *c
 
 ### 2. Human-in-the-loop confirmation — at the dispatch boundary
 
-The industry converged on one beat: model proposes → runtime pauses with serializable state → UI renders the proposal → user approves/denies/edits → resume (research-11 §6). For a command-dispatch app the gate belongs at the **dispatch boundary, driven by declarative command metadata** — *the model proposes; the registry disposes*. A `requiresConfirmation`/`sideEffect: 'destructive'` command dispatched from the assistant channel without an approval token does not execute — it returns a **proposal as errors-as-data** (`code: 'confirmation_required'`, `{command, params, preview}`) which the chat UI renders as an approve/deny/edit card; on approve, re-dispatch with a **one-use token bound to the exact `{command, params}` hash**. Reproducible core: `docs/hand-written-assistant-runtime.md` Piece 1. This keeps confirmation caller-independent, declarative, and schema-validated regardless of surface — and `preview` can call a *view* to show *what will change*.
+The industry converged on one beat: model proposes → runtime pauses with serializable state → UI renders the proposal → user approves/denies/edits → resume (research-11 §6). For a command-dispatch app the gate belongs at the **dispatch boundary, driven by a declarative risk convention** — *the model proposes; the registry disposes*. A `requiresConfirmation`/`sideEffect: 'destructive'` command dispatched from the assistant channel without a valid token does not execute — it returns a **proposal as errors-as-data** (`code: 'confirmation_required'`, `{command, params, preview}`) which the chat UI renders as an approve/deny/edit card. **The complete, secure pattern is `docs/hand-written-assistant-runtime.md` Piece 1** — build it from there.
+
+Two load-bearing points that pattern gets right and a naive gate gets wrong:
+
+- **The token is minted by the RUNTIME after a human approves, and never returned to the model.** If the gate put a usable token in the `confirmation_required` proposal, the model — which reads that tool result — would lift it and **self-approve**, defeating HITL. The proposal carries only `{command, params, preview}`; the runtime mints the one-use token out-of-band on human approval and re-dispatches.
+- **Tokens are one-use and bound to the exact `{command, params}`** (a `createApprovalStore` with `approve`/`consume`), so an approval can't be replayed against different args.
+
+**Design settled: middleware + convention, not `CommandRecord` fields.** `getRisk(id)` is an external map, so the closed record is untouched (the fields alternative opens the guarded surface — needs the named-need test). And like macros, the ~40-line gate ships as a **pattern**, not a package (hard-don't #2; no natural package home). This keeps confirmation caller-independent, declarative, and schema-validated regardless of surface — and `preview` can call a *view* to show *what will change*.
 
 ### 3. The dispatch chain is a macro — undo / replay / test fixtures
 

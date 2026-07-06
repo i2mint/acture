@@ -4,7 +4,7 @@ The live forward-planning surface. `docs/v1_plan.md` and `docs/implementation_pl
 
 **How work proceeds:** phases are over. Work is small, tracked increments. Each picks one or two items from "Next" or "Deferred", ships them, updates this file, and replaces `docs/next_session.md` with the following handoff.
 
-Last updated: **2026-07-06** (v1.17 — acture-hotkeys end-user keymap customization, the second v1.14-deferred accelerator).
+Last updated: **2026-07-06** (v1.18 — confirmation gate (HITL) shipped as a pattern; the "operate my app" story is now complete).
 
 ---
 
@@ -157,6 +157,19 @@ The second v1.14-deferred accelerator. Lets a **user** (not just the developer) 
 - **`McpToolDescriptor`-style discipline held:** the pure `keymap.ts` is tinykeys-free; `bind.ts` composes it. +14 tests (23 in the package; the 9 pre-existing bind tests still pass — backward-compatible). `minor` changeset (`acture-hotkeys` 1.0.1 → 1.1.0).
 - **Left to the app (the primitives cover it):** the full remap-UI React component, preset packs, cloud sync, WCAG "disable character-key shortcuts" toggle — documented, YAGNI-gated (research-10 §5 "deliberately omits").
 - **Still deferred:** the `sideEffect`/`requiresConfirmation` closed-surface question (the confirmation-gate work).
+
+---
+
+### v1.18 — confirmation gate (HITL for destructive AI dispatch) — complete (this increment)
+
+The last "operate my app" piece: a human-in-the-loop gate for destructive/irreversible AI dispatch (research-11 §6). **Design settled with the user: middleware + convention, NOT `CommandRecord` fields** — `getRisk(id)` is an external map, so the closed record stays closed (the fields alternative was declined to avoid opening the guarded surface). And like macros / `recordSequence`, the ~40-line gate ships as a **pattern**, not a package (hard-don't #2 — no god-package-of-one, no natural existing package home); the delivery surface is the reference doc + skill.
+
+- **`docs/hand-written-assistant-runtime.md` Piece 1** rewritten from a sketch to a complete, **secure** implementation: `createApprovalStore` (one-use tokens bound to the exact `{command, params}`), `confirmationGate` (a dispatch wrapper that returns a `confirmation_required` errors-as-data proposal for risky assistant calls), and the runtime re-dispatch flow.
+- **The security fix that motivated hardening it:** the token is minted by the **runtime after a human approves, and never returned to the model** — the prior sketch's `!ctx?.approvedToken` truthiness check (any token passes) plus a hinted token-in-proposal would let the model **self-approve** by lifting the token from the tool result. The proposal now carries only `{command, params, preview}`; tokens are one-use and call-bound.
+- **`acture-ai-assistant` skill §2** updated: the trust-boundary rule (token minted post-human-approval, never to the model), the one-use call-bound tokens, and the settled convention-not-fields / pattern-not-package decision.
+- Docs/skill only — no package, no changeset, no version bump (pattern delivery).
+
+**With this, the "operate my app" story is complete:** write side (tools/MCP) + read side (resources + getState) + HITL confirmation + macro capture + the runtime bridge — all shipped, as packages where a package earned it and as patterns/skills elsewhere.
 
 ---
 
