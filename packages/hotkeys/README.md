@@ -59,6 +59,36 @@ registry.register(commandB); // keybinding: 'g', when: '!editor.focused'
 
 If you want to *override* a base binding from a plugin, explicitly `unregister(id)` the base command first.
 
+## End-user customization — remapping shortcuts
+
+Let a **user** (not just the developer) remap shortcuts and have the choice persist. The record's `keybinding` stays the *developer default*; a sparse **`UserKeymap`** overrides it at bind time — pure composition, **no change to the `CommandRecord`** ([research-10](https://github.com/thorwhalen/acture/blob/main/docs/research/acture_research_10%20--%20End-User%20Keyboard-Shortcut%20Customization.md); reproducible core in [`docs/hand-written-keymap-override.md`](https://github.com/thorwhalen/acture/blob/main/docs/hand-written-keymap-override.md)).
+
+```ts
+import { bindHotkeys, type UserKeymap } from 'acture-hotkeys';
+
+const keymap: UserKeymap = {
+  version: 1,
+  overrides: {
+    'editor.save':   { kind: 'replace', keys: ['$mod+s'] }, // rebind
+    'editor.format': { kind: 'add',     keys: ['$mod+Shift+f'] }, // add a second binding
+    'app.help':      { kind: 'remove' }, // unbind
+  },
+};
+
+const stop = bindHotkeys(registry, { keymap });   // omit → record defaults, unchanged
+```
+
+`useHotkeys` forwards `keymap` and re-binds on its identity change, so a live settings UI takes effect. Persist the `UserKeymap` as JSON (localStorage / a server row); `$mod` keeps tokens portable across a user's machines.
+
+Build the remap UI from the exported primitives:
+
+- **`detectConflicts(registry, keymap?)`** → same-key clashes (`definite` / `possible`), for the "Already assigned to X — Reassign / Keep both / Cancel" flow.
+- **`tokenFromEvent(event)`** → a tinykeys token from a `keydown` (press-to-record); **`isReservedCombo(token)`** rejects browser-owned combos (`$mod+w`, `$mod+t`, …) that `preventDefault` can't reclaim.
+- **`formatKeybinding(token)`** → a ⌘/Ctrl label; **`layoutLabel(code)`** → a layout-correct label for physical (`event.code`) bindings via `navigator.keyboard.getLayoutMap()` (with fallback).
+- **`resolveKeys(cmd, keymap)`** / **`collectBindings(registry, tiers, keymap)`** → the resolution, if you build a custom binder.
+
+> **WCAG 2.1.4 (Level A):** if you ship single-key bindings (`"g i"`, `"d"`), also ship a "disable character-key shortcuts" toggle or default them off/focus-scoped — a legal requirement, not a nicety.
+
 ## Input-aware default
 
 By default, `bindHotkeys` skips firing when the target is an `<input>`, `<textarea>`, `<select>`, or `contentEditable` element — so users typing in a search box don't accidentally trigger the `g` key. Override via `shouldIgnoreEvent`.

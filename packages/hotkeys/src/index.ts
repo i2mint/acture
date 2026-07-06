@@ -26,10 +26,34 @@
  *     useHotkeys(registry, { context });
  */
 
-export { bindHotkeys, parseKeybinding } from './bind.js';
+export { bindHotkeys, parseKeybinding, collectBindings } from './bind.js';
 export type {
   BindHotkeysOptions,
   HotkeyBindingDescriptor,
   HotkeyContextProvider,
   HotkeyDispatchListener,
 } from './bind.js';
+
+/**
+ * End-user keymap customization (research-10; `docs/hand-written-keymap-override.md`).
+ * Layer a sparse `UserKeymap` over the record defaults via `bindHotkeys`'s
+ * `keymap` option, and build a remap UI from the capture / conflict / display
+ * primitives:
+ *
+ *     import { detectConflicts, tokenFromEvent, formatKeybinding } from 'acture-hotkeys';
+ */
+export {
+  resolveKeys,
+  detectConflicts,
+  tokenFromEvent,
+  isReservedCombo,
+  formatKeybinding,
+  layoutLabel,
+  EMPTY_KEYMAP,
+  RESERVED_COMBOS,
+} from './keymap.js';
+export type {
+  UserKeymap,
+  KeybindingOverride,
+  KeymapConflict,
+} from './keymap.js';

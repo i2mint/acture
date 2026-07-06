@@ -4,7 +4,7 @@ The live forward-planning surface. `docs/v1_plan.md` and `docs/implementation_pl
 
 **How work proceeds:** phases are over. Work is small, tracked increments. Each picks one or two items from "Next" or "Deferred", ships them, updates this file, and replaces `docs/next_session.md` with the following handoff.
 
-Last updated: **2026-07-06** (v1.16 — acture-mcp read side completed with the portable `getState` tool; follows v1.15's resources projection).
+Last updated: **2026-07-06** (v1.17 — acture-hotkeys end-user keymap customization, the second v1.14-deferred accelerator).
 
 ---
 
@@ -144,6 +144,19 @@ Completes the read side started in v1.15. MCP **resources** are the correct read
 - **Server:** `createMcpServer(registry, { views, getStateTool: true })` merges the tool into `tools/list` and routes it in `tools/call`. Default off; requires `views`. Fully backward-compatible.
 - **`McpToolDescriptor` gained an optional `annotations` field** (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`) — the getState tool sets it. Additive; the command-tool projection is unchanged (deriving annotations from a command side-effect class stays deferred with the confirmation-gate work). +5 tests (28 total in the package); typecheck + build + workspace green. `minor` changeset (`acture-mcp-server` 1.2.0 → 1.3.0).
 - **Still deferred:** the keymap-customization helper (the second v1.14 accelerator) and the `sideEffect`/`requiresConfirmation` closed-surface question.
+
+---
+
+### v1.17 — acture-hotkeys: end-user keymap customization — complete (this increment)
+
+The second v1.14-deferred accelerator. Lets a **user** (not just the developer) remap shortcuts and have the choice persist (research-10) — pure composition over the record defaults, **no change to the closed `CommandRecord`**. The reproducible zero-dependency equivalent already shipped as `docs/hand-written-keymap-override.md` (v1.14); this is the tested `acture-hotkeys` accelerator.
+
+- **`bindHotkeys(registry, { keymap })`** — an optional `UserKeymap` (sparse `commandId → { replace | add | remove }`) layered over each record's default `keybinding` at bind time. Default empty → existing callers unaffected. `useHotkeys` (React) forwards it and re-binds on keymap identity change, so a live remap UI takes effect.
+- **Pure layer (`keymap.ts`):** `resolveKeys(cmd, keymap)` (override resolution); `collectBindings` gained a keymap param and orders user-touched bindings first on a shared key (VS Code's "user override wins, scope still respected"); `detectConflicts(registry, keymap?)` (`definite`/`possible` same-key clashes — the highest-value remap affordance).
+- **Capture / display primitives:** `tokenFromEvent` (press-to-record), `isReservedCombo` / `RESERVED_COMBOS` (reject browser-owned combos), `formatKeybinding` (⌘/Ctrl labels), `layoutLabel` (`getLayoutMap` for physical keys, with fallback).
+- **`McpToolDescriptor`-style discipline held:** the pure `keymap.ts` is tinykeys-free; `bind.ts` composes it. +14 tests (23 in the package; the 9 pre-existing bind tests still pass — backward-compatible). `minor` changeset (`acture-hotkeys` 1.0.1 → 1.1.0).
+- **Left to the app (the primitives cover it):** the full remap-UI React component, preset packs, cloud sync, WCAG "disable character-key shortcuts" toggle — documented, YAGNI-gated (research-10 §5 "deliberately omits").
+- **Still deferred:** the `sideEffect`/`requiresConfirmation` closed-surface question (the confirmation-gate work).
 
 ---
 

@@ -16,6 +16,7 @@ import type {
   WhenClause,
 } from 'acture';
 import { evaluateWhen } from 'acture';
+import { resolveKeys, EMPTY_KEYMAP, type UserKeymap } from './keymap.js';
 
 /** Function that returns the current context for when-clause evaluation
  *  at hotkey-fire time. Kept as a provider (not a snapshot) so binding
@@ -47,6 +48,13 @@ export interface BindHotkeysOptions {
 
   /** Tier filter applied to candidate commands. Default: `['stable']`. */
   tiers?: readonly Tier[] | 'all';
+
+  /** Optional end-user keymap layered over the record defaults (research-10):
+   *  a sparse `commandId → { replace | add | remove }` override map. Captured
+   *  at bind time; to apply a *changed* keymap, `stop()` then re-`bindHotkeys`.
+   *  Default: an empty keymap (every command uses its record `keybinding`), so
+   *  existing callers are unaffected. See `./keymap.js`. */
+  keymap?: UserKeymap;
 }
 
 /** Internal: a binding-table entry. */
@@ -54,6 +62,10 @@ export interface HotkeyBindingDescriptor {
   readonly keySequence: string;
   readonly commandId: string;
   readonly when?: WhenClause;
+  /** True when this command carries a user keymap override. User-touched
+   *  descriptors sort BEFORE untouched defaults on the same key, so a user
+   *  rebinding wins the key (research-10 §5.2). Absent ⇒ default. */
+  readonly userTouched?: boolean;
 }
 
 const DEFAULT_IGNORE: (e: KeyboardEvent) => boolean = (event) => {
@@ -78,6 +90,7 @@ export function bindHotkeys(
   const contextProvider = options.contextProvider ?? (() => ({}));
   const shouldIgnoreEvent = options.shouldIgnoreEvent ?? DEFAULT_IGNORE;
   const tiers = options.tiers;
+  const keymap = options.keymap ?? EMPTY_KEYMAP;
 
   let teardown: (() => void) | null = null;
   let disposed = false;
@@ -85,7 +98,7 @@ export function bindHotkeys(
   function rebind(): void {
     teardown?.();
     if (disposed) return;
-    const table = collectBindings(registry, tiers);
+    const table = collectBindings(registry, tiers, keymap);
     if (table.size === 0) {
       teardown = () => {};
       return;
@@ -128,10 +141,17 @@ export function bindHotkeys(
 /**
  * Build the binding table: key-sequence → ordered list of candidates.
  * Exported for tests / debugging; not part of the day-to-day surface.
+ *
+ * `keymap` (default: empty) layers a user override over each record's default
+ * `keybinding` via {@link resolveKeys} — with an empty keymap this is exactly
+ * the record defaults, so the behaviour is unchanged. User-touched commands
+ * sort BEFORE untouched defaults on the same key, so a user rebinding wins the
+ * key while the fire-time when-clause scan (in `bindHotkeys`) is untouched.
  */
 export function collectBindings(
   registry: Registry,
   tiers?: readonly Tier[] | 'all',
+  keymap: UserKeymap = EMPTY_KEYMAP,
 ): Map<string, HotkeyBindingDescriptor[]> {
   const table = new Map<string, HotkeyBindingDescriptor[]>();
   // We intentionally do NOT pass `context` to `list()` — the when-clause
@@ -140,8 +160,8 @@ export function collectBindings(
   // when-clauses that depend on dynamic state (selection, focus, etc.).
   const list = registry.list(tiers !== undefined ? { tiers } : undefined);
   for (const cmd of list) {
-    const kbs = normalizeKeybinding(cmd.keybinding);
-    for (const kb of kbs) {
+    const userTouched = keymap.overrides[cmd.id] !== undefined;
+    for (const kb of resolveKeys(cmd, keymap)) {
       const key = parseKeybinding(kb);
       let arr = table.get(key);
       if (!arr) {
@@ -149,10 +169,16 @@ export function collectBindings(
         table.set(key, arr);
       }
       const desc: HotkeyBindingDescriptor = cmd.when !== undefined
-        ? { keySequence: key, commandId: cmd.id, when: cmd.when }
-        : { keySequence: key, commandId: cmd.id };
+        ? { keySequence: key, commandId: cmd.id, when: cmd.when, userTouched }
+        : { keySequence: key, commandId: cmd.id, userTouched };
       arr.push(desc);
     }
+  }
+  // User-touched bindings win the key (research-10 §5.2). Array.sort is stable,
+  // so registration order is preserved within each group — and this is a no-op
+  // when no keymap is applied (every descriptor has userTouched === false).
+  for (const arr of table.values()) {
+    arr.sort((a, b) => Number(b.userTouched ?? false) - Number(a.userTouched ?? false));
   }
   return table;
 }
@@ -165,12 +191,4 @@ export function collectBindings(
  */
 export function parseKeybinding(kb: string): string {
   return kb.trim();
-}
-
-function normalizeKeybinding(
-  kb: AnyCommandRecord['keybinding'],
-): readonly string[] {
-  if (kb === undefined) return [];
-  if (typeof kb === 'string') return [kb];
-  return kb;
 }
