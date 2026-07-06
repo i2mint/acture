@@ -10,10 +10,21 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
+  ListResourcesRequestSchema,
   ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+  SubscribeRequestSchema,
+  UnsubscribeRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import type { ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
 import type { Context, Registry, Tier } from 'acture';
 import { buildToolsList, callTool } from './tools.js';
+import {
+  buildResourcesList,
+  readResource,
+  type BuildResourcesListOptions,
+  type ViewSource,
+} from './resources.js';
 
 export interface CreateMcpServerOptions {
   /** Server name advertised in the MCP handshake. */
@@ -26,6 +37,15 @@ export interface CreateMcpServerOptions {
    *  contexts that change at request time, prefer the per-call form
    *  (call `tools` directly instead of using this server wrapper). */
   context?: Context;
+  /** Optional READ side. Project a `ViewSource` (typed selectors over app
+   *  state) as MCP resources — `resources/list` + `resources/read`, with
+   *  `resources/subscribe` liveness wired to the source's `onStateChanged`.
+   *  Omit for a tools-only server (the default; unchanged). The `tiers`
+   *  filter above applies to views too (`internal` never projected). See
+   *  the `acture-ai-assistant` skill and `docs/hand-written-view-registry.md`. */
+  views?: ViewSource;
+  /** URI scheme + prefix for state-resource URIs. Default `'app://state/'`. */
+  resourceUriPrefix?: string;
 }
 
 /**
@@ -38,7 +58,11 @@ export function createMcpServer(
 ): Server {
   const server = new Server(
     { name: options.name, version: options.version },
-    { capabilities: { tools: { listChanged: true } } },
+    {
+      capabilities: options.views
+        ? { tools: { listChanged: true }, resources: { subscribe: true } }
+        : { tools: { listChanged: true } },
+    },
   );
 
   const listOptions: Parameters<typeof buildToolsList>[1] = options.tiers !== undefined
@@ -64,6 +88,46 @@ export function createMcpServer(
   registry.onCommandsChanged(() => {
     void server.notification({ method: 'notifications/tools/list_changed' });
   });
+
+  // ── Read side (optional) — resources/list + resources/read + subscribe ──
+  const views = options.views;
+  if (views) {
+    const listOpts: BuildResourcesListOptions = {};
+    if (options.tiers !== undefined) listOpts.tiers = options.tiers;
+    if (options.resourceUriPrefix !== undefined) listOpts.uriPrefix = options.resourceUriPrefix;
+    const readOpts: { uriPrefix?: string } =
+      options.resourceUriPrefix !== undefined ? { uriPrefix: options.resourceUriPrefix } : {};
+
+    server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+      resources: buildResourcesList(views, listOpts),
+    }));
+
+    server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const { uri } = request.params as { uri: string };
+      // The pure `readResource` returns an SDK-free `ResourceContents`
+      // mirror; upcast to the SDK's `ReadResourceResult` (structurally the
+      // text-contents variant) so `resources.ts` keeps zero SDK dependency.
+      return readResource(views, uri, readOpts) as ReadResourceResult;
+    });
+
+    // resources/subscribe → track URIs; fire resources/updated when the
+    // ViewSource signals a state change. A ViewSource without
+    // `onStateChanged` still supports subscribe; clients just re-read.
+    const subscribed = new Set<string>();
+    server.setRequestHandler(SubscribeRequestSchema, async (request) => {
+      subscribed.add((request.params as { uri: string }).uri);
+      return {};
+    });
+    server.setRequestHandler(UnsubscribeRequestSchema, async (request) => {
+      subscribed.delete((request.params as { uri: string }).uri);
+      return {};
+    });
+    views.onStateChanged?.(() => {
+      for (const uri of subscribed) {
+        void server.sendResourceUpdated({ uri });
+      }
+    });
+  }
 
   return server;
 }

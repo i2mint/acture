@@ -4,7 +4,7 @@ The live forward-planning surface. `docs/v1_plan.md` and `docs/implementation_pl
 
 **How work proceeds:** phases are over. Work is small, tracked increments. Each picks one or two items from "Next" or "Deferred", ships them, updates this file, and replaces `docs/next_session.md` with the following handoff.
 
-Last updated: **2026-07-05** (v1.14 — consumer-gap research + skills: keybinding customization, app-operating AI assistant; pattern-first, no package code).
+Last updated: **2026-07-06** (v1.15 — acture-mcp read side: MCP resources projection, the first v1.14-deferred accelerator pulled forward).
 
 ---
 
@@ -122,6 +122,17 @@ User-driven gap-fill: assess and close the specialized-support gaps for three co
 - **Skills.** `acture-hotkeys` **extended** with a full end-user-customization section (data model, resolution, capture UX, conflict detection, WCAG) and customization **removed from its "What NOT to build"** list. New **`acture-ai-assistant`** skill — the app-operating-assistant consumer that composes `acture-ai`/`acture-mcp` (write) with the read side + HITL + macro capture, and **bridges to the general `ai-assistant-*` skill family** for the runtime/chat-UI/prompts (kept the app's choice). `acture-architecture-primer` and `acture-consumer-integration` updated to surface both.
 - **Reproducible references (3 new `hand-written-*`).** `docs/hand-written-keymap-override.md` (~50-line user-keymap layer), `docs/hand-written-view-registry.md` (the read-side dual of `hand-written-registry.md`: views → MCP resources + `getState` tool), `docs/hand-written-assistant-runtime.md` (confirmation gate + dispatch-chain capture + backend/frontend loop wiring).
 - **Deferred to a named implementation need (the user's call, per hard-don't #2 / dev-tool-first):** the package accelerators — a `ViewRegistry` + MCP `resources` projection in `acture-mcp`, and a keymap-customization helper in `acture-hotkeys` — plus the closed-surface question of whether `sideEffect`/`requiresConfirmation` become `CommandRecord` fields (currently middleware+convention). Research-10 §7 and research-11 §12 record the exact decision each unblocks. Note: issue **#34** (MCP tool-name contract) sits in the file the resources projection would extend — verify/close before that work.
+
+---
+
+### v1.15 — acture-mcp read side: MCP resources projection — complete (this increment)
+
+The first of the v1.14-deferred package accelerators, pulled forward: the AI **read side**. Full context: research-11 §3 (the read side is the industry-wide gap; acture is placed to close it). Kept to acture's precedent — extend the already-published `acture-mcp-server` (additive `minor`), no new npm package, no core-surface change; the `ViewRegistry` primitive stays the hand-written pattern (`docs/hand-written-view-registry.md`) until a second projection target justifies extracting it (exactly how macros stayed a pattern while only the tool-bound `acture-e2e-playwright` earned a package).
+
+- **`acture-mcp-server` gains a resources projection.** Pure layer (`resources.ts`, SDK-free): `buildResourcesList(views, opts)` / `readResource(views, uri)` / `viewIdToUri` + the `ViewSource` interface (the `list` / `read` / `onStateChanged` subset of the hand-written `ViewRegistry`). Server glue: `createMcpServer(registry, { views, resourceUriPrefix? })` wires `resources/list` + `resources/read` + `resources/subscribe`, advertises the `resources` capability, and fires `notifications/resources/updated` from the source's `onStateChanged`. Tier-filtered like tools (`internal` never projected — enforced by the `ViewSource`, mirroring how core's `dispatch` enforces the write side). Omit `views` → tools-only, fully backward-compatible. +8 tests (`resources.test.ts`); typecheck + build green. `minor` changeset on `acture-mcp-server`.
+- **The pure/glue two-layer discipline held:** `resources.ts` has zero SDK dependency (the SDK's `ReadResourceResult` upcast happens only in `server.ts`), so non-stdio transports consume the projection unchanged (hard-don't #3, `acture-mcp` skill).
+- **Docs/skills:** `acture-mcp` skill gained a "The read side" section and dropped resources from its "What NOT to build" list; README gained a resources section; `docs/hand-written-view-registry.md` and `acture-ai-assistant` now note the shipped package path. Issue **#34** was verified stale (names sanitized on `main` via #24) and closed before this work.
+- **Still deferred:** the `getState`-tool hedge for tools-only hosts (companion to resources), the keymap-customization helper, and the `sideEffect`/`requiresConfirmation` closed-surface question — each awaits its own named need.
 
 ---
 

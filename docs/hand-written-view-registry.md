@@ -156,6 +156,8 @@ export function toMcpResources<S>(views: ViewRegistry<S>) {
 Use RFC-6570 URI templates for parameterized views (`app://state/node/{id}`).
 Resources are **application-driven**: the app decides what enters context.
 
+> **Package path.** `acture-mcp-server` now ships this projection — `buildResourcesList(views, opts)` / `readResource(views, uri)` and `createMcpServer(registry, { views })` (which wires `resources/list` + `resources/read` + `resources/subscribe`). Its `ViewSource` interface is exactly the `list` / `read` / `onStateChanged` subset above, so hand-writing this layer and later installing the package is mechanical. Hand-write the ~10 lines, or install the package — the per-consumer choice (dev-tool-first).
+
 ### (b) A universal read-only `getState` tool — the portable hedge
 
 ```ts

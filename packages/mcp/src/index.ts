@@ -18,6 +18,13 @@
  *
  *   - `connectStdio(server)` is a thin convenience over the SDK's
  *     stdio transport — for the common Node-side path.
+ *
+ *   - `buildResourcesList(views, opts)` / `readResource(views, uri)` project
+ *     the READ side — `ViewSource` (typed selectors over app state) as MCP
+ *     resources, so an assistant can see current state before it acts. Wire
+ *     them via `createMcpServer(registry, { views })`, which adds
+ *     `resources/list` + `resources/read` + `resources/subscribe`. Omit
+ *     `views` for a tools-only server (unchanged).
  */
 
 export {
@@ -36,3 +43,17 @@ export {
   connectStdio,
 } from './server.js';
 export type { CreateMcpServerOptions } from './server.js';
+
+export {
+  buildResourcesList,
+  readResource,
+  viewIdToUri,
+  DEFAULT_RESOURCE_PREFIX,
+} from './resources.js';
+export type {
+  ViewSource,
+  ResourceView,
+  McpResourceDescriptor,
+  BuildResourcesListOptions,
+  ResourceContents,
+} from './resources.js';

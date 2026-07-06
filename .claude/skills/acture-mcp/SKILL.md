@@ -1,6 +1,6 @@
 ---
 name: acture-mcp
-description: Build an MCP-server consumer surface in a target project — project the command registry as Model Context Protocol tools (`{name, description, inputSchema}`), tier-filtered, errors-as-data. Covers the two-layer split (pure projection vs transport glue), the agent-written vs `acture-mcp-server` package paths, tier semantics, function-when-clause exclusion, and the prompt-injection guardrails. Use when exposing a command-dispatch app to MCP clients, or when working ON the `acture-mcp-server` package. Triggers on "MCP", "MCP server", "Model Context Protocol", "tools/list", "tools/call", "expose to Claude", "stdio server", "@modelcontextprotocol/sdk".
+description: Build an MCP-server consumer surface in a target project — project the command registry as Model Context Protocol tools (`{name, description, inputSchema}`), tier-filtered, errors-as-data, AND (new) project app state as MCP resources (the read side — views → `resources/list`/`resources/read`/`resources/subscribe`). Covers the two-layer split (pure projection vs transport glue), the agent-written vs `acture-mcp-server` package paths, tier semantics, function-when-clause exclusion, the prompt-injection guardrails, and the read-side resources projection. Use when exposing a command-dispatch app to MCP clients, exposing app state as MCP resources, or when working ON the `acture-mcp-server` package. Triggers on "MCP", "MCP server", "Model Context Protocol", "tools/list", "tools/call", "MCP resources", "resources/list", "expose state to an assistant", "expose to Claude", "stdio server", "@modelcontextprotocol/sdk".
 ---
 
 # acture mcp — the registry as an MCP server
@@ -31,6 +31,18 @@ Surface both; follow a stated preference if one exists; otherwise ask. Record th
 - **Function `when`-clauses are skipped by default.** A command whose `when` is a function (not the DSL) is opaque to static projection — its availability can't be expressed to an MCP client. `buildToolsList` excludes such commands by default (`excludeFunctionWhen: true`); override only with a deliberate reason.
 - **Fire `notifications/tools/list_changed`** when the registry's tier-filtered view changes (e.g. a command graduates experimental → stable via re-registration). Wire it to `registry.onCommandsChanged(...)`.
 
+## The read side — views as MCP resources (state exposure)
+
+Tools are the **write** side. An assistant that *operates* the app also needs the **read** side — to *see* current state before it acts (research-11 §3: the read side is the industry-wide gap). MCP models read-only, application-driven context as **resources**, and `acture-mcp-server` now ships a resources projection symmetric to its tools projection:
+
+- **A *view* is the read-side dual of a command** — a named, described, tier-tagged *selector over state*. The app supplies a `ViewSource` (the `list` / `read` / `onStateChanged` shape of the hand-written `ViewRegistry`, `docs/hand-written-view-registry.md`); acture-mcp stays state-library-agnostic.
+- **Pure layer (`resources.ts`, SDK-free):** `buildResourcesList(views, opts)` → resource descriptors, `readResource(views, uri)` → contents. Same two-layer discipline as `tools.ts`; any transport consumes it.
+- **Server glue:** `createMcpServer(registry, { views, ... })` — the optional `views` opts into `resources/list` + `resources/read` + `resources/subscribe`, advertises the `resources` capability, and fires `notifications/resources/updated` from the source's `onStateChanged`. Omit `views` → tools-only, unchanged.
+- **Tier-filtered like tools** — `internal` views never projected; the same `tiers` option applies. Enforcement is the `ViewSource`'s job (its `read` returns `undefined` for internal/secret), exactly as core's `dispatch` enforces the write side.
+- **Ship both resources AND a `getState` tool.** Resources are the correct, app-driven representation but the *least-supported* MCP primitive (some hosts are tools-only). For those, also expose a read-only `getState` tool (`readOnlyHint: true`). See `acture-ai-assistant` and research-11 §3.2.
+
+The full "operate my app" story (read side + confirmation gate + macro capture) is the `acture-ai-assistant` skill; this section is just the MCP-resources projection.
+
 ## The security guardrails — this surface is exposed to untrusted callers
 
 MCP clients are external agents. The prompt-injection / tool-poisoning attack class applies directly (hard-don'ts #5 and #10):
@@ -50,7 +62,7 @@ The same positioning applies inward (per `acture-consumer-integration` §"When y
 
 ## What NOT to build (wait for a real need)
 
-No per-user / per-client tool-visibility logic in the adapter (that is business logic — push it into a `when`-clause or core middleware), no auth layer in the adapter, no custom transport abstraction over the SDK's, no MCP *resources* / *prompts* projection — wait until a concrete need surfaces in the project. The registry → `tools/list` + `tools/call` projection covers the overwhelming majority of MCP needs. YAGNI applied softly.
+No per-user / per-client tool-visibility logic in the adapter (that is business logic — push it into a `when`-clause or core middleware), no auth layer in the adapter, no custom transport abstraction over the SDK's, and no MCP *prompts* projection — wait until a concrete need surfaces. MCP **resources** are **no longer** on this list: the read-side gap surfaced a concrete need (research-11 + a real consumer), so the views → `resources/*` projection now ships (see "The read side" above). The registry → `tools/list` + `tools/call` projection, plus the optional views → `resources/*` projection, covers the overwhelming majority of MCP needs. YAGNI applied softly.
 
 ## See also
 

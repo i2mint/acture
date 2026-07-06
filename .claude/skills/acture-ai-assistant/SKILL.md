@@ -24,7 +24,7 @@ The seam: acture projects the registry (write) and state model (read) into whate
 
 No surveyed framework ships a first-class typed channel for exposing an app's *current state* to the model (research-11 §3). acture can, because its state adapter already exposes `getState()` / `subscribe()` and (via `PatchCapableAdapter`) emits RFC-6902-*compatible* patches (the Immer-subset shape — a trivial `path`→JSON-Pointer transform feeds AG-UI's canonical `STATE_DELTA`). Define a **view** — the read-side dual of a command: a named, described, tier-tagged, sensitivity-scoped selector over state — and project one `ViewRegistry` to three read channels, symmetric to how the schema bridge projects a command:
 
-- **MCP resources** (`app://state/<id>`, with `resources/subscribe` liveness) — the semantically correct, *application-driven* representation.
+- **MCP resources** (`app://state/<id>`, with `resources/subscribe` liveness) — the semantically correct, *application-driven* representation. **Shipped** in `acture-mcp-server`: `createMcpServer(registry, { views })` + the pure `buildResourcesList` / `readResource` (see the `acture-mcp` skill). Or hand-write it from `docs/hand-written-view-registry.md`.
 - **A universal read-only `getState` tool** (`readOnlyHint: true`) — the portable hedge, because resources are the least-supported MCP primitive (Cursor and many hosts are tools-only).
 - **An AG-UI `STATE_SNAPSHOT`/`STATE_DELTA` bridge** — for an in-app assistant; maps `PatchCapableAdapter` patches into `STATE_DELTA` (RFC-6902-compatible; a trivial `path`→pointer transform, not a raw pass-through).
 
@@ -47,7 +47,7 @@ Every serious loop runs backend; only rendering/voice is client-side. acture shi
 1. **Read channel(s):** MCP resources + `getState` tool by default (ship both); add the AG-UI bridge only for an in-app assistant. Not really optional — the read side is the gap; the only question is which channels the target host supports.
 2. **Confirmation: middleware + convention, or record fields?** The middleware path adds nothing to `CommandRecord` (a `sideEffect`/`requiresConfirmation` convention read by the gate); the record-field path is cleaner but touches the **closed** `CommandRecord` surface (needs the named-need / rule-of-three test — see `acture-command-record-shape` and `acture-hard-donts`). Surface both; default to middleware+convention unless the project has a concrete reason to open the surface.
 3. **Runtime + chat UI:** the app's choice — hand off to the `ai-assistant-*` family. Name Vercel / OpenAI / LangGraph and assistant-ui / CopilotKit; respect the pick.
-4. **Agent-written vs package-reuse (per piece):** the `ViewRegistry` + confirmation middleware are small and hand-writable (the reference docs); a package would earn its keep only on the UI-bound pieces or a tested resources projection in `acture-mcp`. Per the dev-tool-first rule, this is the user's call.
+4. **Agent-written vs package-reuse (per piece):** the `ViewRegistry` + confirmation middleware are small and hand-writable (the reference docs). The **MCP resources projection now ships** in `acture-mcp-server` (`createMcpServer({ views })` + `buildResourcesList` / `readResource`) — install it or hand-write it. A helper for the UI-bound pieces (confirmation card, `getState` tool for tools-only hosts) could still earn its keep. Per the dev-tool-first rule, each is the user's call.
 
 ## Guardrails (this surface takes input from a model)
 
