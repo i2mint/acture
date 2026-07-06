@@ -4,7 +4,10 @@ import {
   buildResourcesList,
   readResource,
   viewIdToUri,
+  buildGetStateTool,
+  callGetState,
   DEFAULT_RESOURCE_PREFIX,
+  DEFAULT_GET_STATE_TOOL_NAME,
   type ResourceView,
   type ViewSource,
 } from './resources.js';
@@ -113,5 +116,54 @@ describe('viewIdToUri', () => {
     expect(viewIdToUri('app.selection')).toBe('app://state/app.selection');
     expect(viewIdToUri('app.selection', 'state://')).toBe('state://app.selection');
     expect(DEFAULT_RESOURCE_PREFIX).toBe('app://state/');
+  });
+});
+
+describe('buildGetStateTool', () => {
+  it('builds a read-only tool advertising the stable view ids', () => {
+    const tool = buildGetStateTool(makeViews());
+    expect(tool.name).toBe(DEFAULT_GET_STATE_TOOL_NAME);
+    expect(tool.name).toMatch(/^[a-zA-Z0-9_-]{1,64}$/); // wire-safe for Anthropic/OpenAI/MCP
+    expect(tool.annotations).toEqual({
+      readOnlyHint: true,
+      openWorldHint: false,
+      idempotentHint: true,
+    });
+    const schema = tool.inputSchema as {
+      properties: { view: { enum: string[] } };
+      required: string[];
+    };
+    expect(schema.properties.view.enum).toEqual(['app.selection', 'app.mode']); // internal excluded
+    expect(schema.required).toEqual(['view']);
+    expect(tool.description).toContain('app.selection');
+  });
+
+  it('honours a custom name and tier filter', () => {
+    const tool = buildGetStateTool(makeViews(), {
+      name: 'read_state',
+      tiers: ['stable', 'experimental'],
+    });
+    expect(tool.name).toBe('read_state');
+    const schema = tool.inputSchema as { properties: { view: { enum: string[] } } };
+    expect(schema.properties.view.enum).toEqual(['app.selection', 'app.mode', 'app.beta']);
+  });
+});
+
+describe('callGetState', () => {
+  it('reads a known view as JSON content', () => {
+    const res = callGetState(makeViews(), { view: 'app.selection' });
+    expect(res.isError).toBeUndefined();
+    expect(JSON.parse(res.content[0]!.text)).toEqual(['n1', 'n2']);
+  });
+
+  it('reads an unknown / internal view as null (no leak)', () => {
+    expect(callGetState(makeViews(), { view: 'app.nope' }).content[0]!.text).toBe('null');
+    expect(callGetState(makeViews(), { view: 'app.debug' }).content[0]!.text).toBe('null');
+  });
+
+  it('returns errors-as-data for a missing / non-string view', () => {
+    const res = callGetState(makeViews(), {});
+    expect(res.isError).toBe(true);
+    expect(JSON.parse(res.content[0]!.text).code).toBe('invalid_params');
   });
 });

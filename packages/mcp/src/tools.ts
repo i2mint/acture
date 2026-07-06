@@ -26,6 +26,23 @@ export interface McpToolDescriptor {
   name: string;
   description?: string;
   inputSchema: Record<string, unknown>;
+  /** MCP tool annotations — behavioural hints for the host's UX (auto-approve
+   *  vs confirm). Hints, not security; a host MUST treat annotations from an
+   *  untrusted server as untrusted (MCP spec; research-11 §4). Omitted here for
+   *  command-tools until commands carry a side-effect class; the read-only
+   *  `getState` tool sets `readOnlyHint`. */
+  annotations?: McpToolAnnotations;
+}
+
+/** The MCP tool-annotation vocabulary. Defaults are hostile — an omitted
+ *  annotation reads as `destructiveHint: true` + `openWorldHint: true` on
+ *  strict hosts, so opt in to `readOnlyHint` for low-friction reads. */
+export interface McpToolAnnotations {
+  title?: string;
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
 }
 
 export interface BuildToolsListOptions {
