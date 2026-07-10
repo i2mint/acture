@@ -15,6 +15,7 @@
 
 import type { Tier } from 'acture';
 import type { McpToolDescriptor } from './tools.js';
+import { safeStringify } from './serialize.js';
 
 /** A view descriptor as listed by a {@link ViewSource} — the read-side dual
  *  of an MCP tool descriptor. The selector and state live in the app's
@@ -93,6 +94,9 @@ export interface ResourceContents {
  * Read one view's current value as MCP resource contents. The value is
  * JSON-serialized; an unknown / filtered / `secret` view (where
  * `views.read` returns `undefined`) reads as `null` — no leak, no throw.
+ * A non-JSON-serializable view value (BigInt / circular / throwing `toJSON`)
+ * reads as an `unserializable_state` payload rather than throwing — the read
+ * side has no error channel, so the failure surfaces in the resource body.
  */
 export function readResource(
   views: ViewSource,
@@ -107,7 +111,7 @@ export function readResource(
       {
         uri,
         mimeType: 'application/json',
-        text: JSON.stringify(value ?? null, null, 2),
+        text: safeStringify(value).text,
       },
     ],
   };
@@ -187,7 +191,11 @@ export interface GetStateResponse {
  * Execute a getState call — read the requested view and return its JSON value
  * as MCP tool-result content. Errors are **data** (never thrown): a missing /
  * non-string `view` returns `isError: true`; an unknown / internal / secret
- * view reads as `null` (the `ViewSource` enforces that, per {@link readResource}).
+ * view reads as `null` (the `ViewSource` enforces that, per {@link readResource});
+ * a non-JSON-serializable view value (BigInt / circular / throwing `toJSON`)
+ * also returns `isError: true` with an `unserializable_state` payload — the
+ * serialization is guarded so the errors-as-data boundary is never broken by a
+ * thrown `JSON.stringify`.
  */
 export function callGetState(views: ViewSource, args: unknown): GetStateResponse {
   const view = (args as { view?: unknown } | null | undefined)?.view;
@@ -205,8 +213,8 @@ export function callGetState(views: ViewSource, args: unknown): GetStateResponse
       isError: true,
     };
   }
-  const value = views.read(view);
-  return {
-    content: [{ type: 'text', text: JSON.stringify(value ?? null, null, 2) }],
-  };
+  const serialized = safeStringify(views.read(view));
+  return serialized.error
+    ? { content: [{ type: 'text', text: serialized.text }], isError: true }
+    : { content: [{ type: 'text', text: serialized.text }] };
 }

@@ -91,6 +91,24 @@ export function createMcpServer(
     ? getStateOpts.name ?? DEFAULT_GET_STATE_TOOL_NAME
     : null;
 
+  // Fail fast on a getState-tool ↔ command-tool name collision. Otherwise
+  // `tools/list` emits two tools with the same name (strict hosts — the
+  // Anthropic API — reject the ENTIRE array, so every tool call in the session
+  // fails), and `tools/call` for that name is unconditionally routed to
+  // getState below, silently shadowing the command. A dotted command id like
+  // `app.getState` sanitizes to `app_getState` — exactly the default name — so
+  // this is a realistic footgun, not a theoretical one.
+  if (getStateName !== null) {
+    const clash = buildToolsList(registry, listOptions).some((t) => t.name === getStateName);
+    if (clash) {
+      throw new Error(
+        `createMcpServer: getState tool name '${getStateName}' collides with a command's wire ` +
+          `tool name. MCP/Anthropic reject duplicate tool names, and the command would be shadowed ` +
+          `on tools/call. Pass a distinct \`getStateTool: { name }\` or rename the command.`,
+      );
+    }
+  }
+
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools:
       views && getStateOpts
