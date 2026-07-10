@@ -17,6 +17,7 @@ import {
   isFunctionWhen,
   toJsonSchema,
 } from 'acture';
+import { safeStringify } from './serialize.js';
 
 /** MCP tool envelope as understood by `tools/list`. The SDK's exact
  *  type lives in `@modelcontextprotocol/sdk/types.js`; we mirror the
@@ -153,20 +154,25 @@ function resolveDispatchId(registry: Registry, name: string): string {
 }
 
 /** Build an MCP response from an arbitrary acture Result. Exposed for
- *  hosts that want to dispatch directly and pre/post-process. */
+ *  hosts that want to dispatch directly and pre/post-process. Serialization
+ *  is guarded ({@link safeStringify}): an `ok(undefined)` result yields a
+ *  well-formed `"null"` text (not a dropped `text: undefined` field), and a
+ *  non-JSON-serializable value or `error.details` surfaces as errors-as-data
+ *  instead of throwing past the tool-call boundary. */
 export function formatToolResponse(result: Result<unknown>): CallToolResponse {
   if (result.ok) {
-    const payload = JSON.stringify(result.value, null, 2);
-    return {
-      content: [{ type: 'text', text: payload }],
-      _actureResult: result,
-    };
+    const serialized = safeStringify(result.value);
+    return serialized.error
+      ? { content: [{ type: 'text', text: serialized.text }], isError: true, _actureResult: result }
+      : { content: [{ type: 'text', text: serialized.text }], _actureResult: result };
   }
-  const errorPayload = JSON.stringify(
-    { code: result.error.code, message: result.error.message, details: result.error.details },
-    null,
-    2,
-  );
+  const { code, message, details } = result.error;
+  // Preserve the error code/message even when `details` is not serializable —
+  // errors-as-data must never itself throw or lose the primary error.
+  const full = safeStringify({ code, message, details });
+  const errorPayload = full.error
+    ? safeStringify({ code, message, details: '[unserializable]' }).text
+    : full.text;
   return {
     content: [{ type: 'text', text: errorPayload }],
     isError: true,

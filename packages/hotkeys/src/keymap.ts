@@ -47,10 +47,18 @@ function normalizeKeybinding(kb: Keybindable['keybinding']): string[] {
   return typeof kb === 'string' ? [kb] : [...kb];
 }
 
+/** Drop duplicate key sequences, preserving first-seen order. */
+function dedupeKeys(keys: readonly string[]): string[] {
+  return [...new Set(keys)];
+}
+
 /**
  * Effective key sequences for one command, given the user layer. Returns the
  * tinykeys tokens that should now trigger this command — the record default,
- * replaced / augmented / removed per the override.
+ * replaced / augmented / removed per the override. The result is de-duplicated:
+ * an `add` override that re-adds a key already in the default (e.g. a preset
+ * that restates a binding) must not bind the command to the same key twice, nor
+ * make {@link detectConflicts} report the command as conflicting with itself.
  */
 export function resolveKeys(cmd: Keybindable, keymap: UserKeymap): string[] {
   const override = keymap.overrides[cmd.id];
@@ -60,9 +68,9 @@ export function resolveKeys(cmd: Keybindable, keymap: UserKeymap): string[] {
     case 'remove':
       return [];
     case 'replace':
-      return [...override.keys];
+      return dedupeKeys(override.keys);
     case 'add':
-      return [...base, ...override.keys];
+      return dedupeKeys([...base, ...override.keys]);
   }
 }
 
@@ -132,7 +140,18 @@ export function tokenFromEvent(
   if (event.metaKey || event.ctrlKey) mods.push('$mod'); // portable primary modifier
   if (event.shiftKey) mods.push('Shift');
   if (event.altKey) mods.push('Alt');
-  const base = options.mode === 'code' ? event.code : k.length === 1 ? k.toLowerCase() : k;
+  // The spacebar's `event.key` is a literal space; tinykeys parses a binding
+  // string by splitting on spaces (the chord separator), which would strip a
+  // space token to an empty, never-matching key. Emit the code-name 'Space',
+  // which tinykeys matches via `event.code` — so the captured shortcut fires.
+  const base =
+    options.mode === 'code'
+      ? event.code
+      : k === ' '
+        ? 'Space'
+        : k.length === 1
+          ? k.toLowerCase()
+          : k;
   return [...mods, base].join('+');
 }
 

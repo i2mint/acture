@@ -33,16 +33,43 @@ export function useHotkeys(
   const ctxRef = useRef<Context>(options.context ?? {});
   ctxRef.current = options.context ?? {};
 
+  // Route callbacks through refs so the LATEST closure runs at fire time
+  // without rebinding tinykeys. A fresh inline `onDispatched` /
+  // `shouldIgnoreEvent` each render (the common case) would otherwise freeze
+  // at first bind and run with stale captured state (e.g. a stale selection).
+  const onDispatchedRef = useRef(options.onDispatched);
+  onDispatchedRef.current = options.onDispatched;
+  const shouldIgnoreRef = useRef(options.shouldIgnoreEvent);
+  shouldIgnoreRef.current = options.shouldIgnoreEvent;
+
   const enabled = options.enabled ?? true;
-  const { context: _ctx, enabled: _en, ...rest } = options;
+  const {
+    context: _ctx,
+    enabled: _en,
+    onDispatched: _od,
+    shouldIgnoreEvent: _sie,
+    ...rest
+  } = options;
   void _ctx;
   void _en;
+  void _od;
+  void _sie;
 
   useEffect(() => {
     if (!enabled) return;
     const stop = bindHotkeys(registry, {
       ...rest,
       contextProvider: () => ctxRef.current,
+      // Always-installed indirection: harmless when no onDispatched is set
+      // (the optional-call no-ops), and picks up the latest closure otherwise.
+      onDispatched: (cmd, result) => onDispatchedRef.current?.(cmd, result),
+      // Only override the binder's DEFAULT_IGNORE when the caller supplied a
+      // predicate at bind time; the ref keeps it current across renders.
+      // (Toggling its presence on/off mid-flight, like `target`/`tiers`,
+      // requires a remount.)
+      ...(shouldIgnoreRef.current
+        ? { shouldIgnoreEvent: (e: KeyboardEvent) => shouldIgnoreRef.current!(e) }
+        : {}),
     });
     return stop;
     // Re-bind on `keymap` identity change so a live end-user remap UI takes

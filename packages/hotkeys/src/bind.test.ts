@@ -163,6 +163,54 @@ describe('acture-hotkeys', () => {
       input.remove();
     });
 
+    it('a throwing when-clause does not crash the handler — a fallback candidate still fires', async () => {
+      const registry = createRegistry();
+      const execFallback = vi.fn(() => ok(undefined));
+      // First candidate: a function when-clause that throws (reads a ctx slice
+      // that isn't populated). Must not swallow the fallback below.
+      registry.register(
+        defineCommand({
+          id: 'thrower',
+          title: 'T',
+          keybinding: 'g',
+          when: (ctx: { editor?: { focused?: boolean } }) => ctx.editor!.focused!,
+          execute: () => ok(undefined),
+        }),
+      );
+      registry.register(
+        defineCommand({ id: 'fallback', title: 'F', keybinding: 'g', execute: execFallback }),
+      );
+      const stop = bindHotkeys(registry, { target: window, contextProvider: () => ({}) });
+      pressKey(window, 'g');
+      await new Promise((r) => setTimeout(r, 0));
+      expect(execFallback).toHaveBeenCalledTimes(1);
+      stop();
+    });
+
+    it('ignores hotkeys while typing in a shadow-DOM input (composedPath retargeting)', async () => {
+      const registry = createRegistry();
+      const execute = vi.fn(() => ok(undefined));
+      registry.register(
+        defineCommand({ id: 'cmd', title: 'C', keybinding: 'g', execute }),
+      );
+      const host = document.createElement('div');
+      document.body.appendChild(host);
+      const root = host.attachShadow({ mode: 'open' });
+      const input = document.createElement('input');
+      root.appendChild(input);
+      const stop = bindHotkeys(registry, { target: window });
+      // composed: true so the event crosses the shadow boundary to the window
+      // listener; event.target retargets to the host, but composedPath()[0] is
+      // the real inner <input> — which DEFAULT_IGNORE must detect.
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'g', bubbles: true, composed: true, cancelable: true }),
+      );
+      await new Promise((r) => setTimeout(r, 0));
+      expect(execute).not.toHaveBeenCalled();
+      stop();
+      host.remove();
+    });
+
     it('rebinds on commandsChanged when a new keybinding is registered', async () => {
       const registry = createRegistry();
       const stop = bindHotkeys(registry, { target: window });

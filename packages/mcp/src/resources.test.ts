@@ -167,3 +167,35 @@ describe('callGetState', () => {
     expect(JSON.parse(res.content[0]!.text).code).toBe('invalid_params');
   });
 });
+
+describe('non-serializable view values — errors-as-data, never thrown', () => {
+  const bigintViews: ViewSource = {
+    list: () => [{ id: 'app.big', tier: 'stable' }],
+    read: (id) => (id === 'app.big' ? { frameId: 9007199254740993n } : undefined),
+  };
+  const circularViews: ViewSource = {
+    list: () => [{ id: 'app.graph', tier: 'stable' }],
+    read: () => {
+      const node: Record<string, unknown> = { name: 'root' };
+      node.self = node; // circular back-reference (common for graph/tree state)
+      return node;
+    },
+  };
+
+  it('callGetState returns isError (not a thrown TypeError) on a BigInt value', () => {
+    const res = callGetState(bigintViews, { view: 'app.big' });
+    expect(res.isError).toBe(true);
+    expect(JSON.parse(res.content[0]!.text).code).toBe('unserializable_state');
+  });
+
+  it('callGetState returns isError on a circular value', () => {
+    const res = callGetState(circularViews, { view: 'app.graph' });
+    expect(res.isError).toBe(true);
+    expect(JSON.parse(res.content[0]!.text).code).toBe('unserializable_state');
+  });
+
+  it('readResource surfaces the unserializable payload as the body (no error channel, never throws)', () => {
+    const contents = readResource(bigintViews, 'app://state/app.big');
+    expect(JSON.parse(contents.contents[0]!.text).code).toBe('unserializable_state');
+  });
+});

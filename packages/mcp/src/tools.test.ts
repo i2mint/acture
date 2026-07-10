@@ -150,4 +150,33 @@ describe('formatToolResponse', () => {
     expect(r.isError).toBe(true);
     expect(JSON.parse(r.content[0]!.text)).toMatchObject({ code: 'bad', message: 'failed' });
   });
+
+  it('renders ok(undefined) as a well-formed "null" text (not a dropped text field)', () => {
+    const r = formatToolResponse(ok(undefined));
+    expect(r.isError).toBeUndefined();
+    // Regression: JSON.stringify(undefined) === undefined would drop `text` on
+    // the wire, failing the client's CallToolResult schema (text is required).
+    expect(typeof r.content[0]!.text).toBe('string');
+    expect(r.content[0]!.text).toBe('null');
+    expect(JSON.parse(r.content[0]!.text)).toBeNull();
+  });
+
+  it('returns isError (not a thrown TypeError) for a non-serializable ok value', () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+    const r = formatToolResponse(ok(circular));
+    expect(r.isError).toBe(true);
+    expect(JSON.parse(r.content[0]!.text).code).toBe('unserializable_state');
+  });
+
+  it('preserves the error code/message when error.details is not serializable', () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+    const r = formatToolResponse(err('conflict', 'nope', circular));
+    expect(r.isError).toBe(true);
+    const parsed = JSON.parse(r.content[0]!.text);
+    expect(parsed.code).toBe('conflict');
+    expect(parsed.message).toBe('nope');
+    expect(parsed.details).toBe('[unserializable]');
+  });
 });

@@ -69,8 +69,14 @@ export interface HotkeyBindingDescriptor {
 }
 
 const DEFAULT_IGNORE: (e: KeyboardEvent) => boolean = (event) => {
-  const t = event.target;
-  if (t === null || !(t instanceof Element)) return false;
+  // Resolve the innermost real target. For an `<input>` rendered inside a web
+  // component's shadow DOM, `event.target` is retargeted to the shadow HOST, so
+  // a naive tagName check misses it and the hotkey fires while the user types.
+  // `composedPath()[0]` pierces the shadow boundary; fall back to `event.target`
+  // where composedPath is unavailable or empty (e.g. outside dispatch).
+  const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+  const t = path.length > 0 ? path[0] : event.target;
+  if (t === null || t === undefined || !(t instanceof Element)) return false;
   const tag = t.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
   if ((t as HTMLElement).isContentEditable) return true;
@@ -111,7 +117,18 @@ export function bindHotkeys(
         // First-registered-wins under matching context (research-1; user-
         // confirmed escalation #1). Iterate insertion-ordered descriptors.
         for (const desc of descriptors) {
-          if (!evaluateWhen(desc.when, ctx)) continue;
+          let applies: boolean;
+          try {
+            applies = evaluateWhen(desc.when, ctx);
+          } catch {
+            // A function when-clause that throws (e.g. reads a ctx slice that
+            // isn't populated yet) must not crash the whole key handler and
+            // swallow the remaining fallback candidates — treat it as
+            // not-applicable and try the next command, mirroring the
+            // fail-closed discipline of registry.dispatch.
+            continue;
+          }
+          if (!applies) continue;
           event.preventDefault();
           void registry
             .dispatch(desc.commandId, undefined, ctx)

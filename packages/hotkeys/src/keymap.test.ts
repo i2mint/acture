@@ -30,6 +30,19 @@ describe('resolveKeys', () => {
     expect(resolveKeys(cmd('a', 'g'), km({ a: { kind: 'add', keys: ['x'] } }))).toEqual(['g', 'x']);
     expect(resolveKeys(cmd('a', 'g'), km({ a: { kind: 'remove' } }))).toEqual([]);
   });
+
+  it('de-duplicates keys (an add/replace that restates an existing binding)', () => {
+    const km = (o: UserKeymap['overrides']): UserKeymap => ({ version: 1, overrides: o });
+    // 'add' re-adding the record default must not bind the key twice.
+    expect(resolveKeys(cmd('a', 'g'), km({ a: { kind: 'add', keys: ['g'] } }))).toEqual(['g']);
+    expect(resolveKeys(cmd('a', 'g'), km({ a: { kind: 'add', keys: ['g', 'x', 'x'] } }))).toEqual([
+      'g',
+      'x',
+    ]);
+    expect(resolveKeys(cmd('a', 'g'), km({ a: { kind: 'replace', keys: ['x', 'x'] } }))).toEqual([
+      'x',
+    ]);
+  });
 });
 
 describe('collectBindings with a keymap', () => {
@@ -88,6 +101,15 @@ describe('detectConflicts', () => {
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0]!.commandIds.sort()).toEqual(['a', 'b']);
   });
+
+  it('does not report a command as conflicting with itself (add restates its default)', () => {
+    const registry = createRegistry();
+    registry.register(defineCommand({ id: 'a', title: 'A', keybinding: 'g', execute: () => ok(undefined) }));
+    // A preset / remap UI that re-adds the key the command already has must
+    // NOT surface a bogus "'a' conflicts with 'a'" entry.
+    const keymap: UserKeymap = { version: 1, overrides: { a: { kind: 'add', keys: ['g'] } } };
+    expect(detectConflicts(registry, keymap)).toEqual([]);
+  });
 });
 
 describe('tokenFromEvent', () => {
@@ -108,6 +130,15 @@ describe('tokenFromEvent', () => {
     expect(tokenFromEvent(ev({ key: 'w', code: 'KeyW', ctrlKey: true }), { mode: 'code' })).toBe(
       '$mod+KeyW',
     );
+  });
+
+  it('emits a matchable "Space" token for the spacebar (not an empty key)', () => {
+    // event.key for the spacebar is a literal ' '; a ' ' token is stripped by
+    // tinykeys' space-separated chord parser and never fires. 'Space' matches
+    // via event.code.
+    expect(tokenFromEvent(ev({ key: ' ' }))).toBe('Space');
+    expect(tokenFromEvent(ev({ key: ' ', ctrlKey: true }))).toBe('$mod+Space');
+    expect(tokenFromEvent(ev({ key: ' ', shiftKey: true }))).toBe('Shift+Space');
   });
 });
 
