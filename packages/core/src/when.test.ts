@@ -64,6 +64,15 @@ describe('when-clause DSL — parsing', () => {
     expect(compileWhen('path =~ "\\.ts$"').evaluate({ path: 'foo.md' })).toBe(false);
   });
 
+  it('parses a regex literal whose pattern contains a space', () => {
+    // A space in the pattern must not be treated as a token/flag separator
+    // (the regex token now carries pattern and flags as distinct fields).
+    expect(compileWhen('label =~ /foo bar/').evaluate({ label: 'a foo bar b' })).toBe(true);
+    expect(compileWhen('label =~ /foo bar/').evaluate({ label: 'foobar' })).toBe(false);
+    // ...with flags still applied.
+    expect(compileWhen('label =~ /foo bar/i').evaluate({ label: 'FOO BAR' })).toBe(true);
+  });
+
   it('parses in / not in', () => {
     expect(compileWhen('lang in langs').evaluate({ lang: 'ts', langs: ['ts', 'js'] })).toBe(true);
     expect(compileWhen('lang in langs').evaluate({ lang: 'py', langs: ['ts', 'js'] })).toBe(false);
