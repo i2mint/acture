@@ -2,10 +2,17 @@
  * `acture-ai-vercel` — project an acture registry as Vercel AI SDK
  * tool definitions.
  *
+ * **Requires AI SDK v5 or later** (`ai@^5`), where a tool's schema field
+ * is `inputSchema`. The v4 line called it `parameters` and is no longer
+ * supported — it is also a dead end for Google: the final v4-era
+ * `@ai-sdk/google` predates Gemini 3 and drops the `thoughtSignature`
+ * that Gemini 3 requires you to echo back on `functionCall` parts, so
+ * multi-step tool calling 400s. See the v1 → v2 note in CHANGELOG.md.
+ *
  * Each command's Zod `params` schema is converted to a JSON Schema (with
  * Zod 4's native `z.toJSONSchema()`) and handed to the AI SDK via
- * `jsonSchema()` — see `toParameterSchema` for why the conversion cannot
- * be left to the SDK. Runtime validation is unaffected: `registry.dispatch`
+ * `jsonSchema()` — see `toParameterSchema` for why we keep that
+ * conversion ours. Runtime validation is unaffected: `registry.dispatch`
  * still validates against the original Zod schema, so refinements a JSON
  * Schema cannot express (e.g. `z.refine` predicates) are still enforced.
  *
@@ -116,14 +123,19 @@ function selectCommands(
  * Project a command's Zod `params` to a JSON Schema the AI SDK can send
  * to the model.
  *
- * The AI SDK's `tool({ parameters })` *accepts* a Zod schema, but `ai`
- * v4 converts it internally with `zod-to-json-schema`, which understands
- * only Zod **v3**'s internals. Given a Zod **v4** schema it silently
- * emits an empty `{}` — the model then sees a tool with no parameters
- * and cannot supply arguments. So we convert up front with Zod 4's
- * native `z.toJSONSchema()` and hand the SDK a ready JSON Schema via
- * `jsonSchema()`. A command with no `params` projects to an empty object
- * schema.
+ * `tool({ inputSchema })` accepts a Zod schema directly, but we convert
+ * up front with Zod 4's native `z.toJSONSchema()` and hand the SDK a
+ * ready JSON Schema via `jsonSchema()`. This keeps the wire schema
+ * ours: the exact JSON Schema the model sees is decided here, not by
+ * whichever Zod-to-JSON-Schema converter the SDK happens to bundle — a
+ * coupling that already bit us once (`ai` v4 shipped a Zod-v3-only
+ * converter that silently emitted `{}` for a Zod v4 schema, leaving the
+ * model with a parameter-less tool it could not call).
+ *
+ * Runtime validation is unaffected: `registry.dispatch` still validates
+ * against the original Zod schema, so refinements a JSON Schema cannot
+ * express (e.g. `z.refine` predicates) are still enforced. A command
+ * with no `params` projects to an empty object schema.
  */
 function toParameterSchema(
   params: AnyCommandRecord['params'],
@@ -142,7 +154,7 @@ function projectCommand(
   const description = applyDeprecationPrefix(cmd, cmd.description);
   return tool({
     description: description ?? cmd.title,
-    parameters: toParameterSchema(cmd.params),
+    inputSchema: toParameterSchema(cmd.params),
     execute: async (args: unknown) => {
       // `cmd.id` (not the sanitized wire name) is what the registry
       // dispatches on — sanitization is a wire-format concern, not a

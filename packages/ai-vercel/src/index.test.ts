@@ -105,33 +105,38 @@ describe('toAITools', () => {
     expect((cmd as { id: string }).id).toBe('app.search');
   });
 
-  it('projects Zod v4 params to a non-empty JSON Schema', () => {
-    // Regression: `ai` v4 converts a passed-through Zod schema with
-    // `zod-to-json-schema` (Zod v3 only) and silently yields an empty
-    // `{}` for a Zod v4 schema — the model then sees no parameters. The
-    // adapter must convert via `z.toJSONSchema()` itself.
+  it('projects Zod v4 params to a non-empty JSON Schema on `inputSchema`', () => {
+    // Two regressions guarded at once.
+    //
+    // 1. The field is `inputSchema` (AI SDK v5+). On the v4 line it was
+    //    `parameters`; a tool object still carrying `parameters` reaches the
+    //    model with NO schema at all, so it can never supply arguments.
+    // 2. We convert with `z.toJSONSchema()` ourselves rather than passing the
+    //    Zod schema through: `ai` v4 converted it with `zod-to-json-schema`
+    //    (Zod v3 only) and silently yielded `{}` for a Zod v4 schema. Owning
+    //    the conversion decouples us from whatever converter the SDK bundles.
     const { registry } = setup();
     const tools = toAITools(registry);
-    const params = (
-      tools['app_search'] as unknown as {
-        parameters: {
-          jsonSchema?: { type?: string; properties?: Record<string, unknown> };
-        };
-      }
-    ).parameters;
-    expect(params.jsonSchema?.type).toBe('object');
-    expect(params.jsonSchema?.properties ?? {}).toHaveProperty('query');
+    const t = tools['app_search'] as unknown as {
+      parameters?: unknown;
+      inputSchema: {
+        jsonSchema?: { type?: string; properties?: Record<string, unknown> };
+      };
+    };
+    expect(t.parameters).toBeUndefined();
+    expect(t.inputSchema.jsonSchema?.type).toBe('object');
+    expect(t.inputSchema.jsonSchema?.properties ?? {}).toHaveProperty('query');
   });
 
   it('projects a param-less command to an empty object schema', () => {
     const { registry } = setup();
     const tools = toAITools(registry, { tiers: ['stable', 'experimental'] });
-    const params = (
+    const schema = (
       tools['app_exp_thing'] as unknown as {
-        parameters: { jsonSchema?: { type?: string } };
+        inputSchema: { jsonSchema?: { type?: string } };
       }
-    ).parameters;
-    expect(params.jsonSchema?.type).toBe('object');
+    ).inputSchema;
+    expect(schema.jsonSchema?.type).toBe('object');
   });
 });
 
