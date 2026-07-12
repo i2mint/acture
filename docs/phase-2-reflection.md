@@ -35,7 +35,9 @@ This file answers the six questions from `docs/implementation_plan.md` §"Phase 
 
 **Yes, and the dual path is cleaner than expected.**
 
-- **Vercel AI SDK** accepts Zod schemas directly. `acture-ai-vercel` passes `record.params` through unchanged, preserving every `z.refine`, `z.transform`, and custom error message that JSON Schema would silently lose. The AI SDK's `tool({ parameters: zodSchema, execute })` handles the rest.
+> **Superseded (`acture-ai-vercel@2`, AI SDK v5+).** The Zod-passthrough described in the first bullet below was reversed. Both projections now go through JSON Schema, and the AI SDK tool field is `inputSchema`, not `parameters`. The reasoning is preserved here as a record of what we believed at Phase 2; see `packages/ai-vercel/README.md` ("Why convert to JSON Schema") for current behavior. **Do not write new code against the shape below.**
+
+- **Vercel AI SDK** accepts Zod schemas directly, so `acture-ai-vercel` passed `record.params` through unchanged, and the AI SDK's `tool({ parameters: zodSchema, execute })` handled the rest. *(This is what broke: `ai` v4 bundled a Zod-v3-only converter that, handed a Zod v4 schema, silently emitted `{}` — the model saw a tool with no parameters and could not call it. We now convert with `z.toJSONSchema()` and pass a ready schema via `jsonSchema()`, keeping the wire schema ours. Refinements are still enforced at `registry.dispatch`, which validates against the original Zod schema.)*
 
 - **MCP** wants JSON Schema on the wire. `acture-mcp-server/tools.ts` calls `toJsonSchema(record)` and emits the envelope as a `McpToolDescriptor`. Strict mode is opt-in (the OpenAI-style `additionalProperties: false` flavor).
 

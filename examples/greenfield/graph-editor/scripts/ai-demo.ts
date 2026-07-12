@@ -16,7 +16,7 @@
  * pairs to form a triangle. The final state is logged.
  */
 
-import { generateText } from 'ai';
+import { generateText, isStepCount } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createRegistry } from 'acture';
 import { createZustandAdapter } from 'acture-state-zustand';
@@ -39,7 +39,7 @@ const anthropic = createAnthropic({ apiKey });
 const result = await generateText({
   model: anthropic('claude-sonnet-4-5'),
   tools: toAITools(registry),
-  maxSteps: 12,
+  stopWhen: isStepCount(12),
   prompt: [
     'You have a graph editor with the listed tools.',
     'Currently the graph already has nodes n1, n2, n3 and one edge.',

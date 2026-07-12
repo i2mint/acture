@@ -268,10 +268,14 @@ read-side context (`useAssistantContext` / `useCopilotReadable` / AG-UI
 // Build ONE tools config from the registry (plain data — NOT hooks in a loop,
 // which would violate the Rules of Hooks). Register it with your chat layer in a
 // single top-level call; the exact registration API is framework-specific.
+// `toJsonSchema(cmd)` yields `{ name, description, inputSchema }` — JSON Schema, not
+// raw Zod. Hand the SDK a schema you converted, so the wire contract is yours rather
+// than whichever Zod->JSON-Schema converter the SDK bundles. (`ai` v4 bundled a
+// Zod-v3-only one that silently emitted `{}` for a Zod v4 schema: the model saw a tool
+// with no parameters and could not call it.) Note the field is `inputSchema` on AI SDK
+// v5+; v4 called it `parameters`.
 const tools = registry.list({ tiers: ['stable'] }).map((cmd) => ({
-  name: cmd.id,
-  description: cmd.description,
-  parameters: cmd.params,
+  ...toJsonSchema(cmd),
   handler: (args: unknown) => registry.dispatch(cmd.id, args, { channel: 'assistant' }),
 }));
 // e.g. assistant-ui / AG-UI: hand `tools` to the runtime; CopilotKit: register each
