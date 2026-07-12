@@ -99,9 +99,15 @@ Iterates registry, filters by tier (default: `['stable']` only), projects each t
 registry.toAITools({ tiers: ['stable'] }) // default
 ```
 
-For Vercel AI SDK: returns `Record<string, Tool>` keyed by command id, ready to pass to `streamText({ tools })`. Each `Tool` has `{ description, parameters: ZodSchema, execute }`.
+For Vercel AI SDK: returns `Record<string, Tool>` keyed by a wire-safe tool name (see `commandIdToToolName`), ready to pass to `streamText({ tools })`. Each `Tool` has `{ description, inputSchema, execute }`.
 
-For Anthropic SDK: returns `AnthropicTool[]` with `{ name, description, input_schema }`. The Vercel SDK uses Zod directly; Anthropic SDK takes JSON Schema, so the Anthropic projection uses `toJsonSchema` while the Vercel projection passes the Zod schema through.
+**Requires AI SDK v5+.** The schema field is `inputSchema`; the v4 line called it `parameters` and is no longer supported (`acture-ai-vercel@1` is the last v4-compatible release). Emitting `parameters` against v5+ means the tool reaches the model with *no* schema and cannot be called — silently, with no error.
+
+For Anthropic SDK: returns `AnthropicTool[]` with `{ name, description, input_schema }`.
+
+**Both projections go through JSON Schema — neither passes Zod through.** Although the Vercel SDK *accepts* a Zod schema on `inputSchema`, we convert `params` ourselves with Zod 4's native `z.toJSONSchema()` and hand the SDK a ready schema via `jsonSchema()`. This keeps the wire schema ours rather than the SDK's bundled converter's — a coupling that has already bitten us once (`ai` v4 bundled a Zod-v3-only converter that, given a Zod v4 schema, silently emitted `{}`).
+
+Runtime validation is unaffected: `registry.dispatch` still validates against the original Zod schema, so refinements JSON Schema cannot express (`z.refine` predicates and friends) are still enforced. The JSON Schema is only what the model is *shown*.
 
 ## Strict mode (OpenAI)
 

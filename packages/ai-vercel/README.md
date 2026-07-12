@@ -10,19 +10,25 @@ Project an [acture](https://npm.im/acture) registry as [Vercel AI SDK](https://s
 pnpm add acture-ai-vercel ai acture zod
 ```
 
+Requires **AI SDK v5 or later** (`ai@^5 || ^6 || ^7`), where a tool's schema field is
+`inputSchema`. For `ai@^4` — which called it `parameters` — use `acture-ai-vercel@1`.
+Staying on v4 is not recommended: its final `@ai-sdk/google` predates Gemini 3 and
+drops the `thoughtSignature` Gemini 3 requires you to echo back, so multi-step tool
+calling fails outright.
+
 ## Use
 
 ```ts
-import { streamText } from 'ai';
+import { streamText, isStepCount } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { toAITools } from 'acture-ai-vercel';
 import { registry } from './registry';
 
 const result = streamText({
-  model: anthropic('claude-sonnet-4-5'),
+  model: anthropic('claude-sonnet-5'),
   tools: toAITools(registry),
   prompt: 'Add three nodes labeled A, B, C and connect them in a triangle.',
-  maxSteps: 8,
+  stopWhen: isStepCount(8),
 });
 
 for await (const part of result.fullStream) {
@@ -49,9 +55,21 @@ Tool `execute` resolves to:
 
 The model sees the same shape on every surface (palette, hotkeys, MCP, AI SDK). This is the central guarantee of acture's architecture.
 
-## Why pass Zod through (not JSON Schema)?
+## Why convert to JSON Schema (not pass Zod through)?
 
-The Vercel AI SDK accepts Zod schemas directly. Passing the original schema preserves validators (`z.refine`, `z.transform` constraints on output) that JSON Schema would silently drop. The same registry exposed via `acture-mcp-server` projects through `toJsonSchema` because MCP wants JSON Schema on the wire.
+The AI SDK accepts a Zod schema on `inputSchema` directly, but we convert each
+command's `params` up front with Zod 4's native `z.toJSONSchema()` and hand the SDK a
+ready schema via `jsonSchema()`.
+
+This keeps the wire schema *ours*: what the model sees is decided here, not by whichever
+Zod-to-JSON-Schema converter the SDK happens to bundle. That coupling has already bitten
+us once — `ai` v4 shipped a Zod-**v3**-only converter that, given a Zod **v4** schema,
+silently emitted `{}`. The model then saw a tool with no parameters and could not call it,
+with no error anywhere.
+
+Runtime validation is unaffected. `registry.dispatch` still validates against the original
+Zod schema, so refinements JSON Schema cannot express (`z.refine` predicates and friends)
+are still enforced on every dispatch — the JSON Schema is only what the model is *shown*.
 
 ## See also
 
