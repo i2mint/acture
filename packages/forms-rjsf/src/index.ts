@@ -10,7 +10,12 @@
  *
  * For Zod-first authoring with a leaner runtime, prefer
  * [`acture-forms-autoform`](../forms-autoform).
+ *
+ * Peers on `@rjsf` `^5.20.0 || ^6.0.0`; prefer **6.x**, which is what CI tests
+ * and the only line `@rjsf/shadcn` is published on. The `form` prop takes any
+ * RJSF theme's `<Form />` — `@rjsf/shadcn`, `@rjsf/mui`, … — so the host picks
+ * the UI kit and this package never bundles one.
  */
 
 export { RjsfForm } from './rjsf-form.js';
-export type { RjsfFormProps } from './rjsf-form.js';
+export type { RjsfFormProps, RjsfFormComponent } from './rjsf-form.js';

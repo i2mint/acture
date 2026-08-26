@@ -55,4 +55,18 @@ describe('<RjsfForm />', () => {
     fireEvent.keyDown(container.querySelector('[data-acture-rjsf]')!, { key: 'Escape' });
     expect(onCancel).toHaveBeenCalled();
   });
+
+  it('falls back to the @rjsf/core form when no theme is injected', () => {
+    const cmd = defineCommand({
+      id: 'app.t.add',
+      title: 'Add',
+      params: z.object({ label: z.string() }),
+      execute: (p) => ok(p),
+    });
+    const { container } = render(
+      <RjsfForm command={cmd} onSubmit={() => {}} onCancel={() => {}} />,
+    );
+    // `form-control` is the @rjsf/core BaseInputTemplate's class.
+    expect(container.querySelector('input.form-control')).toBeTruthy();
+  });
 });
