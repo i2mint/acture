@@ -42,3 +42,50 @@ jobs:
         run: |
           ls -la /tmp/acture-*.tgz
           tar -tzf /tmp/acture-*.tgz
+
+  # The published `acture-forms-rjsf` peer range is `^5.20.0 || ^6.0.0`. The job
+  # above installs and tests the 6.x half; this one installs and tests the 5.x
+  # half, so both ends of the promise are checked on every PR.
+  #
+  # It is a second INSTALL, not a second alias tree in one install — which is the
+  # only thing pnpm's peers-are-matched-by-name behaviour actually rules out.
+  # `scripts/pin-rjsf-5x.mjs` rewrites the three `@rjsf` devDependencies to the
+  # 5.x clause READ OFF the declared peer range, drops the 6.x-only
+  # `@rjsf/shadcn` and its smoke test, and no-ops if the range ever narrows to
+  # 6-only. Without this job a value that is legal on 6.x but not on 5.x — e.g.
+  # `liveValidate="onChange"`, widened in 6.x — ships green.
+  rjsf5:
+    name: forms-rjsf against @rjsf 5.x
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Pin the forms-rjsf dev tree to the 5.x half of its peer range
+        run: node scripts/pin-rjsf-5x.mjs
+
+      # The lockfile describes the 6.x tree, so this install deliberately
+      # resolves fresh. Nothing is committed from this job.
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Assert a real 5.x tree resolved
+        run: node scripts/pin-rjsf-5x.mjs --verify
+
+      # forms-rjsf consumes `acture` types out of its dist/.
+      - name: Build acture
+        run: pnpm --filter acture build
+
+      - name: Typecheck forms-rjsf against 5.x
+        run: pnpm --filter acture-forms-rjsf typecheck
+
+      - name: Test forms-rjsf against 5.x
+        run: pnpm --filter acture-forms-rjsf test

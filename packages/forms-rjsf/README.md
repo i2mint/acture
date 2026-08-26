@@ -18,12 +18,11 @@ pnpm add acture-forms-rjsf @rjsf/core @rjsf/utils @rjsf/validator-ajv8 react
 ```
 
 Peers on `@rjsf` **`^5.20.0 || ^6.0.0`**. Every API this adapter touches is
-shape-identical across the two majors, so the same code serves both. **Prefer
-6.x**: `@rjsf/shadcn` — the theme most hosts want — is published on the 6.x line
-only, and 6.x is what CI installs and tests. 5.x is supported but exercised by
-hand, not on every commit (a single dev tree cannot hold both majors; pnpm
-matches peer deps by package name, so an aliased 5.x install silently binds the
-6.x `@rjsf/utils`).
+shape-identical across the two majors, so the same code serves both, and **both
+halves run in CI**: the main job installs and tests 6.x, and a second job
+(`rjsf5`) installs its own plain 5.x tree and typechecks + tests the adapter
+against it. **Prefer 6.x** — `@rjsf/shadcn`, the theme most hosts want, is
+published on the 6.x line only, so the shadcn smoke test is 6.x-only.
 
 ## Use as a palette form adapter
 
@@ -61,6 +60,13 @@ const ShadcnRjsfForm: PaletteFormAdapter = (props) => (
 Every RJSF theme's default export has the same type (`ComponentType<FormProps>`),
 so `@rjsf/mui`, `@rjsf/chakra-ui`, `@rjsf/antd`, … all drop in the same way. The
 acture-side bridge is identical.
+
+> **Keep the `form` value referentially stable.** React reconciles by element
+> type, so building the theme inline — `form={withTheme(myTheme)}` in JSX, or an
+> un-hoisted adapter arrow — yields a new component type on every render: the
+> form remounts and whatever the user had typed is silently reset to `defaults`.
+> Both snippets above are safe because `ShadcnForm` and `ShadcnRjsfForm` are
+> module-level bindings. Hoist yours the same way.
 
 ## See also
 

@@ -5,13 +5,13 @@
  * installable together, and needs a way to hand the theme to `<RjsfForm />`.
  *
  * Kept apart from `rjsf-form.test.tsx` on purpose: that file must stay runnable
- * against a plain 5.x tree (see the peer-range note below), and importing
+ * against a plain 5.x tree (the `rjsf5` CI job installs one), and importing
  * `@rjsf/shadcn` would make it un-collectable there.
  */
 
 /// <reference lib="dom" />
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { render, fireEvent, cleanup, act } from '@testing-library/react';
 import { z } from 'zod';
@@ -35,6 +35,26 @@ const installedManifest = (
 
 const majorOf = (versionOrRange: string) => versionOrRange.replace(/^[\^~>=\s]+/, '').split('.')[0]!;
 
+const ownManifest = () =>
+  readJson(resolve(process.cwd(), 'package.json')) as {
+    dependencies?: Record<string, string>;
+    devDependencies: Record<string, string>;
+    peerDependencies: Record<string, string>;
+  };
+
+/**
+ * Assert the rendered input came from the INJECTED theme and not from
+ * `@rjsf/core`'s default. `form-control` is the class `@rjsf/core`'s
+ * `BaseInputTemplate` emits and no themed template does — a discriminator that
+ * survives Tailwind class churn, which is why it lives here rather than being
+ * spelled out per test.
+ */
+const expectThemedInput = (input: HTMLInputElement) => {
+  expect(input).toBeTruthy();
+  expect(input.className).not.toBe('form-control');
+  expect(input.className).not.toContain('form-control');
+};
+
 afterEach(() => cleanup());
 
 describe('@rjsf/shadcn as an injected theme', () => {
@@ -51,10 +71,8 @@ describe('@rjsf/shadcn as an injected theme', () => {
       <RjsfForm command={cmd()} form={ShadcnForm} onSubmit={() => {}} onCancel={() => {}} />,
     );
     const input = container.querySelector('input[type="text"]') as HTMLInputElement;
-    expect(input).toBeTruthy();
-    // shadcn's input template emits Tailwind utility classes; @rjsf/core's
-    // emits the bare `form-control`.
-    expect(input.className).not.toBe('form-control');
+    expectThemedInput(input);
+    // shadcn's input template emits Tailwind utility classes.
     expect(input.className).toContain('rounded-md');
   });
 
@@ -64,6 +82,10 @@ describe('@rjsf/shadcn as an injected theme', () => {
       <RjsfForm command={cmd()} form={ShadcnForm} onSubmit={onSubmit} onCancel={() => {}} />,
     );
     const input = container.querySelector('input[type="text"]') as HTMLInputElement;
+    // Without this the test passes on an adapter that ignores `form` entirely —
+    // @rjsf/core's own form submits identically, so submission alone does not
+    // distinguish the injected theme from the default.
+    expectThemedInput(input);
     await act(async () => {
       fireEvent.change(input, { target: { value: 'A' } });
       fireEvent.submit(container.querySelector('form')!);
@@ -78,21 +100,15 @@ describe('@rjsf/shadcn as an injected theme', () => {
  * the package is actually written and tested against. These pin the two
  * together, so moving either is a deliberate act.
  *
- * What they do NOT assert is that 5.x works. Only 6.x is installed here, and
- * only 6.x runs in CI. 5.x stays in the range because every API this adapter
- * touches is shape-identical across the two majors — `@rjsf/core`'s default
- * export and `FormProps`, `@rjsf/validator-ajv8`'s default export, and the
- * `schema` / `formData` / `validator` / `liveValidate` / `onSubmit` / children
- * props — and because `rjsf-form.test.tsx` was run by hand against a real 5.x
- * tree. It is not a claim CI re-checks. A single dev tree cannot hold both
- * majors: pnpm matches peers by package NAME, so an `npm:`-aliased 5.x install
- * silently binds the 6.x `@rjsf/utils` and the "5.x matrix" would be 6.x
- * wearing a 5.x label.
+ * Both halves of the range are exercised: 6.x by this dev tree and the `ci`
+ * job, 5.x by the `rjsf5` job, which runs `scripts/pin-rjsf-5x.mjs` and then
+ * installs a plain 5.x tree of its own. That is a second *install*; what pnpm's
+ * peers-are-matched-by-name behaviour rules out is a second *alias tree inside
+ * one install*, where an `npm:`-aliased 5.x `@rjsf/core` still binds the 6.x
+ * `@rjsf/utils` and the "5.x matrix" is 6.x wearing a 5.x label.
  */
 describe('declared @rjsf peer range', () => {
-  const pkg = readJson(resolve(process.cwd(), 'package.json')) as {
-    peerDependencies: Record<string, string>;
-  };
+  const pkg = ownManifest();
   const declaredMajors = SUPPORTED_RJSF_RANGE.split('||').map((r) => majorOf(r.trim()));
 
   it.each(['@rjsf/core', '@rjsf/utils', '@rjsf/validator-ajv8'])(
@@ -111,4 +127,75 @@ describe('declared @rjsf peer range', () => {
       majorOf(installedManifest('@rjsf/shadcn').peerDependencies['@rjsf/core']!),
     );
   });
+});
+
+/**
+ * Hard-don't #8 (AGENTS.md merge checklist): **no bundling a UI kit.** The
+ * `form` prop is the slot API that keeps that true, and `@rjsf/shadcn` is here
+ * for the smoke test above and nothing else. Promoting it to `dependencies` or
+ * `peerDependencies` — the obvious "make the theme just work for consumers"
+ * edit — would pull radix + lucide-react + tailwind-merge + tailwindcss-animate
+ * into every consumer's install, and every other test in this package would
+ * stay green while it happened.
+ */
+describe('no UI kit reaches consumers', () => {
+  const pkg = ownManifest();
+
+  it.each(['dependencies', 'peerDependencies'] as const)(
+    '@rjsf/shadcn is not in %s',
+    (field) => {
+      expect(pkg[field]?.['@rjsf/shadcn']).toBeUndefined();
+    },
+  );
+
+  it('@rjsf/shadcn is a devDependency, so the smoke test above is real', () => {
+    expect(pkg.devDependencies['@rjsf/shadcn']).toBeTruthy();
+  });
+
+  it('declares no runtime dependencies at all — everything is peered or injected', () => {
+    expect(Object.keys(pkg.dependencies ?? {})).toEqual([]);
+  });
+});
+
+/**
+ * `pnpm-workspace.yaml` suppresses the missing-`tailwindcss` peer report, which
+ * `@rjsf/shadcn` forces on us: it pulls `tailwindcss-animate`, whose peer range
+ * is the malformed `">=3.0.0 || insiders"` — not a semver range, so pnpm calls
+ * it unmet whatever is installed. pnpm offers no scoped form of the rule
+ * (`tailwindcss-animate>tailwindcss` and `@rjsf/shadcn>tailwindcss` were both
+ * tried; neither is honoured), so the suppression is workspace-wide and
+ * permanent, and the day a workspace package genuinely peers on `tailwindcss`
+ * its missing peer would go unreported. This is the compensating check.
+ */
+describe('the workspace-wide tailwindcss ignoreMissing rule', () => {
+  const repoRoot = resolve(process.cwd(), '../..');
+  const workspaceYaml = readFileSync(resolve(repoRoot, 'pnpm-workspace.yaml'), 'utf8');
+  const ruleIsInPlace = /ignoreMissing:[\s\S]*?^\s*-\s*tailwindcss\s*$/m.test(workspaceYaml);
+
+  const manifests = () => {
+    const roots = ['packages', 'examples'].map((d) => resolve(repoRoot, d));
+    return roots
+      .filter((root) => existsSync(root))
+      .flatMap((root) =>
+        readdirSync(root, { withFileTypes: true })
+          .filter((e) => e.isDirectory())
+          .map((e) => resolve(root, e.name, 'package.json'))
+          .filter((p) => existsSync(p))
+          .map((p) => [p, readJson(p)] as const),
+      );
+  };
+
+  it('is still in pnpm-workspace.yaml (delete this block with the rule)', () => {
+    expect(ruleIsInPlace).toBe(true);
+  });
+
+  it.runIf(ruleIsInPlace)(
+    'no workspace package declares a tailwindcss peer while it is suppressed',
+    () => {
+      const offenders = manifests()
+        .filter(([, pkg]) => pkg.peerDependencies?.tailwindcss)
+        .map(([path]) => path);
+      expect(offenders).toEqual([]);
+    },
+  );
 });

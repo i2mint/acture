@@ -41,6 +41,15 @@ export interface RjsfFormProps {
    * ```
    *
    * acture never bundles a UI kit; the theme is the host's choice.
+   *
+   * **Must be referentially stable.** React reconciles by element *type*, so a
+   * theme built inline in JSX (`form={withTheme(myTheme)}`) is a new component
+   * type on every render of the parent: the form unmounts and remounts, and
+   * RJSF's internal `formData` — whatever the user had typed — is discarded and
+   * reset to `defaults`. Memoizing inside this component cannot fix that, since
+   * the changed identity arrives as the prop. Import a theme's default export
+   * (which is module-level, hence stable), or hoist your `withTheme(...)` call
+   * to a module-level `const`.
    */
   form?: RjsfFormComponent;
 }

@@ -27,4 +27,12 @@ Before this, the README told you to "pass your own `Form` from the themed
 package" and there was no prop that accepted one. acture still bundles no UI kit
 (hard-don't #8) — the theme is the host's, injected.
 
+Both halves of the widened range are checked on every PR: the main CI job
+installs and tests 6.x, and a second job installs its own plain 5.x tree and
+typechecks + tests the adapter against it.
+
+The `form` value must be referentially stable (bind a theme at module level) —
+React reconciles by element type, so an inline `withTheme(...)` remounts the
+form and discards in-progress input. Documented on the prop and in the README.
+
 Also exported: the `RjsfFormComponent` type.

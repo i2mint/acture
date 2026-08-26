@@ -88,8 +88,12 @@ import ShadcnForm from '@rjsf/shadcn';
 const ShadcnRjsfForm: PaletteFormAdapter = (p) => <RjsfForm {...p} form={ShadcnForm} />;
 ```
 
-Peer range is `@rjsf` `^5.20.0 || ^6.0.0`; **prefer 6.x** — `@rjsf/shadcn` is
-published on the 6.x line only, and 6.x is the major CI installs and tests.
+Bind the theme at **module level** — React reconciles by element type, so an
+inline `withTheme(...)` remounts the form and wipes what the user typed.
+
+Peer range is `@rjsf` `^5.20.0 || ^6.0.0`, and CI installs and tests both majors
+(the `rjsf5` job runs a second, plain 5.x install). **Prefer 6.x** —
+`@rjsf/shadcn` is published on the 6.x line only.
 
 Acture's core does not bundle a form library. Per redesign-takeaways §2.3.
 
