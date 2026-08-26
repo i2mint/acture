@@ -17,6 +17,14 @@ For Zod-first authoring with a leaner runtime, prefer [`acture-forms-autoform`](
 pnpm add acture-forms-rjsf @rjsf/core @rjsf/utils @rjsf/validator-ajv8 react
 ```
 
+Peers on `@rjsf` **`^5.20.0 || ^6.0.0`**. Every API this adapter touches is
+shape-identical across the two majors, so the same code serves both. **Prefer
+6.x**: `@rjsf/shadcn` — the theme most hosts want — is published on the 6.x line
+only, and 6.x is what CI installs and tests. 5.x is supported but exercised by
+hand, not on every commit (a single dev tree cannot hold both majors; pnpm
+matches peer deps by package name, so an aliased 5.x install silently binds the
+6.x `@rjsf/utils`).
+
 ## Use as a palette form adapter
 
 ```tsx
@@ -28,7 +36,31 @@ import { RjsfForm } from 'acture-forms-rjsf';
 
 ## Theming
 
-The default render is rjsf's bare bones. To use a theme, wrap `RjsfForm` and pass your own `Form` from the themed package (`@rjsf/mui`, `@rjsf/chakra-ui`, etc.). The acture-side bridge is identical.
+The default render is rjsf's bare bones. Pass any RJSF theme's `<Form />` via the
+`form` prop — acture never bundles a UI kit, so the design system is your choice:
+
+```tsx
+import ShadcnForm from '@rjsf/shadcn';
+import { RjsfForm } from 'acture-forms-rjsf';
+
+<RjsfForm form={ShadcnForm} command={cmd} onSubmit={run} onCancel={close} />;
+```
+
+To hand a themed form to the palette, bind the theme once:
+
+```tsx
+import type { PaletteFormAdapter } from 'acture-palette-react';
+
+const ShadcnRjsfForm: PaletteFormAdapter = (props) => (
+  <RjsfForm {...props} form={ShadcnForm} />
+);
+
+<CommandPalette registry={registry} context={ctx} formAdapter={ShadcnRjsfForm} />;
+```
+
+Every RJSF theme's default export has the same type (`ComponentType<FormProps>`),
+so `@rjsf/mui`, `@rjsf/chakra-ui`, `@rjsf/antd`, … all drop in the same way. The
+acture-side bridge is identical.
 
 ## See also
 

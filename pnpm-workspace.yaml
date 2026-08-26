@@ -9,3 +9,13 @@ allowBuilds:
 
 onlyBuiltDependencies:
   - esbuild
+
+peerDependencyRules:
+  ignoreMissing:
+    # `@rjsf/shadcn` (a devDependency of packages/forms-rjsf, for the smoke test
+    # that proves the shadcn theme renders) pulls in `tailwindcss-animate`, whose
+    # peer range is the malformed `">=3.0.0 || insiders"`. The `insiders` branch
+    # is not a semver range, so pnpm treats the whole range as unsatisfiable and
+    # reports the peer unmet no matter which tailwindcss is installed. Nothing in
+    # this repo compiles CSS, so the peer is genuinely irrelevant here.
+    - tailwindcss
