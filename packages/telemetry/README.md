@@ -110,4 +110,4 @@ Calling `instrumentTelemetry(registry, ...)` twice on the same registry returns 
 
 - [`docs/hand-written-telemetry.md`](../../docs/hand-written-telemetry.md) — the ~30-line agent-written equivalent
 - `acture-devtools` — `instrumentRegistry` (dispatch log) and `enableTierWarnings`; same dispatch-wrap pattern
-- [`acture-telemetry`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-telemetry/SKILL.md) consumer skill
+- [`acture-telemetry`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-telemetry/SKILL.md) consumer skill

@@ -61,7 +61,7 @@ If you want to *override* a base binding from a plugin, explicitly `unregister(i
 
 ## End-user customization — remapping shortcuts
 
-Let a **user** (not just the developer) remap shortcuts and have the choice persist. The record's `keybinding` stays the *developer default*; a sparse **`UserKeymap`** overrides it at bind time — pure composition, **no change to the `CommandRecord`** ([research-10](https://github.com/thorwhalen/acture/blob/main/docs/research/acture_research_10%20--%20End-User%20Keyboard-Shortcut%20Customization.md); reproducible core in [`docs/hand-written-keymap-override.md`](https://github.com/thorwhalen/acture/blob/main/docs/hand-written-keymap-override.md)).
+Let a **user** (not just the developer) remap shortcuts and have the choice persist. The record's `keybinding` stays the *developer default*; a sparse **`UserKeymap`** overrides it at bind time — pure composition, **no change to the `CommandRecord`** ([research-10](https://github.com/i2mint/acture/blob/main/docs/research/acture_research_10%20--%20End-User%20Keyboard-Shortcut%20Customization.md); reproducible core in [`docs/hand-written-keymap-override.md`](https://github.com/i2mint/acture/blob/main/docs/hand-written-keymap-override.md)).
 
 ```ts
 import { bindHotkeys, type UserKeymap } from 'acture-hotkeys';
@@ -99,5 +99,5 @@ Same shape as the rest of acture: `tiers: ['stable']` by default. Internal/exper
 
 ## See also
 
-- [acture-command-record-shape](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-command-record-shape/SKILL.md) — the `keybinding` field spec
-- [acture-architecture-primer](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-architecture-primer/SKILL.md) — why every surface is an adapter
+- [acture-command-record-shape](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-command-record-shape/SKILL.md) — the `keybinding` field spec
+- [acture-architecture-primer](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-architecture-primer/SKILL.md) — why every surface is an adapter

@@ -90,6 +90,6 @@ Every meaningful node carries a `data-acture-*` attribute. Style with CSS — th
 
 ## See also
 
-- [acture-palette-design](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-palette-design/SKILL.md) — the design rationale
+- [acture-palette-design](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-palette-design/SKILL.md) — the design rationale
 - [acture-forms-autoform](../forms-autoform) — Zod-native form adapter
 - [acture-forms-rjsf](../forms-rjsf) — JSON-Schema-native form adapter

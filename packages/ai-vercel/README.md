@@ -73,6 +73,6 @@ are still enforced on every dispatch — the JSON Schema is only what the model 
 
 ## See also
 
-- [`acture-schema-bridge`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-schema-bridge/SKILL.md)
-- [`acture-tier-system`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-tier-system/SKILL.md)
+- [`acture-schema-bridge`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-schema-bridge/SKILL.md)
+- [`acture-tier-system`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-tier-system/SKILL.md)
 - [`acture-mcp-server`](../mcp) — the MCP server counterpart

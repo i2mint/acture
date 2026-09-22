@@ -1,6 +1,6 @@
 # acture (Python)
 
-> **acture is a development tool first.** This Python package is an *optional accelerator* — an agent can hand-write the same client into your project instead, with no `acture` Python dependency. Installing it is a deliberate, opt-in choice to reuse a tested facade rather than own it. See [`docs/positioning.md`](https://github.com/thorwhalen/acture/blob/main/docs/positioning.md) and [`docs/hand-written-python-client.md`](https://github.com/thorwhalen/acture/blob/main/docs/hand-written-python-client.md).
+> **acture is a development tool first.** This Python package is an *optional accelerator* — an agent can hand-write the same client into your project instead, with no `acture` Python dependency. Installing it is a deliberate, opt-in choice to reuse a tested facade rather than own it. See [`docs/positioning.md`](https://github.com/i2mint/acture/blob/main/docs/positioning.md) and [`docs/hand-written-python-client.md`](https://github.com/i2mint/acture/blob/main/docs/hand-written-python-client.md).
 
 The acture library itself is a TypeScript / JavaScript package on npm (https://www.npmjs.com/package/acture); the server side ships as [`acture-mcp-server`](https://www.npmjs.com/package/acture-mcp-server). **This Python package is a thin client** that consumes any `acture-mcp-server` instance the same way an LLM agent would — via the [Model Context Protocol](https://modelcontextprotocol.io/).
 
@@ -75,7 +75,7 @@ For an in-memory channel (tests), a WebSocket bridge, or any other transport, pa
 
 ## What's intentionally *not* in v1
 
-Per [`acture_research_6`](https://github.com/thorwhalen/acture/blob/main/docs/research/acture_research_6%20--%20Cross-Language%20Story%20for%20acture%20(TypeScript%20and%20Python).md) §"v1 scope":
+Per [`acture_research_6`](https://github.com/i2mint/acture/blob/main/docs/research/acture_research_6%20--%20Cross-Language%20Story%20for%20acture%20(TypeScript%20and%20Python).md) §"v1 scope":
 
 - **No Pydantic-codegen SDK.** Pydantic adds no value for agents — they read JSON Schema + descriptions. Human users who want typed models can run `datamodel-code-generator` over each tool's `inputSchema` themselves; that is post-v1 work and out of scope for the thin facade.
 - **No OpenAPI emitter.** OpenAPI imposes REST semantics on a function-call protocol; MCP already speaks JSON Schema. Adding a second wire would double the surface area without serving agents.
@@ -89,10 +89,10 @@ Tier filtering happens **on the server side**. The Python client sees whatever `
 
 ## See also
 
-- [`docs/hand-written-python-client.md`](https://github.com/thorwhalen/acture/blob/main/docs/hand-written-python-client.md) — the ~50-line agent-written equivalent.
+- [`docs/hand-written-python-client.md`](https://github.com/i2mint/acture/blob/main/docs/hand-written-python-client.md) — the ~50-line agent-written equivalent.
 - [`acture-mcp-server`](https://www.npmjs.com/package/acture-mcp-server) — the npm package this client talks to.
 - [Model Context Protocol](https://modelcontextprotocol.io/) — the wire protocol.
-- [`acture` on GitHub](https://github.com/thorwhalen/acture) — the full ecosystem (TypeScript core, adapters, skills).
+- [`acture` on GitHub](https://github.com/i2mint/acture) — the full ecosystem (TypeScript core, adapters, skills).
 
 ## License
 

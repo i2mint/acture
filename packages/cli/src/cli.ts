@@ -49,7 +49,7 @@ Examples:
   acture snapshot ./registry.mjs --out .acture/snapshot.json
   acture snapshot ./registry.mjs --tiers stable,experimental
 
-Docs: https://github.com/thorwhalen/acture#readme
+Docs: https://github.com/i2mint/acture#readme
 `;
 
 const argv = process.argv.slice(2);

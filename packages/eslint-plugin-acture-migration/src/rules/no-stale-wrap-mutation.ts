@@ -53,7 +53,7 @@ export const noStaleWrapMutation: Rule.RuleModule = {
       description:
         'Flag wrapMutation(...) calls whose result is never used — the migration has graduated and the wrapper should become a defineCommand.',
       recommended: true,
-      url: 'https://github.com/thorwhalen/acture/blob/main/packages/eslint-plugin-acture-migration/README.md',
+      url: 'https://github.com/i2mint/acture/blob/main/packages/eslint-plugin-acture-migration/README.md',
     },
     schema: [
       {

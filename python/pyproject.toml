@@ -36,9 +36,9 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/thorwhalen/acture"
-Repository = "https://github.com/thorwhalen/acture"
-Issues = "https://github.com/thorwhalen/acture/issues"
+Homepage = "https://github.com/i2mint/acture"
+Repository = "https://github.com/i2mint/acture"
+Issues = "https://github.com/i2mint/acture/issues"
 "npm package" = "https://www.npmjs.com/package/acture"
 
 [tool.hatch.version]

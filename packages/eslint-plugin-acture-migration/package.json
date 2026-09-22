@@ -6,11 +6,11 @@
   "author": "Thor Whalen",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thorwhalen/acture.git",
+    "url": "git+https://github.com/i2mint/acture.git",
     "directory": "packages/eslint-plugin-acture-migration"
   },
-  "homepage": "https://github.com/thorwhalen/acture#readme",
-  "bugs": "https://github.com/thorwhalen/acture/issues",
+  "homepage": "https://github.com/i2mint/acture#readme",
+  "bugs": "https://github.com/i2mint/acture/issues",
   "type": "module",
   "files": [
     "dist",

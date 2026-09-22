@@ -58,7 +58,7 @@ export const requireParamDescribe: Rule.RuleModule = {
       description:
         'Require a `.describe(...)` call on each top-level field of a `defineCommand` `params: z.object({...})` schema — Zod→JSON-Schema is lossy, and the projected description is what MCP/AI consumers see.',
       recommended: true,
-      url: 'https://github.com/thorwhalen/acture/blob/main/packages/eslint-plugin-acture-migration/README.md',
+      url: 'https://github.com/i2mint/acture/blob/main/packages/eslint-plugin-acture-migration/README.md',
     },
     schema: [
       {

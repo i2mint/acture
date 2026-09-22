@@ -1,6 +1,6 @@
 /**
  * The `@rjsf` 6.x / `@rjsf/shadcn` pairing — the reason this package's peer
- * range moved (thorwhalen/acture#57). `@rjsf/shadcn` is published on the 6.x
+ * range moved (i2mint/acture#57). `@rjsf/shadcn` is published on the 6.x
  * line only, so a consumer on a shadcn design system needs both halves to be
  * installable together, and needs a way to hand the theme to `<RjsfForm />`.
  *
