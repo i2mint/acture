@@ -104,4 +104,4 @@ In practice, instrumenters are installed once at host boot and never disposed, s
 - `acture-state-zustand` / `acture-state-redux` — the two reference `PatchCapableAdapter` implementations.
 - `acture-telemetry` — the sibling instrumenter; observes dispatch without recording patches.
 - `acture-devtools` — `instrumentRegistry` (in-memory dispatch log); same monkey-patch pattern.
-- [`acture-undo`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-undo/SKILL.md) consumer skill.
+- [`acture-undo`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-undo/SKILL.md) consumer skill.

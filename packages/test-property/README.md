@@ -127,4 +127,4 @@ Per the "translate, don't decide" hard-don't (#3): the package projects the regi
 - [`acture-e2e-playwright`](../e2e-playwright/) — the sequence engine `propertyTest` builds on.
 - [`docs/hand-written-command-sequence.md`](../../docs/hand-written-command-sequence.md) — the sequence engine reference.
 - [`docs/positioning.md`](../../docs/positioning.md) — canonical positioning.
-- [`acture-test-property`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-test-property/SKILL.md) consumer skill.
+- [`acture-test-property`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-test-property/SKILL.md) consumer skill.

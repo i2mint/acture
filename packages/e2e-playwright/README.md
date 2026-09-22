@@ -111,5 +111,5 @@ A test sequence is written **once**; only the adapter changes per pyramid level 
 ## See also
 
 - [`docs/hand-written-command-sequence.md`](../../docs/hand-written-command-sequence.md) — the reproducible reference; hand-write the engine instead of installing.
-- [`acture-e2e`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-e2e/SKILL.md) skill — the consumer-integration workflow, including other runners.
-- [`acture-macros`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-macros/SKILL.md) skill — record/replay as a macros surface (no package — pattern + skill).
+- [`acture-e2e`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-e2e/SKILL.md) skill — the consumer-integration workflow, including other runners.
+- [`acture-macros`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-macros/SKILL.md) skill — record/replay as a macros surface (no package — pattern + skill).

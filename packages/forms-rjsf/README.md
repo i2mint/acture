@@ -70,5 +70,5 @@ acture-side bridge is identical.
 
 ## See also
 
-- [`acture-schema-bridge`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-schema-bridge/SKILL.md) — how Zod → JSON Schema flows
+- [`acture-schema-bridge`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-schema-bridge/SKILL.md) — how Zod → JSON Schema flows
 - [`acture-forms-autoform`](../forms-autoform) — Zod-native alternative

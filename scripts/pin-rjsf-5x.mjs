@@ -2,7 +2,7 @@
 /**
  * Repoint `packages/forms-rjsf`'s dev tree at the 5.x half of its DECLARED
  * `@rjsf` peer range, so CI can typecheck and test the adapter against the
- * older major it promises to support (thorwhalen/acture#57).
+ * older major it promises to support (i2mint/acture#57).
  *
  * This is a second *install*, not a second alias tree. The three `@rjsf`
  * devDependencies are rewritten to the 5.x clause of the peer range and

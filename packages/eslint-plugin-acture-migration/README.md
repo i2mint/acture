@@ -2,7 +2,7 @@
 
 > **acture is a development tool first.** This is dev/build-time tooling — it never becomes a runtime dependency of the apps it serves, and using it is entirely optional. See [`docs/positioning.md`](../../docs/positioning.md).
 
-ESLint rules for [acture](https://github.com/thorwhalen/acture). The package keeps its historical `-migration` suffix (renaming a published package is breaking), but its scope is broader: it hosts both **migration-specific** rules and **schema-quality** rules that apply to any acture codebase.
+ESLint rules for [acture](https://github.com/i2mint/acture). The package keeps its historical `-migration` suffix (renaming a published package is breaking), but its scope is broader: it hosts both **migration-specific** rules and **schema-quality** rules that apply to any acture codebase.
 
 Current rules:
 

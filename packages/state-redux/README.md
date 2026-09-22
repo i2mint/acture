@@ -58,5 +58,5 @@ RTK's `store.subscribe(listener)` calls the listener with **no arguments** (unli
 
 ## See also
 
-- [`acture-state-adapter`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-state-adapter/SKILL.md) — the contract
+- [`acture-state-adapter`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-state-adapter/SKILL.md) — the contract
 - [`acture-state-zustand`](../state-zustand) — sibling adapter for zustand+immer

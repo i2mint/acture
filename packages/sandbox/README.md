@@ -3,10 +3,10 @@
 > **acture is a development tool first.** This package is an *optional
 > accelerator* — and a deliberately small one. The extension **host/loader** is
 > a ~15-line core-only pattern you hand-write (see
-> [`docs/hand-written-sandbox.md`](https://github.com/thorwhalen/acture/blob/main/docs/hand-written-sandbox.md)),
+> [`docs/hand-written-sandbox.md`](https://github.com/i2mint/acture/blob/main/docs/hand-written-sandbox.md)),
 > with no `acture-*` dependency. `acture-sandbox` ships only the *one* rung that
 > is genuinely hard to hand-write: **isolating code you did not author.** See
-> [`docs/positioning.md`](https://github.com/thorwhalen/acture/blob/main/docs/positioning.md).
+> [`docs/positioning.md`](https://github.com/i2mint/acture/blob/main/docs/positioning.md).
 
 An extension system is two layers (research-9 §1). The **host/loader** —
 load/unload/observe bundles of command contributions — is pattern territory: a
@@ -88,7 +88,7 @@ await runner.load({
 Isolation only. It deliberately does **not** ship the manifest schema, the
 host/loader, an effect channel, capability grants, an entitlement / install
 gate, or a marketplace. Those are a core-only pattern
-([`docs/hand-written-sandbox.md`](https://github.com/thorwhalen/acture/blob/main/docs/hand-written-sandbox.md))
+([`docs/hand-written-sandbox.md`](https://github.com/i2mint/acture/blob/main/docs/hand-written-sandbox.md))
 and host product architecture — documented, never bundled (no god-package; the
 package translates, it does not decide). Real isolating transports
 (Worker / iframe / QuickJS / `isolated-vm`) arrive one at a time, only when a
@@ -108,6 +108,6 @@ real untrusted-author need names them.
 
 ## See also
 
-- [`docs/hand-written-sandbox.md`](https://github.com/thorwhalen/acture/blob/main/docs/hand-written-sandbox.md) — the ~15-line host/loader you hand-write to drive this runner.
+- [`docs/hand-written-sandbox.md`](https://github.com/i2mint/acture/blob/main/docs/hand-written-sandbox.md) — the ~15-line host/loader you hand-write to drive this runner.
 - The `acture-extensions` skill — the agent's guide to adding an extension system to a target project.
-- [`docs/research/acture_research_9 -- Extensions and Plugin Systems.md`](https://github.com/thorwhalen/acture/blob/main/docs/research/acture_research_9%20--%20Extensions%20and%20Plugin%20Systems.md) — the design: trust model, isolation table, the effect-as-data seam.
+- [`docs/research/acture_research_9 -- Extensions and Plugin Systems.md`](https://github.com/i2mint/acture/blob/main/docs/research/acture_research_9%20--%20Extensions%20and%20Plugin%20Systems.md) — the design: trust model, isolation table, the effect-as-data seam.

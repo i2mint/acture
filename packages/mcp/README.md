@@ -48,7 +48,7 @@ The server registers `tools/list` and `tools/call` handlers, and fires `notifica
 
 Tools are the **write** side (actions). For an AI assistant that *operates* your app, the model also needs the **read** side: to *see* current state before it acts. MCP models read-only, application-driven context as **resources**. This package projects **views** — typed selectors over your state — as MCP resources, symmetric to how it projects commands as tools.
 
-A **view** is the read-side dual of a command. You supply a `ViewSource` (the same `list` / `read` / `onStateChanged` shape as the hand-written `ViewRegistry` — see [`docs/hand-written-view-registry.md`](https://github.com/thorwhalen/acture/blob/main/docs/hand-written-view-registry.md)); acture-mcp never touches your state library.
+A **view** is the read-side dual of a command. You supply a `ViewSource` (the same `list` / `read` / `onStateChanged` shape as the hand-written `ViewRegistry` — see [`docs/hand-written-view-registry.md`](https://github.com/i2mint/acture/blob/main/docs/hand-written-view-registry.md)); acture-mcp never touches your state library.
 
 ```ts
 import { createMcpServer, connectStdio } from 'acture-mcp-server';
@@ -109,5 +109,5 @@ The MCP protocol is **date-versioned**, and the spec/transport story has churned
 
 ## See also
 
-- [`acture-schema-bridge`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-schema-bridge/SKILL.md)
-- [`acture-tier-system`](https://github.com/thorwhalen/acture/blob/main/.claude/skills/acture-tier-system/SKILL.md)
+- [`acture-schema-bridge`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-schema-bridge/SKILL.md)
+- [`acture-tier-system`](https://github.com/i2mint/acture/blob/main/.claude/skills/acture-tier-system/SKILL.md)
