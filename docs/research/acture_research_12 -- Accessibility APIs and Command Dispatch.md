@@ -194,7 +194,7 @@ Stack alternatives: Tauri (Rust AX crates such as `accessibility` / `objc2-appli
 
 ## 7. Follow-up
 
-Filed as one acture issue: close the accessibility gaps listed in §3 (palette ARIA/focus test, disabled-vs-hidden decision, dispatch-result announcer, toggle-state projection design, `aria-keyshortcuts` in projections) and write a `hand-written-native-menu.md` reference for §4.1. The universal palette itself is not an acture task and has no issue; it's the user's call whether to start it as a new project.
+Filed as [i2mint/acture#64](https://github.com/i2mint/acture/issues/64): close the accessibility gaps listed in §3 (palette ARIA/focus test, disabled-vs-hidden decision, dispatch-result announcer, toggle-state projection design, `aria-keyshortcuts` in projections) and write a `hand-written-native-menu.md` reference for §4.1. The universal palette itself is not an acture task and has no issue; it's the user's call whether to start it as a new project.
 
 ## REFERENCES
 
