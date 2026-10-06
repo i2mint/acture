@@ -1,3 +1,6 @@
+# npm auth: trusted publishing (OIDC) only. Never add an NPM_TOKEN secret.
+# npmjs.com -> each package -> Settings -> Trusted Publisher -> GitHub Actions:
+#   owner/repo = i2mint/acture, workflow filename = release.yml, no environment.
 name: Release
 
 # Triggered on every push to main. Behavior depends on changeset state:
@@ -10,7 +13,7 @@ name: Release
 #   - No pending changesets AND versions match the registries → no-op.
 #
 # Secrets consumed (already configured on the repo):
-#   - NPM_TOKEN        — npm publish auth (set with `npm config set //…/token`).
+#   - (npm: none. Publishing uses trusted publishing / OIDC; no token.)
 #   - PYPI_PASSWORD    — PyPI token (used as TWINE_PASSWORD; username "__token__").
 #   - GITHUB_TOKEN     — auto-provided; used to open the Version Packages PR.
 
@@ -18,7 +21,7 @@ on:
   push:
     branches: [main]
   # Manual fire from the Actions tab — useful for re-running a failed
-  # publish (e.g. after rotating NPM_TOKEN or fixing PyPI credentials)
+  # publish (e.g. after fixing PyPI credentials)
   # without having to push a fresh commit to main.
   workflow_dispatch:
 
@@ -30,7 +33,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
-  id-token: write  # reserved for PyPI Trusted Publishers if we adopt it later
+  id-token: write  # npm trusted publishing (OIDC); also reserved for PyPI Trusted Publishers
 
 jobs:
   release:
@@ -43,7 +46,7 @@ jobs:
     # != ...` which the GitHub Actions parser rejected at workflow init.
     outputs:
       published: ${{ steps.changesets.outputs.published }}
-      published-packages: ${{ steps.changesets.outputs.publishedPackages }}
+      published-packages: ${{ steps.changesets.outputs.published-packages }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,9 +58,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
           registry-url: https://registry.npmjs.org
+
+      - name: Ensure npm >= 11.5.1 (required for OIDC trusted publishing)
+        run: |
+          if ! node -e "const [a,b,c]=process.argv[1].split('.').map(Number);process.exit(a>11||(a===11&&(b>5||(b===5&&c>=1)))?0:1)" "$(npm --version)"; then
+            npm install -g npm@^11.5.1
+          fi
+          npm --version
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -82,19 +92,17 @@ jobs:
       #   - runs the `publish` script otherwise (which publishes to npm).
       - name: Changesets — version PR or publish
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
-          version: pnpm version-packages
-          publish: pnpm release
-          commit: "chore(release): bump versions"
-          title: "chore(release): version packages"
+          version-script: pnpm version-packages
+          publish-script: pnpm release
+          commit-message: "chore(release): bump versions"
+          pr-title: "chore(release): version packages"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # `changeset publish` -> `npm publish` reads the .npmrc that
-          # actions/setup-node generates, which references NODE_AUTH_TOKEN.
-          # NPM_TOKEN is kept for any tooling that looks for that name.
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # npm auth is OIDC (id-token: write); changesets/action v2 no
+          # longer writes a token .npmrc. Provenance needs a public repo.
+          NPM_CONFIG_PROVENANCE: "true"
 
   pypi:
     name: Publish acture Python client to PyPI
