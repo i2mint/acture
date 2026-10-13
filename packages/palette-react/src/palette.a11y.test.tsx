@@ -94,11 +94,9 @@ describe('<CommandPalette /> accessibility', () => {
     // Exactly one option is highlighted from the start.
     const first = selectedOptionId();
     expect(first).toBeTruthy();
-    // Known cmdk 1.1.1 quirk: `aria-activedescendant` is only published once the
-    // highlight MOVES, so the very first option is not announced until the user
-    // presses an arrow key. Asserted loosely here; tightened if cmdk fixes it.
-    const initial = input.getAttribute('aria-activedescendant');
-    expect([null, first]).toContain(initial);
+    // cmdk 1.1.1 alone publishes the id only once the highlight moves (#68);
+    // the palette mirrors the highlight so the first option is announced.
+    expect(input.getAttribute('aria-activedescendant')).toBe(first);
 
     await act(async () => {
       fireEvent.keyDown(input, { key: 'ArrowDown' });
@@ -108,6 +106,44 @@ describe('<CommandPalette /> accessibility', () => {
     expect(second).not.toBe(first);
     expect(input.getAttribute('aria-activedescendant')).toBe(second);
     expect(document.activeElement).toBe(input);
+  });
+
+  it('keeps aria-activedescendant on the highlighted option while filtering', async () => {
+    render(<CommandPalette registry={setup()} />);
+    await act(async () => {});
+    const input = screen.getByRole('combobox');
+    const selected = (): string | null =>
+      screen.queryAllByRole('option').find((o) => o.getAttribute('aria-selected') === 'true')?.id ?? null;
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'node' } });
+    });
+    expect(selected()).toBeTruthy();
+    expect(input.getAttribute('aria-activedescendant')).toBe(selected());
+
+    // No match: nothing is highlighted, so nothing may be named.
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'zzzz-no-such-command' } });
+    });
+    expect(selected()).toBeNull();
+    expect(input.getAttribute('aria-activedescendant')).toBeNull();
+  });
+
+  it('names the first option again when the list view comes back', async () => {
+    render(<CommandPalette registry={setup()} />);
+    await act(async () => {});
+    await act(async () => {
+      fireEvent.click(screen.getByText('Set style').closest('[cmdk-item]')!);
+    });
+    // Picker chain is showing; go back to the list.
+    await act(async () => {
+      fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Escape' });
+    });
+    await act(async () => {});
+    const input = screen.getByRole('combobox');
+    const first = screen.getAllByRole('option').find((o) => o.getAttribute('aria-selected') === 'true');
+    expect(first?.id).toBeTruthy();
+    expect(input.getAttribute('aria-activedescendant')).toBe(first?.id);
   });
 
   it('marks the decorative icon aria-hidden and keeps the title as the option name', () => {

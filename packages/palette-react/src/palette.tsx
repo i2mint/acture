@@ -33,6 +33,7 @@ import type {
 } from 'acture';
 import { useCommandsChanged } from './use-commands-changed.js';
 import { deriveKind } from './derive-kind.js';
+import { useActiveDescendant } from './use-active-descendant.js';
 import { PickerChain } from './picker-chain.js';
 
 export type PaletteItemRenderer = (cmd: AnyCommandRecord) => React.ReactNode;
@@ -96,6 +97,7 @@ export function CommandPalette(props: CommandPaletteProps): React.ReactElement {
 
   const revision = useCommandsChanged(registry);
   const [view, setView] = useState<View>({ kind: 'list' });
+  const rootRef = useActiveDescendant();
 
   const groups = useMemo(() => {
     const list = registry.list({
@@ -181,7 +183,7 @@ export function CommandPalette(props: CommandPaletteProps): React.ReactElement {
   }
 
   return (
-    <Command className={className} label="Command palette" data-acture-palette-view="list">
+    <Command ref={rootRef} className={className} label="Command palette" data-acture-palette-view="list">
       <Command.Input placeholder={placeholder} autoFocus />
       <Command.List>
         <Command.Empty>No matching commands.</Command.Empty>
