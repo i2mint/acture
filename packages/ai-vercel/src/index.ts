@@ -41,6 +41,7 @@ import type {
 import {
   buildToolNameToIdMap,
   commandIdToToolName,
+  evaluateWhen,
   isFunctionWhen,
   isOk,
 } from 'acture';
@@ -53,13 +54,27 @@ function deprecationBanner(reason?: string): string {
     : DEPRECATION_PREFIX_BARE;
 }
 
+/** A context, or a function returning the current one (read on every call). */
+export type ContextSource = Context | (() => Context);
+
+function resolveContext(source: ContextSource | undefined): Context | undefined {
+  return typeof source === 'function' ? source() : source;
+}
+
 export interface ToAIToolsOptions {
   /** Tier filter. Default `['stable']`. */
   tiers?: readonly Tier[] | 'all';
   /** Skip commands with function-form when-clause. Default true. */
   excludeFunctionWhen?: boolean;
-  /** Static context forwarded to every dispatch. */
-  context?: Context;
+  /** The context for `when` clauses: commands whose `when` is false in it are
+   *  left out of the tools (an unavailable tool only invites a failed call;
+   *  `when_clause_failed` at dispatch remains the backstop), and it is
+   *  forwarded to every dispatch. A function is called each time tools are
+   *  built and each time one is dispatched, so rebuild the tools (e.g.
+   *  `toAITools` per step) when the context changes: a tool hidden when the
+   *  tools were built stays hidden, even if a step makes it available. Omit it and every
+   *  command that passes the tier filter is projected. */
+  context?: ContextSource;
   /** Called after each dispatch — useful for logging tool-call results.
    *  Receives the original `AnyCommandRecord` (with the canonical `cmd.id`,
    *  not the sanitized tool name). */
@@ -113,10 +128,18 @@ function selectCommands(
   options: ToAIToolsOptions,
 ): readonly AnyCommandRecord[] {
   const excludeFn = options.excludeFunctionWhen ?? true;
-  const listOpts: Parameters<Registry['list']>[0] =
-    options.tiers !== undefined ? { tiers: options.tiers } : undefined;
-  const list = registry.list(listOpts);
-  return excludeFn ? list.filter((cmd) => !isFunctionWhen(cmd.when)) : list;
+  const context = resolveContext(options.context);
+  // Tiers only: given a context `registry.list` would run function `when`s that
+  // are about to be dropped, and they may throw on a context they were never
+  // written for. Availability is checked after that.
+  const list = registry.list(
+    options.tiers !== undefined ? { tiers: options.tiers } : undefined,
+  );
+  return list.filter(
+    (cmd) =>
+      !(excludeFn && isFunctionWhen(cmd.when)) &&
+      (context === undefined || evaluateWhen(cmd.when, context)),
+  );
 }
 
 /**
@@ -159,7 +182,7 @@ function projectCommand(
       // `cmd.id` (not the sanitized wire name) is what the registry
       // dispatches on — sanitization is a wire-format concern, not a
       // dispatch concern.
-      const result = await registry.dispatch(cmd.id, args, options.context);
+      const result = await registry.dispatch(cmd.id, args, resolveContext(options.context));
       options.onDispatched?.(cmd, result);
       // The AI SDK serializes whatever execute returns to JSON in the
       // tool-result message. Pass the Result through unchanged — the

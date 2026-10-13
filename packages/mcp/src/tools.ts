@@ -14,6 +14,7 @@ import type {
 import {
   buildToolNameToIdMap,
   commandIdToToolName,
+  evaluateWhen,
   isFunctionWhen,
   toJsonSchema,
 } from 'acture';
@@ -46,6 +47,15 @@ export interface McpToolAnnotations {
   openWorldHint?: boolean;
 }
 
+/** A context, or a function returning the current one (read on every call, for
+ *  contexts that change while the server or the model session lives). */
+export type ContextSource = Context | (() => Context);
+
+/** Resolve a {@link ContextSource} to the context to use right now. */
+export function resolveContext(source: ContextSource | undefined): Context | undefined {
+  return typeof source === 'function' ? source() : source;
+}
+
 export interface BuildToolsListOptions {
   /** Tier filter. Default `['stable']` per research-5. */
   tiers?: readonly Tier[] | 'all';
@@ -53,6 +63,12 @@ export interface BuildToolsListOptions {
    *  escape hatches are not exposable to MCP per research-5). Default
    *  is true — exposing opaque availability is unsafe for AI clients. */
   excludeFunctionWhen?: boolean;
+  /** When given, commands whose `when` is false in this context are left out
+   *  of the list: a tool the model cannot usefully call only invites a failed
+   *  call (`when_clause_failed` at dispatch, which stays as the backstop).
+   *  Without it every command passing the other filters is listed, as before.
+   *  A function is called on every build, so the list follows the context. */
+  context?: ContextSource;
 }
 
 /** Banner format `[DEPRECATED — <reason>]` is deterministic so downstream
@@ -70,13 +86,17 @@ export function buildToolsList(
   options: BuildToolsListOptions = {},
 ): McpToolDescriptor[] {
   const excludeFn = options.excludeFunctionWhen ?? true;
-  const listOpts: Parameters<Registry['list']>[0] = options.tiers !== undefined
-    ? { tiers: options.tiers }
-    : undefined;
-  const list = registry.list(listOpts);
+  const context = resolveContext(options.context);
+  // `registry.list` is asked for tiers only: given a context it would also run
+  // function `when`s, which are about to be dropped and may throw on a context
+  // they were never written for. Availability is checked here, after that.
+  const list = registry.list(
+    options.tiers !== undefined ? { tiers: options.tiers } : undefined,
+  );
   const out: McpToolDescriptor[] = [];
   for (const cmd of list) {
     if (excludeFn && isFunctionWhen(cmd.when)) continue;
+    if (context !== undefined && !evaluateWhen(cmd.when, context)) continue;
     out.push(projectCommand(cmd));
   }
   return out;

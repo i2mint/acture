@@ -18,7 +18,7 @@ Unlike palette/hotkeys, MCP has effectively **one** SDK — `@modelcontextprotoc
 ### Decision 2 — agent-written vs package-reuse
 
 - **Agent-written** — write the projection directly: a pure layer iterating `registry.list({ tiers })`, projecting each command through `toJsonSchema`, plus a `callTool` that routes through `registry.dispatch`. ~40 lines, owned. Then wire the SDK's `ListToolsRequestSchema` / `CallToolRequestSchema` handlers yourself. Adapt the pattern in `packages/mcp/src/tools.ts` + `packages/mcp/src/server.ts` (worked examples, not imports).
-- **Package-reuse** — install `acture-mcp-server`. Two layers ready: the **pure functions** `buildToolsList(registry, opts)` / `callTool(registry, name, args, ctx?)` / `formatToolResponse(result)` — transport-agnostic, no SDK dependency — and the **Node stdio server** `createMcpServer(registry, { name, version, tiers?, context? })` / `connectStdio(server)`. Cost: a dependency to track (`@modelcontextprotocol/sdk` is a peer dep).
+- **Package-reuse** — install `acture-mcp-server`. Two layers ready: the **pure functions** `buildToolsList(registry, opts)` / `callTool(registry, name, args, ctx?)` / `formatToolResponse(result)` — transport-agnostic, no SDK dependency — and the **Node stdio server** `createMcpServer(registry, { name, version, tiers?, context? })` (`context` — an object or a function read per request — hides commands whose `when` is false from `tools/list` and is passed to dispatch) / `connectStdio(server)`. Cost: a dependency to track (`@modelcontextprotocol/sdk` is a peer dep).
 
 Surface both; follow a stated preference if one exists; otherwise ask. Record the choice in the project's adoption notes.
 

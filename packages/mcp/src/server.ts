@@ -17,8 +17,9 @@ import {
   UnsubscribeRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
-import type { Context, Registry, Tier } from 'acture';
-import { buildToolsList, callTool } from './tools.js';
+import type { Registry, Tier } from 'acture';
+import { buildToolsList, callTool, resolveContext } from './tools.js';
+import type { ContextSource } from './tools.js';
 import {
   buildResourcesList,
   buildGetStateTool,
@@ -37,10 +38,15 @@ export interface CreateMcpServerOptions {
   version: string;
   /** Tier filter applied to `tools/list`. Default `['stable']`. */
   tiers?: readonly Tier[] | 'all';
-  /** Static context passed to `dispatch` on every tool call. For
-   *  contexts that change at request time, prefer the per-call form
-   *  (call `tools` directly instead of using this server wrapper). */
-  context?: Context;
+  /** The context for `when` clauses: commands whose `when` is false in it are
+   *  left out of `tools/list` (an unavailable tool only invites a failed call;
+   *  `when_clause_failed` at dispatch remains the backstop), and it is passed
+   *  to `dispatch` on every tool call. A function is called on every request,
+   *  so the list and the dispatches follow a context that changes. The server
+   *  does not know when it changes: tell clients with
+   *  `server.notification({ method: 'notifications/tools/list_changed' })`.
+   *  Omit it and every command that passes the tier filter is listed. */
+  context?: ContextSource;
   /** Optional READ side. Project a `ViewSource` (typed selectors over app
    *  state) as MCP resources — `resources/list` + `resources/read`, with
    *  `resources/subscribe` liveness wired to the source's `onStateChanged`.
@@ -77,6 +83,11 @@ export function createMcpServer(
   const listOptions: Parameters<typeof buildToolsList>[1] = options.tiers !== undefined
     ? { tiers: options.tiers }
     : {};
+  // The context is read per request, so `tools/list` is built with the current
+  // one. The name-collision check below deliberately ignores it: a command
+  // hidden now may be listed later, and must not collide then.
+  const listNow = (): ReturnType<typeof buildToolsList> =>
+    buildToolsList(registry, { ...listOptions, ...(options.context !== undefined ? { context: options.context } : {}) });
 
   // Optional read side. `views` also powers the getState TOOL below (the
   // portable hedge for tools-only hosts) and the resources block further down.
@@ -112,8 +123,8 @@ export function createMcpServer(
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools:
       views && getStateOpts
-        ? [...buildToolsList(registry, listOptions), buildGetStateTool(views, getStateOpts)]
-        : buildToolsList(registry, listOptions),
+        ? [...listNow(), buildGetStateTool(views, getStateOpts)]
+        : listNow(),
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -123,7 +134,7 @@ export function createMcpServer(
       const gs = callGetState(views, args);
       return { content: gs.content, ...(gs.isError ? { isError: true } : {}) };
     }
-    const response = await callTool(registry, params.name, args, options.context);
+    const response = await callTool(registry, params.name, args, resolveContext(options.context));
     return {
       content: response.content,
       ...(response.isError ? { isError: true } : {}),

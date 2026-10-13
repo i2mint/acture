@@ -34,7 +34,8 @@ const server = createMcpServer(registry, {
   name: 'graph-editor',
   version: '0.1.0',
   // tiers: ['stable'],            // default
-  // context: { user: 'agent-1' }, // optional static context
+  // context: { user: 'agent-1' }, // optional: hides commands whose `when` is false, and is passed to dispatch
+  // (or `context: () => currentContext()`, read on every request)
 });
 
 await connectStdio(server);
@@ -42,7 +43,7 @@ await connectStdio(server);
 //   npx @modelcontextprotocol/inspector node ./dist/mcp.js
 ```
 
-The server registers `tools/list` and `tools/call` handlers, and fires `notifications/tools/list_changed` whenever the registry's tier-filtered view changes.
+The server registers `tools/list` and `tools/call` handlers, and fires `notifications/tools/list_changed` whenever the registry's tier-filtered view changes. It does not know when your `context` changes: if `context` hides commands, send `server.notification({ method: 'notifications/tools/list_changed' })` when it does. A `context` function that throws surfaces as a protocol error, not a tool error; keep it total.
 
 ## Read side — MCP resources (state exposure)
 
