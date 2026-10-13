@@ -114,7 +114,7 @@ Full discussion is in `docs/redesign_takeaways.md` §3 and the `acture-hard-dont
 - Testing: `acture-e2e-playwright` (v1.7) — sequence engine + Playwright fixture; substrate for macros + e2e + property tests. `acture-test-property` (v1.12) — fast-check arbitraries replayed through the sequence engine.
 - Python: `acture` on PyPI (v1.13) — thin MCP client, `ActureClient` as `Mapping[str, Command]`. ~300 LoC, depends only on the official `mcp` SDK.
 
-Hand-written equivalents (the dev-tool-first promise made reproducible) live at `docs/hand-written-{registry,command-sequence,telemetry,undo,test-property,python-client}.md` and `docs/ai-codemod-recipe.md`.
+Hand-written equivalents (the dev-tool-first promise made reproducible) live at `docs/hand-written-{registry,command-sequence,telemetry,undo,test-property,python-client,a11y,native-menu}.md` and `docs/ai-codemod-recipe.md`.
 
 Three remaining post-v1 candidates require explicit user direction: `acture-state-jotai`, `acture-state-valtio`, `acture-sandbox`. The last is also gated on `docs/research/acture_research_prompts.md` Prompt 7 (drafted, not launched).
 
