@@ -97,6 +97,30 @@ Peer range is `@rjsf` `^5.20.0 || ^6.0.0`, and CI installs and tests both majors
 
 Acture's core does not bundle a form library. Per redesign-takeaways §2.3.
 
+## Unavailable commands: hidden or disabled? (decided, research-12 §3.2)
+
+A command whose `when` is false is **unavailable**. What a surface does with it is a per-surface rule, not a property of the record:
+
+| Surface | Unavailable command is… | Why |
+| --- | --- | --- |
+| Command palette (`acture-palette-react`) | **hidden** (`registry.list({ context })` drops it) | The palette is a search box; unavailable rows are noise and VS Code does the same. |
+| AI tool list / MCP | **hidden** | A tool the model cannot usefully call only invites a failed call. |
+| Menu, toolbar, button, native menu | **shown, disabled** | These are spatial and persistent; a vanishing item breaks muscle memory and hides what the app can do. |
+
+For the "shown, disabled" surfaces, build the projection from the **unfiltered** `registry.list()` and evaluate `when` yourself with `evaluateWhen(cmd.when, ctx)`. Map the result to `aria-disabled="true"` (not the `disabled` attribute, which removes the control from the tab order and from screen-reader browse), `AXEnabled: false` (macOS), `IsEnabled: false` (UIA), or Electron/Tauri `enabled: false`. A disabled command must not advertise a live shortcut (`aria-keyshortcuts`).
+
+A palette host that wants the menu convention instead can render its own rows from the unfiltered list and set `aria-disabled` on a `Command.Item`; cmdk skips disabled items in keyboard navigation. That is a host choice; the shipped palette keeps hiding.
+
+## Accessibility contract (tested in `palette.a11y.test.tsx`)
+
+`acture-palette-react` inherits the WAI-ARIA APG combobox pattern from cmdk and pins it with tests. Keep these true when changing the palette:
+
+- The input is `role="combobox"` with `aria-controls` pointing at the `listbox`, named by the `label` ("Command palette"); rows are `option`s inside named `group`s.
+- DOM focus stays in the input; the highlighted row is `aria-selected` and `aria-activedescendant` follows it. (cmdk 1.1.1 only publishes `aria-activedescendant` once the highlight moves; the very first row is not announced until the first arrow key.)
+- When the view switches, the new view's first input takes focus (`autoFocus`), and cancelling returns to the list with the input focused. A host `formAdapter` owns focus inside its form and must `autoFocus` its first field.
+- Every text input the palette renders has an accessible name (the parameter name), and a validation error is `role="alert"`, linked by `aria-describedby`, with `aria-invalid` on the input.
+- Decorative icons are `aria-hidden`; the visible title is part of the option's text (WCAG 2.5.3).
+
 ## The don't-do list (research-2 §9.5)
 
 1. **Do not parse a single text blob into multiple parameters.** Slack's pattern. H2 hate; industry is migrating away.
@@ -122,3 +146,4 @@ The original wrapex `paletteHint` for delegating to a UI panel (Pattern D in `pa
 - `docs/parameterized_command_palette_guide.md` — implementation patterns (defer to research-2 on UX conflicts)
 - `acture-command-record-shape` — the `kind` field spec
 - `acture-schema-bridge` — how `params` projects to forms
+- `docs/research/acture_research_12 -- Accessibility APIs and Command Dispatch.md` — the accessibility alignment this section comes from

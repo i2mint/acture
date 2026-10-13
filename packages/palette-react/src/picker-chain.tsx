@@ -16,7 +16,7 @@
 /// <reference lib="dom" />
 
 import { Command } from 'cmdk';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { AnyCommandRecord } from 'acture';
 import { readEnumOptions, summarizeParams, unwrap } from './derive-kind.js';
 import type { ParamSummary } from './derive-kind.js';
@@ -159,6 +159,7 @@ function TextStep({ param, initial, onCommit, onBack }: StepProps): React.ReactE
     typeof initial === 'string' ? initial : initial === undefined ? '' : String(initial),
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const errorId = useId();
 
   function submit(): void {
     const coerced = coerceFromText(draft, param);
@@ -176,6 +177,9 @@ function TextStep({ param, initial, onCommit, onBack }: StepProps): React.ReactE
       <input
         data-acture-text-step
         autoFocus
+        aria-label={param.name}
+        aria-invalid={errorMsg ? true : undefined}
+        aria-describedby={errorMsg ? errorId : undefined}
         value={draft}
         placeholder={inferPlaceholder(param)}
         onChange={(e) => {
@@ -201,7 +205,7 @@ function TextStep({ param, initial, onCommit, onBack }: StepProps): React.ReactE
         }}
       />
       {errorMsg ? (
-        <span style={{ color: '#c33', fontSize: '0.85em' }} data-acture-validation-error>
+        <span id={errorId} role="alert" style={{ color: '#c33', fontSize: '0.85em' }} data-acture-validation-error>
           {errorMsg}
         </span>
       ) : null}
