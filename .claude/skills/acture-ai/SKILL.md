@@ -25,7 +25,7 @@ Name this fork explicitly when you surface the SDK choice — it changes the ada
 ### Decision 2 — agent-written vs package-reuse
 
 - **Agent-written** — write the projection directly: iterate `registry.list({ tiers })`, build the SDK's tool-definition shape per command, and give each an `execute` that routes through `registry.dispatch`. ~30 lines, owned. This is the **only** path if the SDK is not the Vercel AI SDK — adapt the pattern in `packages/ai-vercel/src/index.ts` (a worked example, not an import).
-- **Package-reuse — only if the SDK is the Vercel AI SDK** — install `acture-ai-vercel`. `toAITools(registry, { tiers?, excludeFunctionWhen?, context?, onDispatched? })` returns `Record<string, Tool>` ready to drop into `streamText({ tools })` / `generateText({ tools })`. Cost: a dependency to track (`ai` and `zod` are peer deps).
+- **Package-reuse — only if the SDK is the Vercel AI SDK** — install `acture-ai-vercel`. `toAITools(registry, { tiers?, excludeFunctionWhen?, context?, onDispatched? })` returns `Record<string, Tool>` (`context` — an object or a function — leaves out commands whose `when` is false) ready to drop into `streamText({ tools })` / `generateText({ tools })`. Cost: a dependency to track (`ai` and `zod` are peer deps).
 
 Surface both; follow a stated preference if one exists; otherwise ask. Record the choice in the project's adoption notes.
 

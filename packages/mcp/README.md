@@ -34,7 +34,8 @@ const server = createMcpServer(registry, {
   name: 'graph-editor',
   version: '0.1.0',
   // tiers: ['stable'],            // default
-  // context: { user: 'agent-1' }, // optional static context
+  // context: { user: 'agent-1' }, // optional: hides commands whose `when` is false, and is passed to dispatch
+  // (or `context: () => currentContext()`, read on every request)
 });
 
 await connectStdio(server);

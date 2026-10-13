@@ -180,3 +180,48 @@ describe('formatToolResponse', () => {
     expect(parsed.details).toBe('[unserializable]');
   });
 });
+
+describe('buildToolsList — context hides unavailable commands (#67)', () => {
+  function gated() {
+    const registry = createRegistry();
+    registry.registerAll([
+      defineCommand({ id: 'app.always', title: 'Always', execute: () => ok(undefined) }),
+      defineCommand({
+        id: 'app.edit.save',
+        title: 'Save',
+        when: 'editor.focused && !view.readonly',
+        execute: () => ok(undefined),
+      }),
+    ]);
+    return registry;
+  }
+  const names = (r: ReturnType<typeof gated>, context?: Parameters<typeof buildToolsList>[1]) =>
+    buildToolsList(r, context).map((t) => t.name);
+
+  it('lists every command when no context is given (unchanged)', () => {
+    expect(names(gated())).toEqual(['app_always', 'app_edit_save']);
+  });
+
+  it('leaves out a command whose when is false in the context', () => {
+    expect(names(gated(), { context: { editor: { focused: false } } })).toEqual(['app_always']);
+    expect(names(gated(), { context: { editor: { focused: true }, view: { readonly: true } } })).toEqual([
+      'app_always',
+    ]);
+  });
+
+  it('lists it when the when is true', () => {
+    expect(names(gated(), { context: { editor: { focused: true }, view: { readonly: false } } })).toEqual([
+      'app_always',
+      'app_edit_save',
+    ]);
+  });
+
+  it('reads a context function on every build', () => {
+    const registry = gated();
+    let ctx: Record<string, unknown> = { editor: { focused: false } };
+    const opts = { context: () => ctx };
+    expect(names(registry, opts)).toEqual(['app_always']);
+    ctx = { editor: { focused: true }, view: { readonly: false } };
+    expect(names(registry, opts)).toEqual(['app_always', 'app_edit_save']);
+  });
+});

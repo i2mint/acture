@@ -40,6 +40,7 @@ export {
 } from './tools.js';
 export type {
   BuildToolsListOptions,
+  ContextSource,
   McpToolDescriptor,
   McpToolAnnotations,
   CallToolResponse,

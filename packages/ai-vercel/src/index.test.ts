@@ -161,3 +161,38 @@ describe('toToolNameMap', () => {
     expect(map['app_old_thing']).toBeUndefined();
   });
 });
+
+describe('toAITools — context hides unavailable commands (#67)', () => {
+  function gated() {
+    const registry = createRegistry();
+    registry.registerAll([
+      defineCommand({ id: 'app.always', title: 'Always', execute: () => ok(1) }),
+      defineCommand({ id: 'app.edit.save', title: 'Save', when: 'editor.focused', execute: () => ok(2) }),
+    ]);
+    return registry;
+  }
+
+  it('projects every command without a context (unchanged)', () => {
+    expect(Object.keys(toAITools(gated()))).toEqual(['app_always', 'app_edit_save']);
+  });
+
+  it('leaves out a command whose when is false, in the tools and in the name map', () => {
+    const options = { context: { editor: { focused: false } } };
+    expect(Object.keys(toAITools(gated(), options))).toEqual(['app_always']);
+    expect(Object.keys(toToolNameMap(gated(), options))).toEqual(['app_always']);
+  });
+
+  it('reads a context function on each build and each dispatch', async () => {
+    const registry = gated();
+    let focused = false;
+    const options = { context: () => ({ editor: { focused } }) };
+    expect(Object.keys(toAITools(registry, options))).toEqual(['app_always']);
+    focused = true;
+    const tools = toAITools(registry, options);
+    expect(Object.keys(tools)).toEqual(['app_always', 'app_edit_save']);
+    focused = false; // dispatch reads the context again: the backstop still holds
+    const save = tools['app_edit_save']! as unknown as { execute: (a: unknown) => Promise<unknown> };
+    const result = (await save.execute({})) as { ok: boolean };
+    expect(result.ok).toBe(false);
+  });
+});
