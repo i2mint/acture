@@ -28,7 +28,7 @@ export interface AriaProps {
 }
 
 export interface ToAriaPropsOptions {
-  /** Context for evaluating `when`. Omitted: the command counts as available. */
+  /** Context for evaluating `when`. Omitted: `when` is not evaluated and the command counts as available. */
   readonly ctx?: Context;
   /** The tinykeys tokens that are actually bound, e.g. from `acture-hotkeys`'
    *  `resolveKeys(cmd, userKeymap)`. Default: the record's own `keybinding`.
@@ -40,7 +40,8 @@ export interface ToAriaPropsOptions {
 }
 
 /** True when the command is available in `ctx` (its `when` is true or absent). */
-export function isAvailable(cmd: AnyCommandRecord, ctx: Context = {}): boolean {
+export function isAvailable(cmd: AnyCommandRecord, ctx?: Context): boolean {
+  if (ctx === undefined) return true; // no context: `when` is not evaluated (as in `registry.list()`)
   return evaluateWhen(cmd.when, ctx);
 }
 
@@ -83,7 +84,9 @@ const KEY_NAMES: Readonly<Record<string, string>> = {
  * (`"Meta+Shift+P"`): `+`-joined UI Events key names, modifiers first,
  * alternatives space-separated. `$mod` becomes `Meta` on Apple, `Control`
  * elsewhere. Chords (`"g i"`) are dropped: ARIA cannot express key sequences.
- * Returns `undefined` when nothing remains.
+ * `+` becomes `Plus`; `KeyP`/`Digit1` codes become `P`/`1`. Shift plus a symbol
+ * (`Shift+?`) is passed through, but ARIA wants the physical key (`Shift+/`): write
+ * such bindings that way. Returns `undefined` when nothing remains.
  */
 export function toAriaKeyShortcuts(
   keys: readonly string[],
@@ -116,6 +119,9 @@ function modifierName(raw: string, apple: boolean): string {
 }
 
 function keyName(raw: string): string {
+  if (raw === '+') return 'Plus'; // ARIA spells the plus key out
+  const code = /^(?:Key([A-Z])|Digit(\d))$/.exec(raw); // tinykeys event.code tokens
+  if (code) return code[1] ?? code[2] ?? raw;
   const named = KEY_NAMES[raw.toLowerCase()];
   if (named) return named;
   return raw.length === 1 ? raw.toUpperCase() : raw;

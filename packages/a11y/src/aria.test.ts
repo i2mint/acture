@@ -19,13 +19,17 @@ describe('toAriaKeyShortcuts', () => {
   });
 
   it('keeps a literal + key and uppercases single letters', () => {
-    expect(toAriaKeyShortcuts(['$mod++'], { apple: false })).toBe('Control++');
+    expect(toAriaKeyShortcuts(['$mod++'], { apple: false })).toBe('Control+Plus');
     expect(toAriaKeyShortcuts(['alt+a'], { apple: false })).toBe('Alt+A');
   });
 
   it('drops chords (ARIA cannot express key sequences) and de-duplicates', () => {
     expect(toAriaKeyShortcuts(['g i'], { apple: false })).toBeUndefined();
     expect(toAriaKeyShortcuts(['g i', '$mod+k', 'Ctrl+k'], { apple: false })).toBe('Control+K');
+  });
+
+  it('maps event.code tokens to key names', () => {
+    expect(toAriaKeyShortcuts(['$mod+KeyP', 'Alt+Digit1'], { apple: false })).toBe('Control+P Alt+1');
   });
 
   it('returns undefined for nothing', () => {
@@ -60,6 +64,11 @@ describe('toAriaProps', () => {
       'aria-label': 'Do it',
       'aria-keyshortcuts': 'Control+S',
     });
+  });
+
+  it('does not evaluate when without a context', () => {
+    expect(isAvailable(cmd({ when: 'editor.focused' }))).toBe(true);
+    expect(toAriaProps(cmd({ when: 'editor.focused' }))['aria-disabled']).toBeUndefined();
   });
 
   it('supports function when-clauses', () => {

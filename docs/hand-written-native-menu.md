@@ -44,7 +44,8 @@ interface MenuOptions {
   onParameterized: (cmd: AnyCommandRecord) => void;
 }
 
-/** tinykeys token to an Electron accelerator; undefined for chords. */
+/** tinykeys token to an Electron accelerator; undefined for chords. Partial:
+ *  key names differ (Electron wants `Up`, `Plus`, ...), so extend for your bindings. */
 function toAccelerator(keybinding: AnyCommandRecord['keybinding']): string | undefined {
   const first = typeof keybinding === 'string' ? keybinding : keybinding?.[0];
   if (!first || /\s/.test(first)) return undefined; // Electron has no key sequences
@@ -91,8 +92,9 @@ const rebuild = () =>
   );
 rebuild();
 registry.onCommandsChanged(rebuild); // new or removed commands
-// Electron menu items are static: call rebuild() whenever the context that
-// `when` reads changes (selection, focus, mode), or the enabled flags go stale.
+// `enabled`/`checked` are read when the menu is built: rebuild() whenever the
+// context that `when` reads changes (selection, focus, mode), or mutate the
+// MenuItem's `enabled`/`checked` in place.
 ```
 
 ## Tauri

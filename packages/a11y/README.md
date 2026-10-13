@@ -31,3 +31,5 @@ import { toAriaProps } from 'acture-a11y';
 You get `aria-label` (the title), `aria-description`, `aria-disabled="true"` when `when` is false, and `aria-keyshortcuts` (`$mod` resolved to `Control` or `Meta`; chords are omitted because ARIA cannot express sequences). A disabled command advertises no shortcut. Pass `keys` (for example `resolveKeys(cmd, userKeymap)` from `acture-hotkeys`) so the attribute reflects the shortcut that is really bound. Choosing the element and role is the surface's job.
 
 Menus show unavailable commands as disabled; the palette hides them. See the hidden-vs-disabled rule in the `acture-palette-design` skill, and [`docs/hand-written-native-menu.md`](../../docs/hand-written-native-menu.md) for the Electron/Tauri menu projection and the checked-state design.
+
+Server rendering: pass `apple` explicitly to `toAriaProps` / `toAriaKeyShortcuts`. Left to detection, a server emits `Control` and a Mac browser emits `Meta`, which is a hydration mismatch.
