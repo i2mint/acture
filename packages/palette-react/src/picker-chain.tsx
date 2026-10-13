@@ -18,6 +18,7 @@
 import { Command } from 'cmdk';
 import { useId, useState } from 'react';
 import type { AnyCommandRecord } from 'acture';
+import { useActiveDescendant } from './use-active-descendant.js';
 import { readEnumOptions, summarizeParams, unwrap } from './derive-kind.js';
 import type { ParamSummary } from './derive-kind.js';
 
@@ -125,8 +126,9 @@ function EnumPicker({
   options,
   coerce,
 }: StepProps & { options: readonly string[]; coerce?: (s: string) => unknown }): React.ReactElement {
+  const rootRef = useActiveDescendant();
   return (
-    <Command label={`Pick ${param.name}`} shouldFilter={true}>
+    <Command ref={rootRef} label={`Pick ${param.name}`} shouldFilter={true}>
       <Command.Input
         placeholder={`Pick ${param.name}…`}
         autoFocus

@@ -129,6 +129,18 @@ describe('<CommandPalette /> accessibility', () => {
     expect(input.getAttribute('aria-activedescendant')).toBeNull();
   });
 
+  it('names the highlighted option in the enum picker step too', async () => {
+    render(<CommandPalette registry={setup()} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Set style').closest('[cmdk-item]')!);
+    });
+    await act(async () => {});
+    const input = screen.getByRole('combobox');
+    const selected = screen.getAllByRole('option').find((o) => o.getAttribute('aria-selected') === 'true');
+    expect(selected?.id).toBeTruthy();
+    expect(input.getAttribute('aria-activedescendant')).toBe(selected?.id);
+  });
+
   it('names the first option again when the list view comes back', async () => {
     render(<CommandPalette registry={setup()} />);
     await act(async () => {});

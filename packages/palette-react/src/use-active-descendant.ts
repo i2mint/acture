@@ -37,6 +37,8 @@ export function useActiveDescendant(): (root: HTMLElement | null) => void {
     observer.current?.disconnect();
     observer.current = null;
     if (!root) return;
+    // cmdk highlights the first option in a later layout pass, so this finds
+    // nothing on a fresh mount; the observer below does the initial work.
     syncActiveDescendant(root);
     if (typeof MutationObserver === 'undefined') return;
     const watcher = new MutationObserver(() => syncActiveDescendant(root));
