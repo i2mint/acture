@@ -177,7 +177,7 @@ function TextStep({ param, initial, onCommit, onBack }: StepProps): React.ReactE
       <input
         data-acture-text-step
         autoFocus
-        aria-label={param.name}
+        aria-label={paramLabel(param)}
         aria-invalid={errorMsg ? true : undefined}
         aria-describedby={errorMsg ? errorId : undefined}
         value={draft}

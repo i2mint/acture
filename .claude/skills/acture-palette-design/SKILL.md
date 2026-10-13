@@ -103,13 +103,13 @@ A command whose `when` is false is **unavailable**. What a surface does with it 
 
 | Surface | Unavailable command is… | Why |
 | --- | --- | --- |
-| Command palette (`acture-palette-react`) | **hidden** (`registry.list({ context })` drops it) | The palette is a search box; unavailable rows are noise and VS Code does the same. |
-| AI tool list / MCP | **hidden** | A tool the model cannot usefully call only invites a failed call. |
+| Command palette (`acture-palette-react`) | **hidden**, when the host passes `context` (`registry.list({ context })` drops it; without `context`, `when` is not evaluated and an unavailable command fails at dispatch) | The palette is a search box; unavailable rows are noise and VS Code does the same. |
+| AI tool list / MCP | **should be hidden; not implemented yet.** `acture-mcp-server` and `acture-ai-vercel` call `registry.list()` without a context, so they list every command and an unavailable one fails with `when_clause_failed` at dispatch | A tool the model cannot usefully call only invites a failed call. |
 | Menu, toolbar, button, native menu | **shown, disabled** | These are spatial and persistent; a vanishing item breaks muscle memory and hides what the app can do. |
 
-For the "shown, disabled" surfaces, build the projection from the **unfiltered** `registry.list()` and evaluate `when` yourself with `evaluateWhen(cmd.when, ctx)`. Map the result to `aria-disabled="true"` (not the `disabled` attribute, which removes the control from the tab order and from screen-reader browse), `AXEnabled: false` (macOS), `IsEnabled: false` (UIA), or Electron/Tauri `enabled: false`. A disabled command must not advertise a live shortcut (`aria-keyshortcuts`).
+For the "shown, disabled" surfaces, build the projection from the **unfiltered** `registry.list()` and evaluate `when` yourself with `evaluateWhen(cmd.when, ctx)`. Map the result to `aria-disabled="true"` (not the `disabled` attribute, which takes the control out of the tab order, so keyboard users can no longer reach it and learn why it is off; APG menu items stay focusable), `AXEnabled: false` (macOS), `IsEnabled: false` (UIA), or Electron/Tauri `enabled: false`. A disabled command must not advertise a live shortcut (`aria-keyshortcuts`).
 
-A palette host that wants the menu convention instead can render its own rows from the unfiltered list and set `aria-disabled` on a `Command.Item`; cmdk skips disabled items in keyboard navigation. That is a host choice; the shipped palette keeps hiding.
+A palette host that wants the menu convention instead can render its own rows from the unfiltered list and pass the `disabled` prop to `Command.Item` (cmdk renders `aria-disabled` itself, overwriting any `aria-disabled` you pass, and skips disabled items in keyboard navigation). That is a host choice; the shipped palette keeps hiding.
 
 ## Accessibility contract (tested in `palette.a11y.test.tsx`)
 

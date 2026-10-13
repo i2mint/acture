@@ -161,6 +161,24 @@ describe('<CommandPalette /> accessibility', () => {
     expect(screen.getByRole('textbox', { name: 'label' })).toBe(text);
   });
 
+  it('names a described parameter by the visible description (Label in Name)', async () => {
+    const registry = createRegistry();
+    registry.register(
+      defineCommand({
+        id: 'app.graph.relabel',
+        title: 'Relabel',
+        params: z.object({ label: z.string().describe('New node label') }),
+        kind: 'atomic',
+        execute: (p) => ok(p),
+      }),
+    );
+    render(<CommandPalette registry={registry} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Relabel').closest('[cmdk-item]')!);
+    });
+    expect(screen.getByRole('textbox', { name: 'New node label' })).toBeTruthy();
+  });
+
   it('announces a validation error on the text step', async () => {
     const registry = createRegistry();
     registry.register(
