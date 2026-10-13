@@ -116,7 +116,7 @@ A palette host that wants the menu convention instead can render its own rows fr
 `acture-palette-react` inherits the WAI-ARIA APG combobox pattern from cmdk and pins it with tests. Keep these true when changing the palette:
 
 - The input is `role="combobox"` with `aria-controls` pointing at the `listbox`, named by the `label` ("Command palette"); rows are `option`s inside named `group`s.
-- DOM focus stays in the input; the highlighted row is `aria-selected` and `aria-activedescendant` follows it. (cmdk 1.1.1 only publishes `aria-activedescendant` once the highlight moves; the very first row is not announced until the first arrow key.)
+- DOM focus stays in the input; the highlighted row is `aria-selected` and `aria-activedescendant` follows it. cmdk 1.1.1 only publishes `aria-activedescendant` once the highlight moves, so `acture-palette-react` mirrors the highlighted option onto the input itself (`use-active-descendant.ts`, #68); a hand-written palette on cmdk must do the same.
 - When the view switches, the new view's first input takes focus (`autoFocus`), and cancelling returns to the list with the input focused. A host `formAdapter` owns focus inside its form and must `autoFocus` its first field.
 - Every text input the palette renders has an accessible name (the parameter name), and a validation error is `role="alert"`, linked by `aria-describedby`, with `aria-invalid` on the input.
 - Decorative icons are `aria-hidden`; the visible title is part of the option's text (WCAG 2.5.3).
