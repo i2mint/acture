@@ -224,4 +224,17 @@ describe('buildToolsList — context hides unavailable commands (#67)', () => {
     ctx = { editor: { focused: true }, view: { readonly: false } };
     expect(names(registry, opts)).toEqual(['app_always', 'app_edit_save']);
   });
+
+  it('never runs a function when while listing (it may throw on this context)', () => {
+    const registry = gated();
+    registry.register(
+      defineCommand({
+        id: 'app.palette.only',
+        title: 'Palette only',
+        when: (c) => Boolean((c.doc as { open: boolean }).open),
+        execute: () => ok(undefined),
+      }),
+    );
+    expect(names(registry, { context: { user: 'agent-1' } })).toEqual(['app_always']);
+  });
 });

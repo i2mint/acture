@@ -41,6 +41,7 @@ import type {
 import {
   buildToolNameToIdMap,
   commandIdToToolName,
+  evaluateWhen,
   isFunctionWhen,
   isOk,
 } from 'acture';
@@ -69,8 +70,9 @@ export interface ToAIToolsOptions {
    *  left out of the tools (an unavailable tool only invites a failed call;
    *  `when_clause_failed` at dispatch remains the backstop), and it is
    *  forwarded to every dispatch. A function is called each time tools are
-   *  built and each time one is dispatched, so rebuild the tools (or the
-   *  `toAITools` call per step) when the context changes. Omit it and every
+   *  built and each time one is dispatched, so rebuild the tools (e.g.
+   *  `toAITools` per step) when the context changes: a tool hidden when the
+   *  tools were built stays hidden, even if a step makes it available. Omit it and every
    *  command that passes the tier filter is projected. */
   context?: ContextSource;
   /** Called after each dispatch — useful for logging tool-call results.
@@ -127,12 +129,17 @@ function selectCommands(
 ): readonly AnyCommandRecord[] {
   const excludeFn = options.excludeFunctionWhen ?? true;
   const context = resolveContext(options.context);
-  const listOpts: NonNullable<Parameters<Registry['list']>[0]> = {
-    ...(options.tiers !== undefined ? { tiers: options.tiers } : {}),
-    ...(context !== undefined ? { context } : {}),
-  };
-  const list = registry.list(listOpts);
-  return excludeFn ? list.filter((cmd) => !isFunctionWhen(cmd.when)) : list;
+  // Tiers only: given a context `registry.list` would run function `when`s that
+  // are about to be dropped, and they may throw on a context they were never
+  // written for. Availability is checked after that.
+  const list = registry.list(
+    options.tiers !== undefined ? { tiers: options.tiers } : undefined,
+  );
+  return list.filter(
+    (cmd) =>
+      !(excludeFn && isFunctionWhen(cmd.when)) &&
+      (context === undefined || evaluateWhen(cmd.when, context)),
+  );
 }
 
 /**

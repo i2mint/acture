@@ -190,9 +190,25 @@ describe('toAITools — context hides unavailable commands (#67)', () => {
     focused = true;
     const tools = toAITools(registry, options);
     expect(Object.keys(tools)).toEqual(['app_always', 'app_edit_save']);
-    focused = false; // dispatch reads the context again: the backstop still holds
     const save = tools['app_edit_save']! as unknown as { execute: (a: unknown) => Promise<unknown> };
-    const result = (await save.execute({})) as { ok: boolean };
-    expect(result.ok).toBe(false);
+    expect(await save.execute({})).toMatchObject({ ok: true, value: 2 });
+    focused = false; // dispatch reads the context again: the backstop still holds
+    expect(await save.execute({})).toMatchObject({ ok: false });
+  });
+
+  it('never runs a function when while building (it may throw on this context)', () => {
+    const registry = gated();
+    registry.register(
+      defineCommand({
+        id: 'app.palette.only',
+        title: 'Palette only',
+        when: (c) => Boolean((c.doc as { open: boolean }).open),
+        execute: () => ok(3),
+      }),
+    );
+    expect(Object.keys(toAITools(registry, { context: { editor: { focused: true } } }))).toEqual([
+      'app_always',
+      'app_edit_save',
+    ]);
   });
 });

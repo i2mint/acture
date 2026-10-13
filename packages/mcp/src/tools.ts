@@ -14,6 +14,7 @@ import type {
 import {
   buildToolNameToIdMap,
   commandIdToToolName,
+  evaluateWhen,
   isFunctionWhen,
   toJsonSchema,
 } from 'acture';
@@ -86,14 +87,16 @@ export function buildToolsList(
 ): McpToolDescriptor[] {
   const excludeFn = options.excludeFunctionWhen ?? true;
   const context = resolveContext(options.context);
-  const listOpts: NonNullable<Parameters<Registry['list']>[0]> = {
-    ...(options.tiers !== undefined ? { tiers: options.tiers } : {}),
-    ...(context !== undefined ? { context } : {}),
-  };
-  const list = registry.list(listOpts);
+  // `registry.list` is asked for tiers only: given a context it would also run
+  // function `when`s, which are about to be dropped and may throw on a context
+  // they were never written for. Availability is checked here, after that.
+  const list = registry.list(
+    options.tiers !== undefined ? { tiers: options.tiers } : undefined,
+  );
   const out: McpToolDescriptor[] = [];
   for (const cmd of list) {
     if (excludeFn && isFunctionWhen(cmd.when)) continue;
+    if (context !== undefined && !evaluateWhen(cmd.when, context)) continue;
     out.push(projectCommand(cmd));
   }
   return out;

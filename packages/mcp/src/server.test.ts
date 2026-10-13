@@ -125,4 +125,30 @@ describe('createMcpServer — tools/list follows the context (#67)', () => {
       await server.close();
     }
   });
+
+  it('dispatches with the current value of a context function', async () => {
+    let focused = true;
+    const registry = createRegistry();
+    registry.register(
+      defineCommand({ id: 'app.edit.save', title: 'Save', when: 'editor.focused', execute: () => ok('saved') }),
+    );
+    const server = createMcpServer(registry, {
+      name: 't',
+      version: '0.0.0',
+      context: () => ({ editor: { focused } }),
+    });
+    const client = new Client({ name: 'c', version: '0.0.0' });
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(a), client.connect(b)]);
+    try {
+      const done = await client.callTool({ name: 'app_edit_save', arguments: {} });
+      expect(done.isError).toBeFalsy();
+      focused = false;
+      const refused = await client.callTool({ name: 'app_edit_save', arguments: {} });
+      expect(refused.isError).toBe(true);
+    } finally {
+      await client.close();
+      await server.close();
+    }
+  });
 });
