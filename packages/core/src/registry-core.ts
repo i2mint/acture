@@ -14,7 +14,6 @@
  * skill §"Case-study lessons" for the Excalidraw cautionary tale).
  */
 
-import type { ZodType } from 'zod';
 import type {
   AnyCommandRecord,
   CommandRecord,
@@ -247,7 +246,7 @@ export function createRegistryCore(
     }
     let parsed: unknown = params;
     if (cmd.params !== undefined) {
-      const schema = cmd.params as ZodType<unknown>;
+      const schema = cmd.params;
       const result = schema.safeParse(params);
       if (!result.success) {
         return err('invalid_params', `Invalid params for "${id}"`, {
