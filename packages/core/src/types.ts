@@ -8,8 +8,6 @@
  * audit (see `docs/redesign_takeaways.md` §3).
  */
 
-import type { ZodType } from 'zod';
-
 /** Execution / availability context. Arbitrary keys; consumers decide
  *  what to put in. The registry passes the same object through to
  *  `execute` and when-clause evaluation. */
@@ -54,9 +52,22 @@ export type Result<R> =
   | { ok: true; value: R; patches?: readonly Patch[]; effects?: readonly Effect[] }
   | { ok: false; error: CommandError };
 
-/** Phase 1 schema authoring layer: Zod. Standard Schema acceptance
- *  comes in Phase 2 (per user direction). The boundary is `ZodType<P>`. */
-export type ParamSchema<P> = ZodType<P>;
+/**
+ * What `dispatch` needs from a params schema: a `safeParse`. Typed
+ * structurally, so a Zod schema satisfies it and so does a hand-written
+ * guard (`{ safeParse }`), and `acture/lite` pages need no Zod types.
+ * Standard Schema (`~standard.validate`) acceptance is still to come.
+ *
+ * The schema bridge (`toJsonSchema`) and `defineCommand`'s param checks
+ * need a Zod schema and narrow at that point, with an error saying so.
+ */
+export interface ParamSchema<P> {
+  safeParse(
+    input: unknown,
+  ):
+    | { readonly success: true; readonly data: P }
+    | { readonly success: false; readonly error: { readonly issues: unknown } };
+}
 
 /** When-clause: DSL string OR function escape hatch. The function form
  *  is flagged "not exposable to AI/MCP" because its body is opaque to

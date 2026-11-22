@@ -114,3 +114,21 @@ describe('records move between entries unchanged', () => {
     }
   });
 });
+
+describe('acture/lite — structural params', () => {
+  it('accepts a hand-written safeParse guard without a cast', async () => {
+    const guard = {
+      safeParse: (input: unknown) =>
+        typeof input === 'number'
+          ? ({ success: true, data: input } as const)
+          : ({ success: false, error: { issues: ['not a number'] } } as const),
+    };
+    const r = createLiteRegistry();
+    r.register(
+      defineLite({ id: 'app.n.double', title: 'double', params: guard, execute: (n: number) => ok(n * 2) }),
+    );
+    expect(await r.dispatch('app.n.double', 4)).toEqual({ ok: true, value: 8 });
+    const bad = await r.dispatch('app.n.double', 'x');
+    expect(bad.ok).toBe(false);
+  });
+});
