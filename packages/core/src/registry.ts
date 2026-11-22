@@ -24,7 +24,6 @@ export type {
   DispatchOptions,
   Registry,
   CreateRegistryOptions,
-  WhenEvaluator,
 } from './registry-core.js';
 
 /** Create a command registry whose `when` clauses may be DSL strings or

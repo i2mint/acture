@@ -153,10 +153,10 @@ registry.register(defineCommand({
 
 It leaves out the two things that make up most of the full entry's size:
 
-- **The when-clause DSL.** `when` must be a function; a DSL string is refused at `register` with a `RegistrationError`. Inject an evaluator to accept strings: `createRegistry({ evaluateWhen })` (the full entry's `evaluateWhen`, or your own). The full `createRegistry` takes the same option.
+- **The when-clause DSL.** `when` must be a function; a DSL string is refused at `register` with a `RegistrationError`. To accept strings, inject acture's evaluator: `createRegistry({ evaluateWhen })` with `evaluateWhen` from `acture` (it brings the DSL's bytes back). Keep to acture's DSL: the full registry and the adapters read string clauses that way.
 - **`defineCommand`'s checks.** Lite's `defineCommand` only freezes the spec. Run the full entry's `validateCommand(record)` over the same records in a test or a dev build to keep the checks out of the shipped bytes.
 
-Zod is not needed at runtime on either entry: `dispatch` calls the `params` object's own `safeParse`, so a hand-written `{ safeParse }` guard works. Budgets per entry live in `size-budget.json` and are checked in CI by `pnpm --filter acture size`.
+`acture/lite` loads no Zod at runtime: `dispatch` calls the `params` object's own `safeParse`, so a hand-written `{ safeParse }` guard works. Its types still name Zod (`params` is typed `ZodType`), so keep `zod` as a dev dependency for the types, and cast a hand-written guard (`params: guard as never`) until params accept any `safeParse`-shaped schema. The full entry imports Zod at runtime. Budgets per entry live in `size-budget.json` and are checked in CI by `pnpm --filter acture size`; the lite budget also fails if its bundle keeps any import (Zod included).
 
 ## When-clause DSL
 

@@ -6,7 +6,7 @@
  * Two entries build on it: `./registry.ts` (the full `acture` entry,
  * which injects the DSL evaluator) and `./lite.ts` (`acture/lite`, which
  * injects a function-only evaluator so byte-budgeted pages can adopt the
- * registry for about 1.5 kB). Records are the same `CommandRecord` in
+ * registry for under 3 kB). Records are the same `CommandRecord` in
  * both, so a page upgrades by swapping the import.
  *
  * The registry is plain TypeScript — ZERO React, ZERO state-library
@@ -86,11 +86,6 @@ export interface CreateRegistryOptions {
    *  If false, the second register silently replaces the first.
    *  Default: true. */
   strictDuplicates?: boolean;
-  /** Evaluates `when` clauses for `list({ context })` and `dispatch`.
-   *  Default: the entry's own evaluator (the DSL plus functions in
-   *  `acture`, functions only in `acture/lite`). Inject one to use a
-   *  different DSL, or to give `acture/lite` string clauses. */
-  evaluateWhen?: WhenEvaluator;
 }
 
 /** Evaluates a command's `when` clause against a context. `undefined`
@@ -103,15 +98,13 @@ export type AdmitRecord = (cmd: AnyCommandRecord) => void;
 
 /**
  * Build a registry around a when-clause evaluator. The public
- * `createRegistry` of each entry is this with its default evaluator;
- * `options.evaluateWhen` overrides it.
+ * `createRegistry` of each entry is this with its own evaluator.
  */
 export function createRegistryCore(
-  defaultEvaluateWhen: WhenEvaluator,
+  evaluateWhen: WhenEvaluator,
   options?: CreateRegistryOptions,
   admit?: AdmitRecord,
 ): Registry {
-  const evaluateWhen = options?.evaluateWhen ?? defaultEvaluateWhen;
   const defaultTier: Tier = options?.defaultTier ?? 'stable';
   const strictDuplicates = options?.strictDuplicates ?? true;
 

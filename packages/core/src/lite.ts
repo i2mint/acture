@@ -7,7 +7,10 @@
  * - **The when-clause DSL.** `when` is accepted as a function only. A DSL
  *   string is refused at `register` time, unless an `evaluateWhen` is
  *   injected (`createRegistry({ evaluateWhen })`), which then receives
- *   strings and functions alike.
+ *   strings and functions alike. Inject acture's own `evaluateWhen` (or one
+ *   reading the same DSL): the full registry, `validateCommand` and the
+ *   adapters (hotkeys, MCP, AI tools) all read string clauses as acture's
+ *   DSL, so a record carrying another syntax would not move between them.
  * - **`defineCommand`'s validation.** Here it only freezes the spec. Run
  *   the full entry's `validateCommand` over the same records in a test or
  *   a dev build to keep the checks without shipping them.
@@ -38,6 +41,15 @@ export type {
   CreateRegistryOptions,
   WhenEvaluator,
 } from './registry-core.js';
+
+/** `acture/lite`'s registry options: the full entry's, plus the evaluator
+ *  that lets it take string `when` clauses. */
+export interface LiteRegistryOptions extends CreateRegistryOptions {
+  /** Evaluates `when` (strings and functions) for `list({ context })` and
+   *  `dispatch`. Without it, `when` must be a function. Use acture's DSL
+   *  (`import { evaluateWhen } from 'acture'`) so records stay portable. */
+  evaluateWhen?: WhenEvaluator;
+}
 export type {
   CommandRecord,
   AnyCommandRecord,
@@ -61,7 +73,7 @@ const evaluateFunctionWhen: WhenEvaluator = (when, ctx) =>
  * injected `evaluateWhen`, registering a record whose `when` is a string
  * throws `RegistrationError`, rather than silently treating it as true.
  */
-export function createRegistry(options?: CreateRegistryOptions): Registry {
+export function createRegistry(options?: LiteRegistryOptions): Registry {
   if (options?.evaluateWhen) return createRegistryCore(options.evaluateWhen, options);
   return createRegistryCore(evaluateFunctionWhen, options, (cmd) => {
     if (typeof cmd.when === 'string') {

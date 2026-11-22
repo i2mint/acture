@@ -3,7 +3,9 @@
  * Check the per-entry byte budgets in `size-budget.json` against the built
  * `dist/`: for each budget, bundle a one-line page that imports the listed
  * names from the entry (esbuild, minified ESM, tree-shaken, zod external)
- * and fail if it exceeds `maxBytes`. Run after `pnpm build`.
+ * and fail if it exceeds `maxBytes`, or, with `noImports`, if the bundle
+ * still imports anything (an external such as zod would otherwise add 0
+ * measured bytes). Run after `pnpm build`.
  *
  * Usage: node scripts/size-budget.mjs [--json]
  */
@@ -35,24 +37,28 @@ async function measure({ entry, imports }) {
     write: false,
     external: ['zod'],
     logLevel: 'silent',
+    metafile: true,
   });
   const code = out.outputFiles[0].contents;
-  return { bytes: code.length, gzip: gzipSync(code).length };
+  const leakedImports = Object.values(out.metafile.outputs).flatMap((o) => o.imports.filter((i) => i.external).map((i) => i.path));
+  return { bytes: code.length, gzip: gzipSync(code).length, imports: leakedImports };
 }
 
 let failed = false;
 const rows = [];
 for (const b of budgets) {
-  const { bytes, gzip } = await measure(b);
-  const ok = bytes <= b.maxBytes;
+  const { bytes, gzip, imports } = await measure(b);
+  const leaked = b.noImports ? imports : [];
+  const ok = bytes <= b.maxBytes && leaked.length === 0;
   failed ||= !ok;
-  rows.push({ entry: b.entry, imports: b.imports, bytes, gzip, maxBytes: b.maxBytes, ok });
+  rows.push({ entry: b.entry, imports: b.imports, bytes, gzip, maxBytes: b.maxBytes, leaked, ok });
 }
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify(rows, null, 2));
 } else {
   for (const r of rows) {
-    console.log(`${r.ok ? 'ok  ' : 'FAIL'} ${r.entry} {${r.imports.join(', ')}}: ${r.bytes} B min, ${r.gzip} B gzip (budget ${r.maxBytes} B)`);
+    console.log(`${r.ok ? 'ok  ' : 'FAIL'} ${r.entry} {${r.imports.join(', ')}}: ${r.bytes} B min, ${r.gzip} B gzip (budget ${r.maxBytes} B)` +
+      (r.leaked.length ? `; imports ${r.leaked.join(', ')} but must import nothing` : ''));
   }
 }
 if (failed) {

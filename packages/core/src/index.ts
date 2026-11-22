@@ -30,7 +30,6 @@ export type {
   CommandsChangedEvent,
   CommandsChangedListener,
   CommandsChangedReason,
-  WhenEvaluator,
 } from './registry.js';
 
 export {

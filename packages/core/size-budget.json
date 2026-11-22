@@ -1,5 +1,5 @@
 {
-  "$comment": "Minified ESM bytes of what a page bundles when it imports `imports` from `entry` (tree-shaken, zod external). Checked by scripts/size-budget.mjs against dist/. Raise a budget only on purpose.",
+  "$comment": "Minified ESM bytes of what a page bundles when it imports `imports` from `entry` (tree-shaken, zod external). Checked by scripts/size-budget.mjs against dist/. Raise a budget only on purpose. `noImports`: the bundle must import nothing (zod included).",
   "budgets": [
     {
       "entry": "acture/lite",
@@ -9,7 +9,8 @@
         "ok",
         "err"
       ],
-      "maxBytes": 2900
+      "maxBytes": 2900,
+      "noImports": true
     },
     {
       "entry": "acture",

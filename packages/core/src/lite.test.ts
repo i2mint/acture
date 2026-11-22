@@ -103,9 +103,14 @@ describe('records move between entries unchanged', () => {
     expect(await full.dispatch('app.a.run')).toEqual({ ok: true, value: 'app.a.run' });
   });
 
-  it('the full registry takes an injected evaluateWhen too', () => {
-    const full = createRegistry({ evaluateWhen: () => false });
-    full.register(cmd('app.a.run', { when: 'anything' }));
-    expect(full.list({ context: {} })).toEqual([]);
+  it('a lite record with a DSL when (injected evaluator) behaves the same in the full registry', () => {
+    const rec = cmd('app.a.dsl', { when: 'open' });
+    const lite = createLiteRegistry({ evaluateWhen });
+    const full = createRegistry();
+    lite.register(rec);
+    full.register(rec);
+    for (const ctx of [{ open: true }, { open: false }]) {
+      expect(lite.list({ context: ctx }).length).toBe(full.list({ context: ctx }).length);
+    }
   });
 });
