@@ -169,3 +169,34 @@ describe('defineCommand', () => {
     ).toThrow(/tier/);
   });
 });
+
+describe('defineCommand literal id', () => {
+  it('preserves the literal id so hosts can derive a CommandId union', () => {
+    const a = defineCommand({
+      id: 'app.doc.open',
+      title: 'Open',
+      execute: () => ok(undefined),
+    });
+    const b = defineCommand({
+      id: 'app.doc.close',
+      title: 'Close',
+      execute: () => ok(undefined),
+    });
+    const all = [a, b] as const;
+    type CommandId = (typeof all)[number]['id'];
+    const id: CommandId = 'app.doc.open';
+    // @ts-expect-error not a registered id
+    const bad: CommandId = 'app.doc.nope';
+    expect([id, bad]).toBeDefined();
+  });
+
+  it('keeps explicit <P, R> call sites working (id stays string)', () => {
+    const c = defineCommand<{ n: number }, number>({
+      id: 'app.doc.count',
+      title: 'Count',
+      execute: (p) => ok(p.n),
+    });
+    const s: string = c.id;
+    expect(s).toBe('app.doc.count');
+  });
+});

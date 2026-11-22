@@ -73,9 +73,15 @@ export type DefaultScore = number | ((ctx: Context) => number);
  * Generic parameters:
  * - `P` — the params type (inferred from the Zod schema).
  * - `R` — the value type of a successful Result.
+ * - `Id` — the literal id type (defaults to `string`). `defineCommand` keeps
+ *   the literal, so a host can derive `type CommandId = (typeof all)[number]['id']`.
  */
-export interface CommandRecord<P = unknown, R = unknown> {
-  readonly id: string;
+export interface CommandRecord<
+  P = unknown,
+  R = unknown,
+  Id extends string = string,
+> {
+  readonly id: Id;
   readonly title: string;
   readonly description?: string;
   readonly category?: string;
