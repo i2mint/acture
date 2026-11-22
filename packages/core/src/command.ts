@@ -21,7 +21,11 @@ const VALID_TIERS: readonly Tier[] = [
 
 /** Author-facing input form. Identical to CommandRecord but with
  *  writable fields — the helper freezes the result. */
-export type CommandSpec<P, R> = CommandRecord<P, R>;
+export type CommandSpec<P, R, Id extends string = string> = CommandRecord<
+  P,
+  R,
+  Id
+>;
 
 /**
  * Define a command. Validates the spec at registration time:
@@ -33,11 +37,11 @@ export type CommandSpec<P, R> = CommandRecord<P, R>;
  * Returns a deep-frozen `CommandRecord<P, R>`. Throws `RegistrationError`
  * if any constraint is violated.
  */
-export function defineCommand<P, R>(
-  spec: CommandSpec<P, R>,
-): CommandRecord<P, R> {
+export function defineCommand<P, R, const Id extends string = string>(
+  spec: CommandSpec<P, R, Id>,
+): CommandRecord<P, R, Id> {
   validateSpec(spec);
-  return Object.freeze({ ...spec }) as CommandRecord<P, R>;
+  return Object.freeze({ ...spec }) as CommandRecord<P, R, Id>;
 }
 
 export class RegistrationError extends Error {
@@ -47,7 +51,7 @@ export class RegistrationError extends Error {
   }
 }
 
-function validateSpec<P, R>(spec: CommandSpec<P, R>): void {
+function validateSpec<P, R>(spec: CommandSpec<P, R, string>): void {
   if (!spec || typeof spec !== 'object') {
     throw new RegistrationError(
       'defineCommand requires a spec object, got: ' + typeof spec,
