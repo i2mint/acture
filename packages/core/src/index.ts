@@ -13,6 +13,7 @@
 
 export {
   defineCommand,
+  validateCommand,
   RegistrationError,
 } from './command.js';
 export type { CommandSpec } from './command.js';
@@ -29,6 +30,7 @@ export type {
   CommandsChangedEvent,
   CommandsChangedListener,
   CommandsChangedReason,
+  WhenEvaluator,
 } from './registry.js';
 
 export {

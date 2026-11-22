@@ -55,6 +55,22 @@ describe('createRegistry — basics', () => {
 });
 
 describe('createRegistry — registerAll', () => {
+  it('rolls back when the same record appears twice in one batch', () => {
+    const r = createRegistry();
+    const a = trivialCmd('twice.a.b');
+    expect(() => r.registerAll([a, a])).toThrow(DuplicateCommandError);
+    expect(r.size()).toBe(0);
+  });
+
+  it('disposer is unaffected by the caller mutating the array afterwards', () => {
+    const r = createRegistry();
+    const batch = [trivialCmd('mut.a.b')];
+    const dispose = r.registerAll(batch);
+    batch.length = 0;
+    dispose();
+    expect(r.size()).toBe(0);
+  });
+
   it('batches add and emits one event', () => {
     const r = createRegistry();
     const events: CommandsChangedEvent[] = [];

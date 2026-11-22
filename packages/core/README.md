@@ -135,6 +135,29 @@ type Result<R> =
 | `invalid_params`      | Zod `safeParse` failed. `details.issues` is the ZodError. |
 | `execute_threw`       | The handler threw. `details.stack` is the stack trace. |
 
+### `acture/lite`: the registry on a byte budget
+
+A page with a hard per-page byte budget can import the same registry from `acture/lite`: about 2.9 kB minified (1.4 kB gzip) for `createRegistry, defineCommand, ok, err`, against about 12 kB from `acture`. Same `Registry` interface, same `CommandRecord` shape, same error codes; records register unchanged in either, so upgrading is swapping the import.
+
+```ts
+import { createRegistry, defineCommand, ok } from 'acture/lite';
+
+const registry = createRegistry();
+registry.register(defineCommand({
+  id: 'app.view.toggleGrid',
+  title: 'Toggle grid',
+  when: (ctx) => ctx.canvas === true,   // functions only
+  execute: () => ok(toggleGrid()),
+}));
+```
+
+It leaves out the two things that make up most of the full entry's size:
+
+- **The when-clause DSL.** `when` must be a function; a DSL string is refused at `register` with a `RegistrationError`. Inject an evaluator to accept strings: `createRegistry({ evaluateWhen })` (the full entry's `evaluateWhen`, or your own). The full `createRegistry` takes the same option.
+- **`defineCommand`'s checks.** Lite's `defineCommand` only freezes the spec. Run the full entry's `validateCommand(record)` over the same records in a test or a dev build to keep the checks out of the shipped bytes.
+
+Zod is not needed at runtime on either entry: `dispatch` calls the `params` object's own `safeParse`, so a hand-written `{ safeParse }` guard works. Budgets per entry live in `size-budget.json` and are checked in CI by `pnpm --filter acture size`.
+
 ## When-clause DSL
 
 A small expression language compiled at registration time and evaluated at dispatch time.
