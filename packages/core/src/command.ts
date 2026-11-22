@@ -8,6 +8,7 @@
 
 import type { ZodType } from 'zod';
 import { compileWhen } from './when.js';
+import { RegistrationError } from './errors.js';
 import type { CommandRecord, Tier, CommandKind } from './types.js';
 
 const ID_PATTERN = /^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)*$/;
@@ -40,18 +41,23 @@ export type CommandSpec<P, R, Id extends string = string> = CommandRecord<
 export function defineCommand<P, R, const Id extends string = string>(
   spec: CommandSpec<P, R, Id>,
 ): CommandRecord<P, R, Id> {
-  validateSpec(spec);
+  validateCommand(spec);
   return Object.freeze({ ...spec }) as CommandRecord<P, R, Id>;
 }
 
-export class RegistrationError extends Error {
-  constructor(message: string, public readonly commandId?: string) {
-    super(message);
-    this.name = 'RegistrationError';
-  }
-}
+export { RegistrationError };
 
-function validateSpec<P, R>(spec: CommandSpec<P, R, string>): void {
+/**
+ * Run `defineCommand`'s registration-time checks on a spec without
+ * freezing or returning it. Throws `RegistrationError` on the first
+ * violation.
+ *
+ * `acture/lite`'s `defineCommand` skips these checks to stay small; a
+ * page built on it runs this over its records in a test or a dev build
+ * (`for (const c of commands) validateCommand(c)`), so the checks still
+ * happen, just not in the shipped bytes.
+ */
+export function validateCommand<P, R>(spec: CommandSpec<P, R, string>): void {
   if (!spec || typeof spec !== 'object') {
     throw new RegistrationError(
       'defineCommand requires a spec object, got: ' + typeof spec,

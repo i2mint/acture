@@ -135,6 +135,29 @@ type Result<R> =
 | `invalid_params`      | Zod `safeParse` failed. `details.issues` is the ZodError. |
 | `execute_threw`       | The handler threw. `details.stack` is the stack trace. |
 
+### `acture/lite`: the registry on a byte budget
+
+A page with a hard per-page byte budget can import the same registry from `acture/lite`: about 2.9 kB minified (1.4 kB gzip) for `createRegistry, defineCommand, ok, err`, against about 12 kB from `acture`. Same `Registry` interface, same `CommandRecord` shape, same error codes; records register unchanged in either, so upgrading is swapping the import.
+
+```ts
+import { createRegistry, defineCommand, ok } from 'acture/lite';
+
+const registry = createRegistry();
+registry.register(defineCommand({
+  id: 'app.view.toggleGrid',
+  title: 'Toggle grid',
+  when: (ctx) => ctx.canvas === true,   // functions only
+  execute: () => ok(toggleGrid()),
+}));
+```
+
+It leaves out the two things that make up most of the full entry's size:
+
+- **The when-clause DSL.** `when` must be a function; a DSL string is refused at `register` with a `RegistrationError`. To accept strings, inject acture's evaluator: `createRegistry({ evaluateWhen })` with `evaluateWhen` from `acture` (it brings the DSL's bytes back). Keep to acture's DSL: the full registry and the adapters read string clauses that way.
+- **`defineCommand`'s checks.** Lite's `defineCommand` only freezes the spec. Run the full entry's `validateCommand(record)` over the same records in a test or a dev build to keep the checks out of the shipped bytes.
+
+`acture/lite` loads no Zod at runtime: `dispatch` calls the `params` object's own `safeParse`, so a hand-written `{ safeParse }` guard works. Its types still name Zod (`params` is typed `ZodType`), so keep `zod` as a dev dependency for the types, and cast a hand-written guard (`params: guard as never`) until params accept any `safeParse`-shaped schema. The full entry imports Zod at runtime. Budgets per entry live in `size-budget.json` and are checked in CI by `pnpm --filter acture size`; the lite budget also fails if its bundle keeps any import (Zod included).
+
 ## When-clause DSL
 
 A small expression language compiled at registration time and evaluated at dispatch time.

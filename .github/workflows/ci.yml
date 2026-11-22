@@ -32,6 +32,11 @@ jobs:
       - name: Typecheck
         run: pnpm -r --filter "./packages/*" typecheck
 
+      # Per-entry byte budgets (packages/core/size-budget.json), measured
+      # on the built dist/ as a page would bundle it.
+      - name: Size budget
+        run: pnpm --filter acture size
+
       - name: Test
         run: pnpm -r --filter "./packages/*" test
 

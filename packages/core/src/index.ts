@@ -13,6 +13,7 @@
 
 export {
   defineCommand,
+  validateCommand,
   RegistrationError,
 } from './command.js';
 export type { CommandSpec } from './command.js';

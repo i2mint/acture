@@ -26,6 +26,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./lite": {
+      "types": "./dist/lite.d.ts",
+      "import": "./dist/lite.js",
+      "require": "./dist/lite.cjs"
+    },
     "./package.json": "./package.json"
   },
   "sideEffects": false,
@@ -33,12 +38,14 @@
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "clean": "rm -rf dist *.tsbuildinfo"
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "size": "node scripts/size-budget.mjs"
   },
   "peerDependencies": {
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "esbuild": "^0.25.12",
     "fast-check": "^4.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
