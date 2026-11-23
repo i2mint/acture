@@ -43,7 +43,7 @@ pip install acture  # MCP client facade — Mapping[str, Command] over any actur
 
 ## Status
 
-**v1.13 — chain end (2026-05-15).** 19 npm packages live + 1 PyPI package (`acture`, the Python MCP client). 489 npm package tests + 41 example tests + 23 Python tests, all green. 26 agent skills + 7 reproducibility docs. Phases 0–4 of the original v1 plan are complete; work since has been small, tracked increments. See [`docs/roadmap.md`](docs/roadmap.md) for the live status. Of the post-v1 candidates, the state adapters `acture-state-jotai` and `acture-state-valtio` remain; `acture-sandbox` now ships the isolation-only extension seam (the `ExtensionRunner` port + in-process transport), with the real isolating transports still deferred.
+**v1.13 — chain end (2026-05-15).** 22 npm packages live + 1 PyPI package (`acture`, the Python MCP client). Test counts: see CI. 26 agent skills + 7 reproducibility docs. Phases 0–4 of the original v1 plan are complete; work since has been small, tracked increments. See [`docs/roadmap.md`](docs/roadmap.md) for the live status. Of the post-v1 candidates, the state adapters `acture-state-jotai` and `acture-state-valtio` remain; `acture-sandbox` now ships the isolation-only extension seam (the `ExtensionRunner` port + in-process transport), with the real isolating transports still deferred.
 
 | Package | Role |
 | --- | --- |
