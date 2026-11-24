@@ -119,4 +119,88 @@ describe('toJsonSchema', () => {
     expect(env.warnings).toBeDefined();
     expect((env.warnings ?? []).join(' ')).toMatch(/minLength|maxLength/);
   });
+
+  it('strict mode walks union branches and makes optional keys nullable (#90)', () => {
+    const cmd = defineCommand({
+      id: 'app.t.strictUnion',
+      title: 'strict union',
+      params: z.object({
+        selection: z.union([
+          z.object({ kind: z.literal('ids'), ids: z.array(z.string()) }),
+          z.object({ kind: z.literal('query'), search: z.string().optional(), expectedCount: z.number().int().optional() }),
+        ]).optional(),
+        tag: z.string(),
+      }),
+      execute: () => ok(undefined as void),
+    });
+    const s = toJsonSchema(cmd, { strict: true }).inputSchema as any;
+    expect(s.required).toEqual(['selection', 'tag']);
+    expect(s.properties.tag.type).toBe('string');
+    const branches = s.properties.selection.anyOf;
+    expect(branches.at(-1)).toEqual({ type: 'null' }); // optional at the top: or null
+    const query = branches.find((b: any) => b.properties?.kind?.const === 'query');
+    expect(query.additionalProperties).toBe(false);
+    expect(query.required).toEqual(['kind', 'search', 'expectedCount']);
+    expect(query.properties.search.type).toEqual(['string', 'null']);
+  });
+
+  it('strict mode flags an open record instead of closing it', () => {
+    const cmd = defineCommand({
+      id: 'app.t.strictRecord',
+      title: 'strict record',
+      params: z.object({ query: z.record(z.string(), z.unknown()) }),
+      execute: () => ok(undefined as void),
+    });
+    const env = toJsonSchema(cmd, { strict: true });
+    expect((env.warnings ?? []).join(' ')).toMatch(/open record/);
+  });
+
+  it('fromStrictArgs turns strict "left out" nulls back into absent keys (so .optional() accepts them)', async () => {
+    const { fromStrictArgs } = await import('./schema-bridge.js');
+    const params = z.object({ tag: z.string(), note: z.string().optional(), sel: z.object({ ids: z.array(z.string()), n: z.number().optional() }).optional() });
+    const strictCall = { tag: 'x', note: null, sel: { ids: ['a'], n: null } };
+    expect(params.safeParse(strictCall).success).toBe(false);
+    expect(params.safeParse(fromStrictArgs(strictCall)).data).toEqual({ tag: 'x', sel: { ids: ['a'] } });
+  });
+
+  it('strict: discriminated unions become anyOf, recursive $defs are walked, optional enums allow null (#97 review)', () => {
+    type Node = { name: string; kids?: Node[] };
+    const Node: z.ZodType<Node> = z.lazy(() => z.object({ name: z.string(), kids: z.array(Node).optional() }));
+    const cmd = defineCommand({
+      id: 'app.t.strictMore',
+      title: 'strict more',
+      params: z.object({
+        sel: z.discriminatedUnion('kind', [z.object({ kind: z.literal('a'), n: z.number() }), z.object({ kind: z.literal('b') })]),
+        color: z.enum(['red', 'blue']).optional(),
+        tree: Node,
+      }),
+      execute: () => ok(undefined as void),
+    });
+    const s = toJsonSchema(cmd, { strict: true }).inputSchema as any;
+    const text = JSON.stringify(s);
+    expect(text).not.toMatch(/"oneOf"/);
+    expect(s.properties.sel.anyOf).toHaveLength(2);
+    expect(s.properties.color.enum).toContain(null);
+    // every object anywhere (definitions included) lists all its keys and is closed
+    const objects: any[] = [];
+    const walk = (x: any) => { if (x && typeof x === 'object') { if (x.properties) objects.push(x); Object.values(x).forEach(walk); } };
+    walk(s);
+    for (const o of objects) {
+      expect(o.required).toEqual(Object.keys(o.properties));
+      expect(o.additionalProperties).toBe(false);
+    }
+  });
+
+  it('strict: a root union and a catchall are flagged', () => {
+    const env = toJsonSchema({ id: 'x', title: 'x', params: z.object({ a: z.string() }).catchall(z.number()), execute: () => ok(undefined) } as never, { strict: true });
+    expect((env.warnings ?? []).join(' ')).toMatch(/catchall/);
+  });
+
+  it('fromStrictArgs with the params keeps a real null and drops a left-out one', async () => {
+    const { fromStrictArgs } = await import('./schema-bridge.js');
+    const params = z.object({ note: z.string().nullable(), tag: z.string().optional(), items: z.array(z.object({ x: z.number().optional() })) });
+    const call = { note: null, tag: null, items: [{ x: null }] };
+    expect(fromStrictArgs(call, params)).toEqual({ note: null, items: [{}] });
+    expect(params.safeParse(fromStrictArgs(call, params)).success).toBe(true);
+  });
 });

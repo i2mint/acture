@@ -50,6 +50,7 @@ export type {
 
 export {
   toJsonSchema,
+  fromStrictArgs,
 } from './schema-bridge.js';
 export type {
   ToJsonSchemaOptions,
