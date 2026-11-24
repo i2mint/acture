@@ -52,6 +52,21 @@ await history.transaction(async () => {
 // One `history.undo()` rolls back both moves.
 ```
 
+**An undo bound to its own action.** `transaction(fn)` resolves to the entry it pushed (`null` when nothing was captured). `history.undoEntry(entry)` undoes that entry only while it is the last one applied, so an undo toast offered for a bulk action never undoes the edit made after it (`{ ok: false, reason: 'not-on-top' }`), nor an earlier one after Cmd/Ctrl+Z already took it (`'already-undone'`); `history.isApplied(entry)` lets the toast dismiss itself then. With `acture/selection`:
+
+```ts
+import type { SelectionSeams } from 'acture/selection';
+
+const undoSeams: Pick<SelectionSeams<Item>, 'transaction' | 'transactionUndo'> = {
+  transaction: (fn) => history.transaction(fn), // resolves to the entry, or null (nothing to undo)
+  transactionUndo: (entry) => {
+    const r = history.undoEntry(entry);
+    // Cmd/Ctrl+Z already took it: restored, not a conflict. Anything else that refused is one.
+    return r.ok || r.reason === 'already-undone' ? undefined : 'conflict';
+  },
+};
+```
+
 **Partial-failure semantics (settled with the user):** if a dispatch inside a transaction throws or returns `ok: false`, prior mutations stay applied; the entry is still pushed for whatever was captured; the caller may `history.undo()` to rewind. acture-undo does *not* hide failures behind a magic rollback — the host stays in control.
 
 Nested transactions throw — keep them flat.

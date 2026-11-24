@@ -18,7 +18,7 @@ Undo rests on a `PatchCapableAdapter<S>`. Realistic choices: **zustand + immer**
 ### Decision 2 — agent-written vs package-reuse
 
 - **Agent-written** — write the instrument directly into the project from [`docs/hand-written-undo.md`](../../docs/hand-written-undo.md). ~80 lines, owned, zero acture dependency. Adapts wholesale; the doc covers the capture-owner state machine, transactions, the inverse-patch prepend ordering, the empty-capture-no-entry rule, the partial-failure semantics.
-- **Package-reuse** — install `acture-undo`. `createUndoHistory(adapter, registry, options?)` returns the full `{ undo, redo, canUndo, canRedo, clear, transaction, entries, dispose }` API. Cost: a dev dependency to track.
+- **Package-reuse** — install `acture-undo`. `createUndoHistory(adapter, registry, options?)` returns the full `{ undo, redo, undoEntry, isApplied, canUndo, canRedo, clear, transaction, entries, dispose }` API (`transaction` resolves to the entry it pushed, or null). Cost: a dev dependency to track.
 
 Surface both; follow a stated preference if one exists; otherwise ask. Record the choice in the project's adoption notes (`acture-consumer-integration` §Step 4).
 
@@ -36,6 +36,8 @@ Whatever path is chosen, the project must honour these — they are what makes u
 `transaction(fn)` groups N dispatches into one entry. The settled semantics (user-confirmed 2026-05-15):
 
 > **Partial stays applied on failure.** If a dispatch inside a transaction throws or returns `ok: false`, prior mutations stay applied; the entry is still pushed for whatever was captured; the caller may then call `undo()` to rewind.
+
+**An undo toast for one action is bound to its entry:** `const entry = await history.transaction(fn)`, then the toast calls `history.undoEntry(entry)`, which undoes it only while it is the last applied (never a later edit; `busy` while another capture is open). Never `history.undo()` or `entries().at(-1)` from a toast. The wiring for `acture/selection` is in acture-undo's README.
 
 This is the predictable choice — it matches acture's errors-as-data discipline, and it keeps the host in control rather than hiding state changes behind a magic rollback. If the host wants atomicity, it checks after each dispatch and undoes explicitly. Nested transactions throw.
 
