@@ -243,4 +243,44 @@ describe('toJsonSchema', () => {
     expect(fromStrictArgs({ sel: { kind: 'a', n: null }, anything: { x: null } }, params)).toEqual({ sel: { kind: 'a' }, anything: { x: null } });
     expect(fromStrictArgs({ sel: { kind: 'b', m: null }, anything: null }, params)).toEqual({ sel: { kind: 'b', m: null }, anything: null });
   });
+
+  describe('fromStrictArgs sees through every schema shape (left-out nulls go, real nulls stay)', () => {
+    const opt = z.object({ a: z.string().optional() });
+    // [name, params, strict-mode args, expected]
+    const cases: [string, z.ZodType, unknown, unknown][] = [
+      ['transform', z.object({ a: z.string().optional(), b: z.number() }).transform((x) => x), { a: null, b: 1 }, { b: 1 }],
+      ['pipe', opt.pipe(opt), { a: null }, {}],
+      ['preprocess', z.preprocess((x) => x, opt), { a: null }, {}],
+      ['refine', opt.refine(() => true), { a: null }, {}],
+      ['intersection', z.intersection(opt, z.object({ b: z.string().optional() })), { a: null, b: null }, {}],
+      ['intersection keeps a nullable side', z.intersection(opt, z.object({ b: z.string().nullable() })), { a: null, b: null }, { b: null }],
+      ['tuple', z.tuple([opt]), [{ a: null }], [{}]],
+      ['tuple rest', z.tuple([z.string()], opt), ['x', { a: null }, { a: null }], ['x', {}, {}]],
+      ['union of array and string', z.union([z.array(opt), z.string()]), [{ a: null }], [{}]],
+      ['union of objects', z.union([opt, z.object({ q: z.string() })]), { a: null }, {}],
+      ['union nested in a field', z.object({ f: z.union([opt, z.string()]) }), { f: { a: null } }, { f: {} }],
+      ['discriminated union', z.discriminatedUnion('t', [z.object({ t: z.literal('x'), a: z.string().optional() }), z.object({ t: z.literal('y'), b: z.number().optional() })]), { t: 'y', b: null }, { t: 'y' }],
+      ['record of objects', z.record(z.string(), opt), { k: { a: null } }, { k: {} }],
+      ['record of optionals', z.record(z.string(), z.string().optional()), { k: null, j: 'x' }, { j: 'x' }],
+      ['record of nullables', z.record(z.string(), z.string().nullable()), { owner: null }, { owner: null }],
+      ['record of unknowns', z.record(z.string(), z.unknown()), { owner: null }, { owner: null }],
+      ['record of union with null', z.record(z.string(), z.union([opt, z.null()])), { k: { a: null }, j: null }, { k: {}, j: null }],
+      ['optional record', z.object({ q: z.record(z.string(), z.unknown()).optional() }), { q: null }, {}],
+      ['catch', opt.catch({}), { a: null }, {}],
+      ['readonly', opt.readonly(), { a: null }, {}],
+      ['lazy', z.lazy(() => opt), { a: null }, {}],
+      ['nullable object', opt.nullable(), { a: null }, {}],
+      ['default', opt.default({}), { a: null }, {}],
+      ['custom (structure unknown): stripped when only that parses', z.custom<{ a?: string }>((v) => typeof v === 'object' && v !== null && !Object.values(v).includes(null)), { a: null }, {}],
+      ['custom (structure unknown): kept when it parses as given', z.custom<object>((v) => typeof v === 'object'), { a: null }, { a: null }],
+    ];
+    for (const [name, params, call, expected] of cases) {
+      it(name, async () => {
+        const { fromStrictArgs } = await import('./schema-bridge.js');
+        const out = fromStrictArgs(call, params);
+        expect(out).toEqual(expected);
+        expect(params.safeParse(out).success).toBe(true);
+      });
+    }
+  });
 });
