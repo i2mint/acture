@@ -556,3 +556,21 @@ describe('review round 4', () => {
     expect(out.warnings).toContain('It cannot be undone in one step.');
   });
 });
+
+describe('a failed undo', () => {
+  it('false rejects and is retried, for a batch undo and for an item undo', async () => {
+    const { resolve } = library();
+    let ok = false;
+    const offers: UndoOffer[] = [];
+    const batch: SelectionAction<Song> = { ...trash(), run: (t) => ({ done: t, undo: () => ok }) };
+    await (await planSelection(batch, undefined, { kind: 'ids', ids: ['a'] }, { resolve, offer: (o) => offers.push(o) })).go();
+    await expect(offers[0]!.undo()).rejects.toThrow(/Could not undo/);
+    ok = true;
+    expect(await offers[0]!.undo()).toEqual({ restored: 1, conflicts: 0 });
+    let itemOk = false;
+    const undo = composeUndo([() => (itemOk ? undefined : (false as never))]);
+    await expect(undo()).rejects.toThrow(/1 of 1/);
+    itemOk = true;
+    expect(await undo()).toEqual({ restored: 1, conflicts: 0 });
+  });
+});
