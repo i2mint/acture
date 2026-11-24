@@ -1,6 +1,6 @@
 {
   "name": "acture-a11y",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "acture accessibility projections: ARIA props and aria-keyshortcuts from a CommandRecord, and a polite live-region announcer for dispatch results (WCAG 4.1.3).",
   "license": "Apache-2.0",
   "author": "Thor Whalen",

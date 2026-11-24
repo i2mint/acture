@@ -1,5 +1,12 @@
 # acture-palette-react
 
+## 1.0.2
+
+### Patch Changes
+
+- f5b77e6: Accessibility: the picker chain's text step now has an accessible name (the parameter name), and its validation error is announced (`role="alert"`, `aria-describedby`, `aria-invalid`). Adds `palette.a11y.test.tsx`, which pins the APG combobox roles, `aria-activedescendant` and the focus hand-off between the list, the picker chain and a host form.
+- 934d8db: Accessibility: the palette (list and enum picker step) now publishes `aria-activedescendant` for the initially highlighted option (and keeps it on the highlight while filtering). cmdk 1.1.1 only published it once the highlight moved, so a screen reader did not hear the first option until the first arrow key.
+
 ## 1.0.1
 
 ### Patch Changes
