@@ -65,14 +65,14 @@ const undoSeams: Pick<SelectionSeams<Item>, 'transaction' | 'transactionUndo'> =
     const r = history.undoEntry(entry);
     if (r.ok || r.reason === 'already-undone') return undefined; // Cmd/Ctrl+Z already took it: restored
     if (r.reason === 'busy') return false; // another change is still in flight: a failure, tried again
-    return 'conflict'; // a later edit is on top, or the entry is gone: left as it is
+    return 'conflict'; // a later edit is on top, it also holds another command, or it is gone: left as it is
   },
 };
 ```
 
 `undoEntry` answers `busy` while another dispatch or transaction is still open (its changes are applied but not yet recorded, so undoing now would take them too). That is not a conflict: map it to `false`, a failed Undo the toast offers to try again, never to `'conflict'`, which is final.
 
-A selection command calls `transaction` inside its own `execute`, so when it runs through `registry.dispatch` the transaction opens inside the dispatch's capture. `history.transaction(fn, { join: true })` joins that capture rather than throwing: the dispatch is the one undo entry, and the transaction resolves to it (`undoEntry` says `busy` and `isApplied` says `true` until the dispatch closes). Pass `join` only from inside a dispatch: a transaction started elsewhere (a button) while an unrelated command is in flight would merge into that command's entry, so without `join` it still throws.
+A selection command calls `transaction` inside its own `execute`, so when it runs through `registry.dispatch` the transaction opens inside the dispatch's capture. `history.transaction(fn, { join: true })` joins that capture rather than throwing: the dispatch is the one undo entry, and the transaction resolves to it (`undoEntry` says `busy` and `isApplied` says `true` until the dispatch closes). When another command ran at the same time, the overlapping dispatches share one capture, so the entry holds both: `undoEntry` then refuses the joined handle (`'shared'`) rather than take the other command back with it (Cmd/Ctrl+Z still undoes the whole entry). Pass `join` only from inside a dispatch: a transaction started elsewhere (a button) while an unrelated command is in flight would merge into that command's entry, so without `join` it still throws.
 
 **Partial-failure semantics (settled with the user):** if a dispatch inside a transaction throws or returns `ok: false`, prior mutations stay applied; the entry is still pushed for whatever was captured; the caller may `history.undo()` to rewind. acture-undo does *not* hide failures behind a magic rollback — the host stays in control.
 

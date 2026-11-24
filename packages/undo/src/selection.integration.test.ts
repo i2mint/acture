@@ -146,6 +146,35 @@ describe('acture/selection with acture-undo', () => {
     expect(await pending).toBeNull(); // a handle would undo only part of what it did
   });
 
+  it("a selection command overlapping an unrelated async command: its Undo refuses ('shared') rather than revert both", async () => {
+    const { adapter, registry, history, trash, resolve, undoSeams } = setup();
+    let release!: () => void;
+    registry.registerAll([
+      defineCommand({
+        id: 'app.slow',
+        title: 'Slow',
+        execute: async () => {
+          adapter.setStateWithPatches((d) => { d.trashed.a = true; });
+          await new Promise<void>((r) => { release = r; });
+          return ok(undefined);
+        },
+      }),
+    ]);
+    const offers: UndoOffer[] = [];
+    registry.registerAll(
+      createSelectionCommands([trash], {
+        current: () => ({ kind: 'ids', ids: ['b'] }), resolve, shown: () => ['b'], offer: (o) => offers.push(o), ...undoSeams,
+      }),
+    );
+    const slow = registry.dispatch('app.slow', {});
+    expect((await registry.dispatch('lib.selection.trash', {})).ok).toBe(true);
+    release();
+    await slow;
+    expect(history.undoEntry(history.entries()[0])).toEqual({ ok: false, reason: 'shared' });
+    expect(await offers[0]!.undo()).toEqual({ restored: 0, conflicts: 1 });
+    expect(adapter.getState().trashed).toEqual({ a: true, b: true }); // the unrelated command is not undone
+  });
+
   it('a transaction directly inside a transaction still throws', async () => {
     const { history } = setup();
     await expect(history.transaction(async () => { await history.transaction(() => {}); })).rejects.toThrow(

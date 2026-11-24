@@ -13,7 +13,7 @@ export const undoSeamsFor = (history: UndoHistory): Pick<SelectionSeams<Item>, '
     const r = history.undoEntry(entry);
     if (r.ok || r.reason === 'already-undone') return undefined; // Cmd/Ctrl+Z already took it: restored
     if (r.reason === 'busy') return false; // another change is still in flight: a failure, tried again
-    return 'conflict'; // a later edit is on top, or the entry is gone: left as it is
+    return 'conflict'; // a later edit is on top, it also holds another command, or it is gone: left as it is
   },
 });
 

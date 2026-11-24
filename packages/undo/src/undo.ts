@@ -139,7 +139,12 @@ export interface TransactionOptions {
 
 export type UndoEntryResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: 'not-on-top' | 'already-undone' | 'busy' | 'unknown' };
+  | {
+      readonly ok: false;
+      /** `shared`: a joined entry whose capture also recorded another command running at the same
+       *  time; undoing it would take that command back too. */
+      readonly reason: 'not-on-top' | 'already-undone' | 'busy' | 'shared' | 'unknown';
+    };
 
 interface CaptureBuffer {
   patches: Patch[];
@@ -148,10 +153,14 @@ interface CaptureBuffer {
   /** The entry this capture will push, created up front so a transaction that joins a capture
    *  opened by a dispatch can hand it out before the dispatch closes. Frozen on close. */
   entry: { patches: readonly Patch[]; inversePatches: readonly Patch[]; effects: readonly Effect[] };
+  /** Dispatches that ran in this capture (overlapping async dispatches share one). */
+  dispatches: number;
+  /** A joined transaction handed `entry` out. */
+  joined: boolean;
 }
 
 function newBuffer(): CaptureBuffer {
-  return { patches: [], inversePatches: [], effects: [], entry: { patches: [], inversePatches: [], effects: [] } };
+  return { patches: [], inversePatches: [], effects: [], entry: { patches: [], inversePatches: [], effects: [] }, dispatches: 0, joined: false };
 }
 
 /**
@@ -191,6 +200,8 @@ export function createUndoHistory<S>(
 
   let buffer: CaptureBuffer | null = null;
   let captureOwner: 'dispatch' | 'transaction' | null = null;
+  /** Joined entries that also hold another, overlapping command: `undoEntry` refuses them. */
+  const shared = new WeakSet<UndoEntry>();
 
   /* ── adapter.setStateWithPatches wrapper ──────────────────────────── */
 
@@ -225,6 +236,7 @@ export function createUndoHistory<S>(
         buffer = newBuffer();
         captureOwner = 'dispatch';
       }
+      if (buffer) buffer.dispatches += 1;
       try {
         const result = await originalDispatch<R>(id, params, ctx, opts);
         if (buffer && result.ok && result.effects && result.effects.length > 0) {
@@ -275,6 +287,7 @@ export function createUndoHistory<S>(
         effects: captured.effects,
       }),
     );
+    if (captured.joined && captured.dispatches > 1) shared.add(entry);
     entries.push(entry);
     cursor = entries.length;
 
@@ -362,7 +375,9 @@ export function createUndoHistory<S>(
     const before = open.patches.length + open.effects.length;
     await fn();
     if (buffer !== open) return null;
-    return open.patches.length + open.effects.length > before ? (open.entry as UndoEntry) : null;
+    if (open.patches.length + open.effects.length === before) return null;
+    open.joined = true;
+    return open.entry as UndoEntry;
   }
 
   function undoEntry(entry: unknown): UndoEntryResult {
@@ -373,6 +388,9 @@ export function createUndoHistory<S>(
     if (at < 0) return { ok: false, reason: 'unknown' };
     if (at >= cursor) return { ok: false, reason: 'already-undone' };
     if (at !== cursor - 1) return { ok: false, reason: 'not-on-top' };
+    // A joined handle stands for its own command; this entry also holds another one that ran at
+    // the same time (overlapping dispatches share a capture), so it cannot be taken back alone.
+    if (shared.has(entry as UndoEntry)) return { ok: false, reason: 'shared' };
     undo(); // the entry is on top: this cannot be a no-op
     return { ok: true };
   }
