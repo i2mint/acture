@@ -175,6 +175,48 @@ describe('one undo step', () => {
   });
 });
 
+describe('the checks at go()', () => {
+  it('a batch run\'s Undo runs once on a double click', async () => {
+    const { resolve } = library();
+    let n = 0;
+    const batch: SelectionAction<Song> = { ...trash(), run: (t) => ({ done: t, undo: async () => { await new Promise((r) => setTimeout(r, 1)); n++; } }) };
+    const out = (await (await planSelection(batch, undefined, { kind: 'ids', ids: ['a'] }, { resolve, offer: () => {} })).go())!;
+    await Promise.all([out.undo!(), out.undo!()]);
+    await out.undo!();
+    expect(n).toBe(1);
+  });
+
+  it('go() does not run when a target stopped applying since the plan', async () => {
+    const { rows, resolve } = library();
+    const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, offer: () => {} });
+    rows.find((r) => r.id === 'b')!.owner = 'you';
+    const out = (await plan.go())!;
+    expect(out.stale).toMatch(/changed since/);
+    expect(out.done).toHaveLength(0);
+    expect(rows.find((r) => r.id === 'a')!.trashed).toBe(false);
+  });
+
+  it('with a transaction, its undo is what is offered', async () => {
+    const { resolve } = library();
+    const transactionUndo = vi.fn();
+    const offers: UndoOffer[] = [];
+    const batch: SelectionAction<Song> = { ...trash(), run: (t) => ({ done: t, undo: null }) };
+    const plan = await planSelection(batch, undefined, { kind: 'ids', ids: ['a', 'b'] }, {
+      resolve, offer: (o) => offers.push(o), transaction: (fn) => fn(), transactionUndo,
+    });
+    expect(plan.confirm).toBeNull();
+    await plan.go();
+    await offers[0]!.undo();
+    expect(transactionUndo).toHaveBeenCalledTimes(1);
+  });
+
+  it('a transaction without its undo is no Undo: the policy asks', async () => {
+    const { resolve } = library();
+    const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, offer: () => {}, transaction: (fn) => fn() });
+    expect(plan.confirm).not.toBeNull();
+  });
+});
+
 describe('partial failure', () => {
   it('reports each failure, offers Undo for the part done, and retries the rest', async () => {
     const { rows, resolve } = library();
@@ -186,6 +228,7 @@ describe('partial failure', () => {
     expect(out.failed.map((f) => [f.item.id, f.error])).toEqual([['b', 'cannot trash b']]);
     expect(offers.map((o) => o.count)).toEqual([1]);
     failOn.length = 0;
+    rows.find((r) => r.id === 'b')!.owner = 'me';
     const again = (await out.retry())!;
     expect(again.done.map((s) => s.id)).toEqual(['b']);
     expect(rows.find((r) => r.id === 'b')!.trashed).toBe(true);
@@ -298,11 +341,26 @@ describe('createSelectionCommands', () => {
   });
 
   it('a selection passed as a parameter wins (AI and MCP); null means the current one', async () => {
-    const { rows, registry } = setup({ kind: 'ids', ids: ['a'] });
+    const { rows, registry } = setup({ kind: 'ids', ids: ['a'] }, { shown: () => ['a', 'b', 'c', 'd'] });
     expect(code(await registry.dispatch('library.selection.moveToTrash', { selection: { kind: 'ids', ids: ['b'] } }))).toBe('ok');
     expect(rows.find((x) => x.id === 'b')!.trashed).toBe(true);
     expect(code(await registry.dispatch('library.selection.moveToTrash', { selection: null, confirmed: null }))).toBe('ok');
     expect(rows.find((x) => x.id === 'a')!.trashed).toBe(true);
+  });
+
+  it('ids passed as a parameter ask first when nothing says what is shown', async () => {
+    const { registry } = setup({ kind: 'ids', ids: [] });
+    expect(code(await registry.dispatch('library.selection.moveToTrash', { selection: { kind: 'ids', ids: ['b'] } }))).toBe('needs_confirmation');
+  });
+
+  it('what cannot be undone is never confirmed by token: needs_person, or the confirm seam', async () => {
+    const purge: SelectionAction<Song> = { ...trash(), id: 'library.selection.purge', reversal: 'none', verb: (n) => `Delete ${n} songs permanently` };
+    const lib = library();
+    const registry = createRegistry();
+    for (const c of createSelectionCommands<Song, { owner?: string }>([purge], { resolve: lib.resolve, current: () => ({ kind: 'ids', ids: ['a'] }) })) registry.register(c);
+    const r = await registry.dispatch('library.selection.purge', {});
+    expect(code(r)).toBe('needs_person');
+    expect(JSON.stringify(r)).not.toMatch(/token/);
   });
 
   it('a query passed as a parameter without expectedCount asks first', async () => {
@@ -393,5 +451,17 @@ describe('sameSelection', () => {
   it('compares by value, key order aside', () => {
     expect(sameSelection({ kind: 'query', query: { a: 1, b: 2 } }, { kind: 'query', query: { b: 2, a: 1 } })).toBe(true);
     expect(sameSelection({ kind: 'ids', ids: ['a'] }, { kind: 'ids', ids: ['b'] })).toBe(false);
+  });
+});
+
+describe('retry', () => {
+  it('reports what the gate now refuses', async () => {
+    const { rows, resolve } = library();
+    const failOn = ['b'];
+    const out = (await (await planSelection(trash({ failOn }), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, offer: () => {} })).go())!;
+    rows.find((r) => r.id === 'b')!.owner = 'you';
+    const again = (await out.retry())!;
+    expect(again.done).toHaveLength(0);
+    expect(again.refused.map((r) => [r.item.id, r.why])).toEqual([['b', 'not yours']]);
   });
 });

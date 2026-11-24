@@ -184,14 +184,20 @@ for (const c of createSelectionCommands([moveToTrash], {
   current: () => selectionStore.getState().selection,
   resolve: (sel) => resolveSelection(rows(), sel),
   shown: () => shownIds(),                            // targets not shown make it ask first
-  offer: ({ message, undo, count, reversal }) => offerUndo({ message, undo: () => undo().then(() => {}), context: { reversal, count } }),
+  offer: ({ message, undo, count, reversal }) => offerUndo({
+    message, context: { reversal, count },
+    undo: async () => {
+      const { conflicts } = await undo();
+      if (conflicts) offerUndo({ message: `${conflicts} changed since, left as they are`, undo: () => {} });
+    },
+  }),
   afterRun: (_, chosen) => { if (sameSelection(selectionStore.getState().selection, chosen)) selectionStore.getState().clear(); },
 })) registry.register(c);
 ```
 
-A command that needs a yes returns `err('needs_confirmation', question, { token, count, confirmLabel, typeToConfirm, hidden })`; calling again with `confirmed: <token>` runs it only if the plan is unchanged (a selection that grew since asks again), so an AI must show the person the question and cannot pre-confirm. With a `confirm` seam (a dialog), the command asks the person itself. A query passed as a parameter without `expectedCount` always asks. Other codes: `empty_selection`, `nothing_applies`, `declined`, `busy` (`SELECTION_ERRORS`).
+A command that needs a yes returns `err('needs_confirmation', question, { token, count, confirmLabel, typeToConfirm, hidden })`; calling again with `confirmed: <token>` runs it only if the plan is unchanged (a selection that grew since asks again). The token proves only that; the caller (an AI) is trusted to have shown the person the question. What cannot be undone (`reversal: 'none'`, or a type-to-confirm question) is never confirmed by token: it returns `needs_person` unless a `confirm` seam (a dialog) lets the command ask the person itself. A selection passed as a parameter that the person may not have seen (a query without `expectedCount`, or ids with no `shown`) always asks. Other codes: `empty_selection`, `nothing_applies`, `declined`, `busy` (`SELECTION_ERRORS`).
 
-`planSelection(action, params, selection, seams)` is the same logic for a button: it returns the targets, the refusals, the weakest `reversal` over the targets (`reversalOf(item)` marks an item Undo cannot take back), and the confirmation; `go()` runs it. The seams are one argument each: `resolve`, `key`, `shown`, `policy` (receives the action id, reversal, count, verb, `undoAvailable`, hidden and the action's `policyContext`, so undo-toast's `advise` with a preset plugs in; `thenOffer: false` means confirm or Undo, never both), `offer`, `transaction` (acture-undo's `history.transaction` for actions on local state; then the history entry is the Undo, do not offer both), `lock` (`createSelectionLock()`, shared by buttons and commands) and `afterRun`. The hand-written version, for a project that wants no dependency, is [`docs/hand-written-selection-commands.md`](../../docs/hand-written-selection-commands.md).
+`planSelection(action, params, selection, seams)` is the same logic for a button: it returns the targets, the refusals, the weakest `reversal` over the targets (`reversalOf(item)` marks an item Undo cannot take back), and the confirmation; `go()` runs it, after resolving and gating the same items again under the lock: if anything changed since the plan, it runs nothing and returns `stale`. The seams are one argument each: `resolve`, `key`, `shown`, `policy` (receives the action id, reversal, count, verb, `undoAvailable`, hidden and the action's `policyContext`, so undo-toast's `advise` with a preset plugs in; `thenOffer: false` means confirm or Undo, never both), `offer`, `transaction` with `transactionUndo` (acture-undo's `history.transaction` and `() => history.undo()` for actions on local state: then the history entry is what is offered), `lock` (pass the same `createSelectionLock()` to buttons and commands) and `afterRun`. Every Undo runs once, even on a double click. The hand-written version, for a project that wants no dependency, is [`docs/hand-written-selection-commands.md`](../../docs/hand-written-selection-commands.md).
 
 ## When-clause DSL
 
