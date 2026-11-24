@@ -158,6 +158,33 @@ It leaves out the two things that make up most of the full entry's size:
 
 `acture/lite` loads no Zod at runtime: `dispatch` calls the `params` object's own `safeParse`, so a hand-written `{ safeParse }` guard works. `params` is typed structurally (anything with a `safeParse` returning `{ success, data }` or `{ success, error: { issues } }`), so a hand-written guard type-checks with no cast and no Zod types. The schema bridge (`toJsonSchema`) and the full entry's `defineCommand` checks need a Zod schema. The full entry imports Zod at runtime. Budgets per entry live in `size-budget.json` and are checked in CI by `pnpm --filter acture size`; the lite budget also fails if its bundle keeps any import (Zod included).
 
+### `acture/selection`: bulk actions on a selection
+
+A **selection action** (bulk action) applies one action to a selection: explicit ids, or a query with exceptions ("all 340 matching, except these 3"). `acture/selection` gives it a per-item gate whose refusals show before the click, one Undo for the whole operation (still offered for the part done when some items fail, with Retry for the rest), and the rule for asking first: a bulk action confirms, with the count, unless one Undo takes it all back in place; it always confirms when a query now matches a different number than the person saw, or when some targets are not shown.
+
+```ts
+import { createSelectionCommands, liftToSelection } from 'acture/selection';
+import { offerUndo } from 'undo-toast';
+
+const moveToTrash = liftToSelection<Song>({
+  id: 'library.selection.moveToTrash',
+  title: 'Move the selection to the Trash',
+  reversal: 'compensating',                          // one Undo restores all: act, then offer Undo
+  verb: (n) => `Move ${n} songs to Trash`,
+  done: (n) => `${n} songs moved to Trash`,
+  appliesTo: (s) => s.owner === me || 'not yours',   // refusals are counted before anything runs
+  runItem: async (s) => { await api.trash(s.id); return () => api.restore(s.id); },
+});
+
+for (const c of createSelectionCommands([moveToTrash], {
+  current: () => selectionStore.getState().selection,
+  resolve: (sel) => resolveSelection(rows(), sel),
+  offer: ({ message, undo, count, reversal }) => offerUndo({ message, undo, context: { reversal, count } }),
+})) registry.register(c);
+```
+
+A command that needs a yes returns `err('needs-confirmation', question)` unless called with `confirmed: true`, so the palette shows the question and an AI asks the person, then calls again. `planSelection(action, params, selection, seams)` is the same logic for a button: it returns the targets, the refusals and the confirmation, and `go()` runs it. The seams (`resolve`, `key`, `shown`, `policy`, `offer`, `transaction`) are one argument each; `policy` takes undo-toast's `advise`, `transaction` takes acture-undo's `history.transaction`. The hand-written version, for a project that wants no dependency, is [`docs/hand-written-selection-commands.md`](../../docs/hand-written-selection-commands.md).
+
 ## When-clause DSL
 
 A small expression language compiled at registration time and evaluated at dispatch time.
