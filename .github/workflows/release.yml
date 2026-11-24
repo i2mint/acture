@@ -33,7 +33,6 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
-  id-token: write  # npm trusted publishing (OIDC); also reserved for PyPI Trusted Publishers
 
 jobs:
   release:
@@ -44,9 +43,14 @@ jobs:
     # versions match the registries, it no-ops in a few seconds. Earlier
     # versions of this file had `if: github.event.head_commit.message
     # != ...` which the GitHub Actions parser rejected at workflow init.
+    # id-token only here (npm trusted publishing), not workflow-wide: the pypi job never needs it.
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     outputs:
       published: ${{ steps.changesets.outputs.published }}
-      published-packages: ${{ steps.changesets.outputs.published-packages }}
+      published-packages: ${{ steps.changesets.outputs.publishedPackages }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -92,16 +96,19 @@ jobs:
       #   - runs the `publish` script otherwise (which publishes to npm).
       - name: Changesets — version PR or publish
         id: changesets
-        uses: changesets/action@v2
+        # v1, not v2: v2 refuses @changesets/cli 2.x (this repo's). v1 uses
+        # OIDC when no NPM_TOKEN is set ("No NPM_TOKEN found, but OIDC is
+        # available - using npm trusted publishing"). Never set NPM_TOKEN.
+        uses: changesets/action@v1
         with:
-          version-script: pnpm version-packages
-          publish-script: pnpm release
-          commit-message: "chore(release): bump versions"
-          pr-title: "chore(release): version packages"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: pnpm version-packages
+          publish: pnpm release
+          commit: "chore(release): bump versions"
+          title: "chore(release): version packages"
         env:
-          # npm auth is OIDC (id-token: write); changesets/action v2 no
-          # longer writes a token .npmrc. Provenance needs a public repo.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Trusted publishing from a public repo adds provenance by itself;
+          # this only makes it explicit.
           NPM_CONFIG_PROVENANCE: "true"
 
   pypi:
