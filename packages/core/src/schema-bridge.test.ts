@@ -258,6 +258,8 @@ describe('toJsonSchema', () => {
       ['tuple rest', z.tuple([z.string()], opt), ['x', { a: null }, { a: null }], ['x', {}, {}]],
       ['union of array and string', z.union([z.array(opt), z.string()]), [{ a: null }], [{}]],
       ['union of objects', z.union([opt, z.object({ q: z.string() })]), { a: null }, {}],
+      ['union: a branch that takes the null as given keeps it', z.union([opt, z.object({ a: z.string().nullable(), b: z.string().optional() })]), { a: null }, { a: null }],
+      ['union: a strict branch does not steal a real null', z.union([opt.strict(), z.object({ a: z.string().nullable() })]), { a: null }, { a: null }],
       ['union nested in a field', z.object({ f: z.union([opt, z.string()]) }), { f: { a: null } }, { f: {} }],
       ['discriminated union', z.discriminatedUnion('t', [z.object({ t: z.literal('x'), a: z.string().optional() }), z.object({ t: z.literal('y'), b: z.number().optional() })]), { t: 'y', b: null }, { t: 'y' }],
       ['record of objects', z.record(z.string(), opt), { k: { a: null } }, { k: {} }],

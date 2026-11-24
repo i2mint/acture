@@ -198,9 +198,10 @@ function enforceStrict(
  * `.nullable()` field, a record value that accepts `null` (a query `{owner: null}`), a value the
  * schema does not describe. Wrappers (optional, nullable, default, catch, readonly, lazy, pipe and
  * transform input), intersections (both sides), tuples and union branches are walked; under a
- * union, the branch whose stripped value parses decides. Where the schema's structure is not known,
- * or no union branch parses, the value is kept if it parses as given, else every `null` key is
- * removed if that parses, else it is kept. Without `params`, every `null` key is removed.
+ * union, a branch that parses the value as given decides, else the first whose stripped value
+ * parses. Where the schema's structure is not known, or no union branch parses, the value is kept
+ * if it parses as given, else every `null` key is removed if that parses, else it is kept.
+ * Without `params`, every `null` key is removed.
  */
 export function fromStrictArgs<T>(args: T, params?: unknown): T {
   return (params === undefined ? stripAll(args) : strip(args, params)) as T;
@@ -264,6 +265,12 @@ function strip(value: unknown, schema: unknown): unknown {
   const def = core._def ?? {};
   const options = core.options ?? def.options;
   if (Array.isArray(options)) {
+    // A branch that accepts the value as given decides: its nulls are real.
+    const asGiven = options.find((option) => parses(option, value));
+    if (asGiven !== undefined) {
+      const candidate = strip(value, asGiven);
+      return parses(asGiven, candidate) ? candidate : value;
+    }
     for (const option of options) {
       const candidate = strip(value, option);
       if (parses(option, candidate)) return candidate;
