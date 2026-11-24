@@ -14,9 +14,10 @@ A **bulk action** (batch action, selection action) applies one action to a selec
 | `reversal` | Declared per action, in undo-toast's words: `deferred`, `compensating` (one Undo takes it all back in place), `manual` (recoverable by hand only: not reversible), `none`. |
 | `appliesTo(item, params)` | The gate: `true`, or `false` / a reason. Evaluated before anything runs, so "3 are not yours" is shown before the click. |
 | `run(targets, params)` | Returns `{done, failed, undo}`: the items changed, the ones that failed with why, and **one** Undo for exactly `done`. |
-| `liftToSelection(itemAction)` | Runs a per-item action over the targets; each item returns its own undo; the composite Undo runs them last first, and each once even when called again (an Undo that failed half-way is finished by calling it again). |
-| The ask-first rule | Confirm with the count unless one Undo takes the whole operation back in place (`compensating`, `deferred`); `manual` asks above one item; `none` always asks. A query that now matches a different number than `expectedCount`, or targets the list does not show, always ask. |
-| Commands | Each action is a command whose params are the action's own plus `selection?` (default: the current one) and `confirmed?`. Without `confirmed`, a command that needs a yes returns `needs-confirmation` with the question; an AI asks the person and calls again. One runs at a time (`busy`). |
+| `liftToSelection(itemAction)` | Runs a per-item action over the targets; each item returns its own undo, **compare-and-set**: it restores only if the item is still as the action left it, else returns `'conflict'`. The composite Undo runs them in reverse completion order, each once even when called again (an Undo that failed half-way is finished by calling it again; a double click undoes once) and reports `{restored, conflicts}`. |
+| `reversalOf(item)` | An item weaker than the action (stopping a running job before trashing it) makes the whole plan as weak as it, so it asks. |
+| The ask-first rule | Confirm with the count unless one Undo takes the whole operation back in place (`compensating`, `deferred`) **and** an Undo can be offered; `manual` asks above one item; `none` always asks. A query that now matches a different number than `expectedCount` (or cannot be counted), or targets the list does not show, always ask. |
+| Commands | Each action is a command whose params are the action's own plus `selection?` (null or absent: the current one) and `confirmed?`. A command that needs a yes returns `needs_confirmation` with the question and a **token** (a fingerprint of the targets, the reversal and the params); it runs only when called again with that token, so a selection that changed since asks again and an AI cannot pre-confirm. Or give the command a `confirm` seam (a dialog) and it asks the person itself. One runs at a time (a lock shared with buttons). |
 
 ## The code (about 90 lines; adapt freely)
 
@@ -38,26 +39,33 @@ interface SelectionAction<T, P> {
   run(targets: T[], p: P): Promise<RunOutcome<T>>;
 }
 
-/** One Undo over many: last first; each part once, so calling it again finishes a failed Undo. */
-function composeUndo(undos: (() => unknown)[]) {
+type ItemUndo = () => Promise<void | 'conflict'>;   // compare-and-set: 'conflict' = changed since
+
+/** One Undo over many: last first; each part once, so calling it again finishes a failed Undo;
+ *  two calls at once share one run. */
+function composeUndo(undos: ItemUndo[]) {
   const pending = new Set(undos.keys());
-  return async () => {
+  let restored = 0, conflicts = 0, inFlight: Promise<{ restored: number; conflicts: number }> | null = null;
+  const once = async () => {
     const errors: unknown[] = [];
     for (let i = undos.length - 1; i >= 0; i--) {
       if (!pending.has(i)) continue;
-      try { await undos[i](); pending.delete(i); } catch (e) { errors.push(e); }
+      try { (await undos[i]()) === 'conflict' ? conflicts++ : restored++; pending.delete(i); }
+      catch (e) { errors.push(e); }
     }
     if (errors.length) throw new AggregateError(errors, 'Undo failed for some items; call it again.');
+    return { restored, conflicts };
   };
+  return () => (inFlight ??= once().finally(() => { inFlight = null; }));
 }
 
 function liftToSelection<T, P>(a: Omit<SelectionAction<T, P>, 'run'> & {
-  runItem(item: T, p: P): Promise<(() => unknown) | null>;
+  runItem(item: T, p: P): Promise<ItemUndo | null>;
 }): SelectionAction<T, P> {
   return {
     ...a,
     async run(targets, p) {
-      const done: T[] = [], failed: { item: T; error: string }[] = [], undos: (() => unknown)[] = [];
+      const done: T[] = [], failed: { item: T; error: string }[] = [], undos: ItemUndo[] = [];
       let undoable = true;
       for (const item of targets) {
         try {
@@ -101,12 +109,12 @@ async function planSelection<T, P, Q>(
 }
 ```
 
-Wire the result to the UI: show `refused` next to the action button ("3 are not yours"), the confirmation when `confirm` is set (its button is the verb with the count, never "OK"), and call `go()`. Project each action as a command whose `execute` calls `planSelection`, returns `err('needs-confirmation', confirm)` unless `params.confirmed`, and otherwise runs `go()`.
+This sketch leaves out what the package adds: the per-item `reversalOf`, the `policy` seam, the confirmation token, the lock, `retry()`, and catching a `run` that throws. Wire the result to the UI: show `refused` next to the action button ("3 are not yours"), the confirmation when `confirm` is set (its button is the verb with the count, never "OK"), and call `go()`. Project each action as a command whose `execute` calls `planSelection`, returns `err('needs_confirmation', confirm, { token })` unless `params.confirmed` equals a token computed from the plan (the sorted target keys, the reversal and the params), and otherwise runs `go()`.
 
 ## Plugging in the rest of the fleet
 
-- **undo-toast** decides the surface: `policy: ({ reversal, count, verb }) => { const a = advise({ reversal, count, verb }); return a.surface === 'confirm' ? { question: \`${verb}?\`, confirmLabel: a.confirmLabel ?? verb, typeToConfirm: a.typeToConfirm } : null; }`, and offers the Undo: `offer: ({ message, undo, count, reversal }) => offerUndo({ message, undo, context: { reversal, count } })`.
-- **acture-undo**: when the action changes local state through a patch-capable adapter, pass `transaction: (fn) => history.transaction(fn)` so the whole run is one entry on Cmd/Ctrl+Z too.
+- **undo-toast** decides the surface: `policy: ({ reversal, count, verb, context }) => { const a = advise(context ?? {}, { reversal, count, verb }); return a.surface === 'confirm' ? { question: \`${verb}?\`, confirmLabel: a.confirmLabel ?? verb, typeToConfirm: a.typeToConfirm, thenOffer: false } : null; }` (put the undo-toast preset in the action's `policyContext`), and offers the Undo: `offer: ({ message, undo, count, reversal }) => offerUndo({ message, undo: () => undo().then(() => {}), context: { reversal, count } })`.
+- **acture-undo**: when the action changes local state through a patch-capable adapter, pass `transaction: (fn) => history.transaction(fn)` so the whole run is one history entry; then that entry is the Undo (`run` returns `undo: null`; `offer` calls `history.undo()`). Never offer both: they would undo twice.
 - **zodal**: `Selection` is the design's `@zodal/core` type; `resolve` is `resolveSelection` over the rows (or a server query when the store can run one).
 
 ## What makes Undo safe (the review findings)

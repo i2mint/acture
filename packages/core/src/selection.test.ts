@@ -4,6 +4,8 @@ import { createRegistry } from './registry.js';
 import {
   composeUndo,
   createSelectionCommands,
+  createSelectionLock,
+  sameSelection,
   defaultConfirmPolicy,
   liftToSelection,
   planSelection,
@@ -50,7 +52,9 @@ const trash = (opts: { failOn?: string[] } = {}) =>
     runItem(s) {
       if (opts.failOn?.includes(s.id)) throw new Error(`cannot trash ${s.id}`);
       s.trashed = true;
+      // compare-and-set: put it back only if it is still where this action left it
       return () => {
+        if (!s.trashed) return 'conflict';
         s.trashed = false;
       };
     },
@@ -82,7 +86,7 @@ describe('one undo step', () => {
     const offers: UndoOffer[] = [];
     const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, offer: (o) => offers.push(o) });
     expect(plan.confirm).toBeNull();
-    const out = await plan.go();
+    const out = (await plan.go())!;
     expect(out.done.map((s) => s.id)).toEqual(['a', 'b']);
     expect(rows.filter((r) => r.trashed).map((r) => r.id)).toEqual(['a', 'b', 'd']);
     expect(offers).toHaveLength(1);
@@ -103,27 +107,71 @@ describe('one undo step', () => {
     const log: string[] = [];
     let failB = true;
     const undo = composeUndo([
-      () => log.push('a'),
+      () => void log.push('a'),
       () => {
         if (failB) throw new Error('b');
         log.push('b');
       },
-      () => log.push('c'),
+      () => void log.push('c'),
     ]);
     await expect(undo()).rejects.toThrow(/1 of 3/);
     expect(log).toEqual(['c', 'a']);
     failB = false;
-    await undo();
+    expect(await undo()).toEqual({ restored: 3, conflicts: 0 });
     expect(log).toEqual(['c', 'a', 'b']);
   });
 
-  it('no Undo when an item could not give one', async () => {
+  it('composeUndo: two calls at once undo once (a double click)', async () => {
+    let n = 0;
+    const undo = composeUndo([async () => { await new Promise((r) => setTimeout(r, 1)); n++; }]);
+    await Promise.all([undo(), undo()]);
+    expect(n).toBe(1);
+  });
+
+  it('Undo is compare-and-set: an item changed since is a conflict, left as it is', async () => {
+    const { rows, resolve } = library();
+    const offers: UndoOffer[] = [];
+    await (await planSelection(trash(), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, offer: (o) => offers.push(o) })).go();
+    rows.find((r) => r.id === 'a')!.trashed = false; // restored by hand meanwhile
+    expect(await offers[0]!.undo()).toEqual({ restored: 1, conflicts: 1 });
+  });
+
+  it('undo runs in reverse completion order with concurrency', async () => {
+    const order: string[] = [];
+    const action = liftToSelection<Song>({
+      ...trash(),
+      async runItem(s) {
+        await new Promise((r) => setTimeout(r, s.id === 'a' ? 5 : 0)); // b finishes first
+        return () => void order.push(s.id);
+      },
+    }, { concurrency: 2 });
+    const { resolve } = library();
+    const out = await (await planSelection(action, undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, offer: () => {} })).go();
+    await out!.undo!();
+    expect(order).toEqual(['a', 'b']); // a completed last, so it is undone first
+  });
+
+  it('no Undo when an item could not give one, and it says so', async () => {
     const { resolve } = library();
     const action = liftToSelection<Song>({ ...trash(), runItem: () => null });
     const offer = vi.fn();
-    const out = await (await planSelection(action, undefined, { kind: 'ids', ids: ['a'] }, { resolve, offer })).go();
+    const out = (await (await planSelection(action, undefined, { kind: 'ids', ids: ['a'] }, { resolve, offer })).go())!;
     expect(out.undo).toBeNull();
+    expect(out.warnings[0]).toMatch(/gave no Undo/);
     expect(offer).not.toHaveBeenCalled();
+  });
+
+  it('afterRun and offer errors are warnings, never a failed action', async () => {
+    const { rows, resolve } = library();
+    const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a'] }, {
+      resolve,
+      offer: () => { throw new Error('no toast'); },
+      afterRun: () => { throw new Error('boom'); },
+    });
+    const out = (await plan.go())!;
+    expect(out.done).toHaveLength(1);
+    expect(out.warnings).toEqual(['The Undo could not be offered: no toast', 'After the action: boom']);
+    expect(rows.find((r) => r.id === 'a')!.trashed).toBe(true);
   });
 });
 
@@ -133,12 +181,12 @@ describe('partial failure', () => {
     const failOn = ['b'];
     const offers: UndoOffer[] = [];
     const plan = await planSelection(trash({ failOn }), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, offer: (o) => offers.push(o) });
-    const out = await plan.go();
+    const out = (await plan.go())!;
     expect(out.done.map((s) => s.id)).toEqual(['a']);
     expect(out.failed.map((f) => [f.item.id, f.error])).toEqual([['b', 'cannot trash b']]);
     expect(offers.map((o) => o.count)).toEqual([1]);
     failOn.length = 0;
-    const again = await out.retry();
+    const again = (await out.retry())!;
     expect(again.done.map((s) => s.id)).toEqual(['b']);
     expect(rows.find((r) => r.id === 'b')!.trashed).toBe(true);
     // Undo of the first run takes back only what it did.
@@ -154,35 +202,58 @@ describe('partial failure', () => {
         throw new Error('offline');
       },
     };
-    const out = await (await planSelection(action, undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve })).go();
+    const out = (await (await planSelection(action, undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve })).go())!;
     expect(out.failed.map((f) => f.error)).toEqual(['offline', 'offline']);
     expect(out.undo).toBeNull();
   });
 });
 
 describe('when to ask first', () => {
-  const policyOf = (reversal: SelectionAction<Song>['reversal'], count: number) =>
-    defaultConfirmPolicy({ reversal, count, verb: `Do ${count}` });
+  const policyOf = (reversal: SelectionAction<Song>['reversal'], count: number, undoAvailable = true) =>
+    defaultConfirmPolicy({ actionId: 'x', reversal, count, verb: `Do ${count}`, undoAvailable, hidden: 0, params: {} });
 
-  it('the default policy: compensating and deferred act; manual asks above one; none always asks', () => {
+  it('the default policy: compensating and deferred act when an Undo is offered; manual asks above one; none always asks', () => {
     expect(policyOf('compensating', 50)).toBeNull();
     expect(policyOf('deferred', 50)).toBeNull();
+    expect(policyOf('compensating', 50, false)?.question).toBe('Do 50?'); // no way to offer the Undo
     expect(policyOf('manual', 1)).toBeNull();
     expect(policyOf('manual', 2)?.confirmLabel).toBe('Do 2');
     expect(policyOf('none', 1)?.question).toBe('Do 1?');
   });
 
+  it('an item weaker than the action (reversalOf) makes the whole plan ask', async () => {
+    const { resolve } = library();
+    const action: SelectionAction<Song> = { ...trash(), reversalOf: (s) => (s.id === 'b' ? 'none' : 'compensating') };
+    const plan = await planSelection(action, undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, offer: () => {} });
+    expect(plan.reversal).toBe('none');
+    expect(plan.confirm?.question).toBe('Move 2 songs to Trash?');
+  });
+
+  it('asks when an expectedCount cannot be checked', async () => {
+    const plan = await planSelection(trash(), undefined, { kind: 'query', query: {}, expectedCount: 2 }, { resolve: () => songs().slice(0, 2), offer: () => {} });
+    expect(plan.confirm?.question).toMatch(/could not be counted/);
+  });
+
+  it('thenOffer: false means confirm or Undo, never both', async () => {
+    const { resolve } = library();
+    const offer = vi.fn();
+    const policy = () => ({ question: 'Sure?', confirmLabel: 'Go', thenOffer: false });
+    const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, offer, policy });
+    await plan.go();
+    expect(offer).not.toHaveBeenCalled();
+  });
+
   it('asks when the query now matches a different number than the person saw', async () => {
     const { resolve } = library();
     const sel: Selection<{ owner?: string }> = { kind: 'query', query: { owner: 'me' }, exclude: ['d'], expectedCount: 2 };
-    const plan = await planSelection(trash(), undefined, sel, { resolve });
+    const plan = await planSelection(trash(), undefined, sel, { resolve, offer: () => {} });
     expect(plan.targets.map((s) => s.id)).toEqual(['a', 'b']);
     expect(plan.confirm?.question).toMatch(/now matches 3 \(you chose 2\)/);
   });
 
   it('asks when some targets are not shown, and says how many', async () => {
     const { resolve } = library();
-    const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, shown: () => ['a'] });
+    const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, shown: () => ['a'], offer: () => {} });
     expect(plan.hidden).toBe(1);
     expect(plan.confirm?.question).toBe('1 of them is not shown now. Move 2 songs to Trash?');
   });
@@ -191,72 +262,99 @@ describe('when to ask first', () => {
     const { resolve } = library();
     const policy = vi.fn(() => ({ question: 'Sure?', confirmLabel: 'Move them', typeToConfirm: true }));
     const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve, policy });
-    expect(policy).toHaveBeenCalledWith({ reversal: 'compensating', count: 2, verb: 'Move 2 songs to Trash' });
+    expect(policy).toHaveBeenCalledWith(expect.objectContaining({ actionId: 'library.selection.moveToTrash', reversal: 'compensating', count: 2, verb: 'Move 2 songs to Trash', undoAvailable: false }));
     expect(plan.confirm).toEqual({ question: 'Sure?', confirmLabel: 'Move them', typeToConfirm: true });
   });
 });
 
 describe('createSelectionCommands', () => {
-  const setup = (current: Selection<{ owner?: string }>, extra: Partial<Parameters<typeof createSelectionCommands<Song, { owner?: string }>>[1]> = {}) => {
-    const lib = library();
-    const tag: SelectionAction<Song, { tag: string }> = {
-      id: 'library.selection.tag',
-      title: 'Tag the selection',
-      reversal: 'manual',
-      params: z.object({ tag: z.string().min(1) }),
-      verb: (n, p) => `Tag ${n} songs “${p.tag}”`,
-      done: (n, p) => `${n} songs tagged “${p.tag}”`,
-      run: (targets) => ({ done: targets, undo: null }),
-    };
-    const registry = createRegistry();
-    const commands = createSelectionCommands<Song, { owner?: string }>([trash(), tag], { resolve: lib.resolve, current: () => current, ...extra });
-    for (const c of commands) registry.register(c);
-    return { ...lib, registry };
+  type Seams = Partial<Parameters<typeof createSelectionCommands<Song, { owner?: string }>>[1]>;
+  const tagAction: SelectionAction<Song, { tag: string }> = {
+    id: 'library.selection.tag',
+    title: 'Tag the selection',
+    reversal: 'manual',
+    params: z.object({ tag: z.string().min(1) }),
+    verb: (n, p) => `Tag ${n} songs “${p.tag}”`,
+    done: (n, p) => `${n} songs tagged “${p.tag}”`,
+    run: (targets) => ({ done: targets, undo: null }),
   };
+  const setup = (initial: Selection<{ owner?: string }>, extra: Seams = {}) => {
+    const lib = library();
+    let current = initial;
+    const registry = createRegistry();
+    const commands = createSelectionCommands<Song, { owner?: string }>([trash(), tagAction], { resolve: lib.resolve, current: () => current, ...extra });
+    for (const c of commands) registry.register(c);
+    return { ...lib, registry, select: (s: Selection<{ owner?: string }>) => { current = s; } };
+  };
+  const code = (r: { ok: boolean; error?: { code: string } }) => (r.ok ? 'ok' : r.error!.code);
 
   it('runs on the current selection', async () => {
     const afterRun = vi.fn();
     const { rows, registry } = setup({ kind: 'ids', ids: ['a', 'c'] }, { afterRun });
     const r = await registry.dispatch('library.selection.moveToTrash', {});
-    expect(r).toEqual({ ok: true, value: { done: 1, failed: 0, refused: 1, failures: [] } });
+    expect(r).toEqual({ ok: true, value: { done: 1, failed: 0, refused: 1, failures: [], warnings: [] } });
     expect(rows.find((x) => x.id === 'a')!.trashed).toBe(true);
     expect(afterRun).toHaveBeenCalledTimes(1);
   });
 
-  it('a selection passed as a parameter wins (AI and MCP)', async () => {
-    const { rows, registry } = setup({ kind: 'ids', ids: [] });
-    const r = await registry.dispatch('library.selection.moveToTrash', { selection: { kind: 'ids', ids: ['b'] } });
-    expect(r.ok).toBe(true);
+  it('a selection passed as a parameter wins (AI and MCP); null means the current one', async () => {
+    const { rows, registry } = setup({ kind: 'ids', ids: ['a'] });
+    expect(code(await registry.dispatch('library.selection.moveToTrash', { selection: { kind: 'ids', ids: ['b'] } }))).toBe('ok');
     expect(rows.find((x) => x.id === 'b')!.trashed).toBe(true);
+    expect(code(await registry.dispatch('library.selection.moveToTrash', { selection: null, confirmed: null }))).toBe('ok');
+    expect(rows.find((x) => x.id === 'a')!.trashed).toBe(true);
   });
 
-  it('needs a yes, then runs when confirmed', async () => {
-    const { registry } = setup({ kind: 'ids', ids: ['a', 'b'] });
-    const asked = await registry.dispatch('library.selection.tag', { tag: 'x' });
-    expect(asked.ok).toBe(false);
-    if (!asked.ok) {
-      expect(asked.error.code).toBe('needs-confirmation');
-      expect(asked.error.message).toBe('Tag 2 songs “x”?');
-    }
-    const ran = await registry.dispatch('library.selection.tag', { tag: 'x', confirmed: true });
-    expect(ran.ok).toBe(true);
+  it('a query passed as a parameter without expectedCount asks first', async () => {
+    const { registry } = setup({ kind: 'ids', ids: [] });
+    const r = await registry.dispatch('library.selection.moveToTrash', { selection: { kind: 'query', query: { owner: 'me' } } });
+    expect(code(r)).toBe('needs_confirmation');
+  });
+
+  it('a yes is a token bound to the plan: confirmed: true is not one, and a changed selection asks again', async () => {
+    const t = setup({ kind: 'ids', ids: ['a', 'b'] });
+    const asked = await t.registry.dispatch('library.selection.tag', { tag: 'x' });
+    expect(code(asked)).toBe('needs_confirmation');
+    const details = (asked as { error: { message: string; details: { token: string; typeToConfirm: boolean; count: number } } }).error;
+    expect(details.message).toBe('Tag 2 songs “x”?');
+    expect(details.details).toMatchObject({ count: 2, typeToConfirm: false });
+    expect(code(await t.registry.dispatch('library.selection.tag', { tag: 'x', confirmed: 'true' }))).toBe('needs_confirmation');
+    t.select({ kind: 'ids', ids: ['a', 'b', 'c', 'd'] }); // grows after the question
+    t.rows.forEach((r) => { r.trashed = false; });
+    const changed = await t.registry.dispatch('library.selection.tag', { tag: 'x', confirmed: details.details.token });
+    expect(code(changed)).toBe('needs_confirmation');
+    expect((changed as { error: { message: string } }).error.message).toMatch(/changed since you confirmed/);
+    const token = (changed as { error: { details: { token: string } } }).error.details.token;
+    expect(code(await t.registry.dispatch('library.selection.tag', { tag: 'x', confirmed: token }))).toBe('ok');
+  });
+
+  it('with a confirm seam the command asks the person itself', async () => {
+    const confirm = vi.fn(async () => false);
+    const t = setup({ kind: 'ids', ids: ['a', 'b'] }, { confirm });
+    expect(code(await t.registry.dispatch('library.selection.tag', { tag: 'x' }))).toBe('declined');
+    confirm.mockResolvedValueOnce(true);
+    expect(code(await t.registry.dispatch('library.selection.tag', { tag: 'x' }))).toBe('ok');
+    expect(confirm).toHaveBeenLastCalledWith(expect.objectContaining({ count: 2, question: 'Tag 2 songs “x”?' }));
   });
 
   it('validates the action params', async () => {
     const { registry } = setup({ kind: 'ids', ids: ['a'] });
-    const r = await registry.dispatch('library.selection.tag', { tag: '' });
-    expect(r.ok).toBe(false);
+    expect(code(await registry.dispatch('library.selection.tag', { tag: '' }))).toBe('invalid_params');
+  });
+
+  it('refuses an action that declares a reserved param', () => {
+    const bad: SelectionAction<Song, { confirmed: boolean }> = { ...tagAction, id: 'library.selection.bad', params: z.object({ confirmed: z.boolean() }) } as never;
+    expect(() => createSelectionCommands<Song>([bad], { resolve: () => [], current: () => ({ kind: 'ids', ids: [] }) })).toThrow(/reserved/);
   });
 
   it('says why when nothing applies, and when nothing is selected', async () => {
     const none = await setup({ kind: 'ids', ids: ['c'] }).registry.dispatch('library.selection.moveToTrash', {});
-    expect(!none.ok && none.error.code).toBe('nothing-applies');
+    expect(code(none)).toBe('nothing_applies');
     expect(!none.ok && none.error.message).toMatch(/not yours/);
-    const empty = await setup({ kind: 'ids', ids: [] }).registry.dispatch('library.selection.moveToTrash', {});
-    expect(!empty.ok && empty.error.code).toBe('empty');
+    expect(code(await setup({ kind: 'ids', ids: [] }).registry.dispatch('library.selection.moveToTrash', {}))).toBe('empty_selection');
   });
 
-  it('one at a time', async () => {
+  it('one at a time, shared with buttons through the lock', async () => {
     const lib = library();
     let release!: () => void;
     const slow: SelectionAction<Song> = {
@@ -267,12 +365,14 @@ describe('createSelectionCommands', () => {
       done: (n) => `Slowed ${n}`,
       run: (t) => new Promise((r) => (release = () => r({ done: t, undo: null }))),
     };
+    const lock = createSelectionLock();
     const registry = createRegistry();
-    for (const c of createSelectionCommands<Song, { owner?: string }>([slow], { resolve: lib.resolve, current: () => ({ kind: 'ids', ids: ['a'] }) })) registry.register(c);
+    for (const c of createSelectionCommands<Song, { owner?: string }>([slow], { resolve: lib.resolve, lock, current: () => ({ kind: 'ids', ids: ['a'] }) })) registry.register(c);
     const first = registry.dispatch('library.selection.slow', {});
     await new Promise((r) => setTimeout(r, 0));
-    const second = await registry.dispatch('library.selection.slow', {});
-    expect(!second.ok && second.error.code).toBe('busy');
+    expect(code(await registry.dispatch('library.selection.slow', {}))).toBe('busy');
+    const button = await planSelection(slow, undefined, { kind: 'ids', ids: ['a'] }, { resolve: lib.resolve, lock });
+    expect(await button.go()).toBeNull();
     release();
     expect((await first).ok).toBe(true);
   });
@@ -286,5 +386,12 @@ describe('the schema bridge', () => {
     const schema = env.inputSchema as { properties: Record<string, unknown> };
     expect(env.description).toMatch(/current selection/);
     expect(Object.keys(schema.properties)).toEqual(['selection', 'confirmed']);
+  });
+});
+
+describe('sameSelection', () => {
+  it('compares by value, key order aside', () => {
+    expect(sameSelection({ kind: 'query', query: { a: 1, b: 2 } }, { kind: 'query', query: { b: 2, a: 1 } })).toBe(true);
+    expect(sameSelection({ kind: 'ids', ids: ['a'] }, { kind: 'ids', ids: ['b'] })).toBe(false);
   });
 });

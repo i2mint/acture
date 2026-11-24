@@ -160,10 +160,10 @@ It leaves out the two things that make up most of the full entry's size:
 
 ### `acture/selection`: bulk actions on a selection
 
-A **selection action** (bulk action) applies one action to a selection: explicit ids, or a query with exceptions ("all 340 matching, except these 3"). `acture/selection` gives it a per-item gate whose refusals show before the click, one Undo for the whole operation (still offered for the part done when some items fail, with Retry for the rest), and the rule for asking first: a bulk action confirms, with the count, unless one Undo takes it all back in place; it always confirms when a query now matches a different number than the person saw, or when some targets are not shown.
+A **selection action** (bulk action) applies one action to a selection: explicit ids, or a query with exceptions ("all 340 matching, except these 3"). `acture/selection` gives it a per-item gate whose refusals show before the click, one Undo for the whole operation (compare-and-set per item: an item changed since is reported as a conflict, not overwritten; still offered for the part done when some items fail, with `retry()` for the rest), and the rule for asking first: a bulk action confirms, with the count, unless one Undo takes it all back in place; it always confirms when a query now matches a different number than the person saw (or that cannot be counted), or, given `shown`, when some targets are not shown.
 
 ```ts
-import { createSelectionCommands, liftToSelection } from 'acture/selection';
+import { createSelectionCommands, liftToSelection, sameSelection } from 'acture/selection';
 import { offerUndo } from 'undo-toast';
 
 const moveToTrash = liftToSelection<Song>({
@@ -173,17 +173,25 @@ const moveToTrash = liftToSelection<Song>({
   verb: (n) => `Move ${n} songs to Trash`,
   done: (n) => `${n} songs moved to Trash`,
   appliesTo: (s) => s.owner === me || 'not yours',   // refusals are counted before anything runs
-  runItem: async (s) => { await api.trash(s.id); return () => api.restore(s.id); },
+  runItem: async (s) => {
+    const { version } = await api.trash(s.id);
+    // compare-and-set: restore only if it is still as this action left it
+    return async () => ((await api.restore(s.id, { ifVersion: version })).ok ? undefined : 'conflict');
+  },
 });
 
 for (const c of createSelectionCommands([moveToTrash], {
   current: () => selectionStore.getState().selection,
   resolve: (sel) => resolveSelection(rows(), sel),
-  offer: ({ message, undo, count, reversal }) => offerUndo({ message, undo, context: { reversal, count } }),
+  shown: () => shownIds(),                            // targets not shown make it ask first
+  offer: ({ message, undo, count, reversal }) => offerUndo({ message, undo: () => undo().then(() => {}), context: { reversal, count } }),
+  afterRun: (_, chosen) => { if (sameSelection(selectionStore.getState().selection, chosen)) selectionStore.getState().clear(); },
 })) registry.register(c);
 ```
 
-A command that needs a yes returns `err('needs-confirmation', question)` unless called with `confirmed: true`, so the palette shows the question and an AI asks the person, then calls again. `planSelection(action, params, selection, seams)` is the same logic for a button: it returns the targets, the refusals and the confirmation, and `go()` runs it. The seams (`resolve`, `key`, `shown`, `policy`, `offer`, `transaction`) are one argument each; `policy` takes undo-toast's `advise`, `transaction` takes acture-undo's `history.transaction`. The hand-written version, for a project that wants no dependency, is [`docs/hand-written-selection-commands.md`](../../docs/hand-written-selection-commands.md).
+A command that needs a yes returns `err('needs_confirmation', question, { token, count, confirmLabel, typeToConfirm, hidden })`; calling again with `confirmed: <token>` runs it only if the plan is unchanged (a selection that grew since asks again), so an AI must show the person the question and cannot pre-confirm. With a `confirm` seam (a dialog), the command asks the person itself. A query passed as a parameter without `expectedCount` always asks. Other codes: `empty_selection`, `nothing_applies`, `declined`, `busy` (`SELECTION_ERRORS`).
+
+`planSelection(action, params, selection, seams)` is the same logic for a button: it returns the targets, the refusals, the weakest `reversal` over the targets (`reversalOf(item)` marks an item Undo cannot take back), and the confirmation; `go()` runs it. The seams are one argument each: `resolve`, `key`, `shown`, `policy` (receives the action id, reversal, count, verb, `undoAvailable`, hidden and the action's `policyContext`, so undo-toast's `advise` with a preset plugs in; `thenOffer: false` means confirm or Undo, never both), `offer`, `transaction` (acture-undo's `history.transaction` for actions on local state; then the history entry is the Undo, do not offer both), `lock` (`createSelectionLock()`, shared by buttons and commands) and `afterRun`. The hand-written version, for a project that wants no dependency, is [`docs/hand-written-selection-commands.md`](../../docs/hand-written-selection-commands.md).
 
 ## When-clause DSL
 
