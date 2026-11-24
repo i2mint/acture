@@ -154,4 +154,12 @@ describe('toJsonSchema', () => {
     const env = toJsonSchema(cmd, { strict: true });
     expect((env.warnings ?? []).join(' ')).toMatch(/open record/);
   });
+
+  it('fromStrictArgs turns strict "left out" nulls back into absent keys (so .optional() accepts them)', async () => {
+    const { fromStrictArgs } = await import('./schema-bridge.js');
+    const params = z.object({ tag: z.string(), note: z.string().optional(), sel: z.object({ ids: z.array(z.string()), n: z.number().optional() }).optional() });
+    const strictCall = { tag: 'x', note: null, sel: { ids: ['a'], n: null } };
+    expect(params.safeParse(strictCall).success).toBe(false);
+    expect(params.safeParse(fromStrictArgs(strictCall)).data).toEqual({ tag: 'x', sel: { ids: ['a'] } });
+  });
 });

@@ -21,8 +21,10 @@ export interface ToJsonSchemaOptions {
   /**
    * OpenAI-style strict mode: every property `required`, optionals
    * encoded as `type: [T, "null"]`, `additionalProperties: false`.
-   * Lossy transformations are reported on `warnings`.
-   * Default: `false`.
+   * Lossy transformations are reported on `warnings`. A model then sends
+   * `null` for what it leaves out: pass its arguments through
+   * {@link fromStrictArgs} before `dispatch` (Zod's `.optional()` refuses
+   * `null`). Default: `false`.
    */
   strict?: boolean;
 }
@@ -174,4 +176,20 @@ function enforceStrict(
     }
   }
   return schema;
+}
+
+/**
+ * Arguments from a strict-mode tool call, as the command's params expect them: a key whose value
+ * is `null` is removed (strict mode encodes "left out" as `null`; Zod's `.optional()` refuses it),
+ * in nested objects and in objects inside arrays. Use only with `toJsonSchema(..., { strict: true })`:
+ * a schema where `null` is a real value (`.nullable()`) loses it.
+ */
+export function fromStrictArgs<T>(args: T): T {
+  if (Array.isArray(args)) return args.map((a) => fromStrictArgs(a)) as T;
+  if (args === null || typeof args !== 'object') return args;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(args as Record<string, unknown>)) {
+    if (v !== null) out[k] = fromStrictArgs(v);
+  }
+  return out as T;
 }
