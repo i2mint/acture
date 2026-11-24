@@ -107,6 +107,9 @@ jobs:
           title: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Empty, not setup-node's placeholder (XXXXX-…): with a token in .npmrc npm may send it
+          # instead of doing the OIDC exchange (as wads' npm-ci publish job does).
+          NODE_AUTH_TOKEN: ''
           # Trusted publishing from a public repo adds provenance by itself;
           # this only makes it explicit.
           NPM_CONFIG_PROVENANCE: "true"
