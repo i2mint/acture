@@ -100,8 +100,17 @@ export interface UndoHistory {
    *  the dispatches make) into one undo entry. The callback runs to
    *  completion or throws; either way one entry is pushed for whatever
    *  was captured (partial-stays-applied semantics). Nested transactions
-   *  throw. */
-  transaction(fn: () => void | Promise<void>): Promise<void>;
+   *  throw. Resolves to the entry pushed, or `null` when nothing was
+   *  captured (then there is nothing to undo): hand it to `undoEntry`. */
+  transaction(fn: () => void | Promise<void>): Promise<UndoEntry | null>;
+  /** Undo exactly this entry, and only while it is the last one applied:
+   *  an undo toast bound to its own action must not undo a later edit
+   *  (`not-on-top`) or an earlier one after Cmd/Ctrl+Z took this one
+   *  (`already-undone`). */
+  undoEntry(entry: UndoEntry): UndoEntryResult;
+  /** Whether this entry is applied now (a toast can dismiss itself when
+   *  Cmd/Ctrl+Z took its entry). */
+  isApplied(entry: UndoEntry): boolean;
   /** Read-only snapshot of the current entries. */
   entries(): readonly UndoEntry[];
   /** Restore the adapter's `setStateWithPatches` and the registry's
@@ -109,6 +118,10 @@ export interface UndoHistory {
    *  reverse install order if other instrumenters wrap this registry. */
   dispose(): void;
 }
+
+export type UndoEntryResult =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly reason: 'not-on-top' | 'already-undone' | 'unknown' };
 
 interface CaptureBuffer {
   patches: Patch[];
@@ -202,14 +215,14 @@ export function createUndoHistory<S>(
 
   /* ── capture / entry plumbing ────────────────────────────────────── */
 
-  function closeCapture(): void {
+  function closeCapture(): UndoEntry | null {
     const captured = buffer;
     buffer = null;
     captureOwner = null;
-    if (!captured) return;
+    if (!captured) return null;
     // Empty captures don't push an entry — a dispatch that performed no
     // state mutation and emitted no effects is invisible to undo.
-    if (captured.patches.length === 0 && captured.effects.length === 0) return;
+    if (captured.patches.length === 0 && captured.effects.length === 0) return null;
 
     // Starting a new branch discards any pending redo entries.
     if (cursor < entries.length) {
@@ -229,11 +242,12 @@ export function createUndoHistory<S>(
       }
     }
 
-    entries.push({
+    const entry: UndoEntry = Object.freeze({
       patches: captured.patches,
       inversePatches: captured.inversePatches,
       effects: captured.effects,
     });
+    entries.push(entry);
     cursor = entries.length;
 
     if (entries.length > limit) {
@@ -241,6 +255,7 @@ export function createUndoHistory<S>(
       entries = entries.slice(drop);
       cursor -= drop;
     }
+    return entry;
   }
 
   /* ── public API ────────────────────────────────────────────────── */
@@ -291,17 +306,33 @@ export function createUndoHistory<S>(
     cursor = 0;
   }
 
-  async function transaction(fn: () => void | Promise<void>): Promise<void> {
+  async function transaction(fn: () => void | Promise<void>): Promise<UndoEntry | null> {
     if (captureOwner !== null) {
       throw new Error('acture-undo: nested transactions are not supported');
     }
     buffer = { patches: [], inversePatches: [], effects: [] };
     captureOwner = 'transaction';
+    let entry: UndoEntry | null = null;
     try {
       await fn();
     } finally {
-      closeCapture();
+      entry = closeCapture();
     }
+    return entry;
+  }
+
+  function undoEntry(entry: UndoEntry): UndoEntryResult {
+    const at = entries.indexOf(entry);
+    if (at < 0) return { ok: false, reason: 'unknown' };
+    if (at >= cursor) return { ok: false, reason: 'already-undone' };
+    if (at !== cursor - 1) return { ok: false, reason: 'not-on-top' };
+    undo(); // the entry is on top: this cannot be a no-op
+    return { ok: true };
+  }
+
+  function isApplied(entry: UndoEntry): boolean {
+    const at = entries.indexOf(entry);
+    return at >= 0 && at < cursor;
   }
 
   function entriesSnapshot(): readonly UndoEntry[] {
@@ -318,6 +349,8 @@ export function createUndoHistory<S>(
   return {
     undo,
     redo,
+    undoEntry,
+    isApplied,
     canUndo,
     canRedo,
     clear,

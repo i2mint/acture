@@ -400,3 +400,31 @@ describe('runtime patch-capability guard', () => {
     }
   });
 });
+
+describe('undoEntry: an undo bound to its own transaction', () => {
+  it('transaction resolves to the entry it pushed, or null when it captured nothing', async () => {
+    const { adapter, registry } = setup();
+    const history = createUndoHistory(adapter, registry);
+    const entry = await history.transaction(async () => {
+      await registry.dispatch('app.add', { by: 2 });
+    });
+    expect(entry).toBe(history.entries()[0]);
+    expect(await history.transaction(async () => {})).toBeNull();
+  });
+
+  it('undoes that entry only while it is on top; never a later or an earlier one', async () => {
+    const { adapter, registry } = setup();
+    const history = createUndoHistory(adapter, registry);
+    const bulk = (await history.transaction(async () => {
+      await registry.dispatch('app.add', { by: 10 });
+    }))!;
+    await registry.dispatch('app.increment'); // one more edit while the toast is up
+    expect(history.undoEntry(bulk)).toEqual({ ok: false, reason: 'not-on-top' });
+    expect(adapter.getState().count).toBe(11); // the later edit was not undone
+    history.undo(); // Cmd+Z takes the later edit
+    expect(history.undoEntry(bulk)).toEqual({ ok: true });
+    expect(adapter.getState().count).toBe(0);
+    expect(history.isApplied(bulk)).toBe(false);
+    expect(history.undoEntry(bulk)).toEqual({ ok: false, reason: 'already-undone' });
+  });
+});
