@@ -600,8 +600,10 @@ async function execute<T, P, Q>(
   const failed = outcome.failed ?? [];
   const warnings = [...(outcome.warnings ?? [])];
   const transactionUndo = seams.transactionUndo;
+  // A transaction that recorded nothing (null/undefined handle) has nothing to take back: no
+  // Undo, rather than one that would undo whatever entry came before.
   const raw = !done.length ? null
-    : seams.transaction ? (transactionUndo ? () => transactionUndo(entry) : null)
+    : seams.transaction ? (transactionUndo && entry != null ? () => transactionUndo(entry) : null)
     : outcome.undo ?? null;
   const undo = raw ? onceUndo(raw, done.length) : null;
   const reversible = plan.reversal === 'compensating' || plan.reversal === 'deferred';

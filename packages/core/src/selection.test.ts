@@ -541,3 +541,18 @@ describe('review round 3', () => {
     expect(lock.busy).toBe(false);
   });
 });
+
+describe('review round 4', () => {
+  it('a transaction that recorded nothing offers no Undo (never the entry before it)', async () => {
+    const { resolve } = library();
+    const offer = vi.fn();
+    const transactionUndo = vi.fn();
+    const batch: SelectionAction<Song> = { ...trash(), run: (t) => ({ done: t, undo: null }) };
+    const out = (await (await planSelection(batch, undefined, { kind: 'ids', ids: ['a'] }, {
+      resolve, offer, transaction: async (fn) => { await fn(); return null; }, transactionUndo,
+    })).go())!;
+    expect(out.undo).toBeNull();
+    expect(offer).not.toHaveBeenCalled();
+    expect(out.warnings).toContain('It cannot be undone in one step.');
+  });
+});
