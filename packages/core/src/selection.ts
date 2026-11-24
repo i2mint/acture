@@ -312,30 +312,35 @@ export function createSelectionLock(): SelectionLock {
 }
 
 export interface SelectionSeams<T, Q = SelectionQuery> {
-  /** Turn a selection into the items it holds now (may run the query on a server). */
+  /** Turn a selection into the items it holds now (may run the query on a server). It answers
+   *  both kinds: `{kind: 'ids'}` holds `key` values (a retry asks for the failed items that way).
+   *  `go()` calls it again under the lock to check nothing changed since the plan. */
   readonly resolve: (selection: Selection<Q>) => Resolved<T> | Promise<Resolved<T>>;
-  /** The item key (default `item.id`). */
+  /** The item key (default `item.id`); the ids of a selection are keys. */
   readonly key?: (item: T) => ItemId;
   /** The keys the list shows now; targets outside it make the action ask first. Without it,
    *  nothing is known about what is shown. */
   readonly shown?: () => Iterable<ItemId>;
   /** Ask first or act (default {@link defaultConfirmPolicy}). */
   readonly policy?: ConfirmPolicy;
-  /** Offer the Undo (an undo toast). Called once per run that did something and can be undone.
-   *  Show `UndoReport.conflicts` when the Undo resolves (items left as they are now). */
+  /** Offer the Undo (an undo toast). Called once per run that did something and can be undone;
+   *  not awaited. Show `UndoReport.conflicts` when the Undo resolves (items left as they are). */
   readonly offer?: (offer: UndoOffer) => unknown;
   /** Wrap the run, e.g. acture-undo's `history.transaction`, for actions that change local
-   *  state through a patch-capable adapter. Then the history entry is the Undo: give
-   *  `transactionUndo` (e.g. `() => history.undo()`), and it is what is offered (the action's
-   *  own `undo`, if any, is not: they would undo twice). */
-  readonly transaction?: (fn: () => Promise<void>) => Promise<void>;
-  /** With `transaction`: take back the transaction just recorded. */
-  readonly transactionUndo?: () => unknown;
+   *  state through a patch-capable adapter. What it resolves to (a handle on the entry it
+   *  recorded) is handed to `transactionUndo`, which is what is offered (the action's own `undo`,
+   *  if any, is not: they would undo twice). */
+  readonly transaction?: (fn: () => Promise<void>) => Promise<unknown>;
+  /** With `transaction`: take back exactly the entry `transaction` recorded (its handle), and
+   *  return `'conflict'` (or `{ok: false}`) when that entry is no longer the last one applied —
+   *  never `history.undo()` blindly, which would undo whatever came after. */
+  readonly transactionUndo?: (entry: unknown) => unknown;
   /** One action at a time (default: none for a plan; the commands create one unless given).
    *  Pass the same `createSelectionLock()` to buttons and commands. Not reentrant. */
   readonly lock?: SelectionLock;
-  /** After a run that did something (e.g. clear the selection if it is still `chosen`; see
-   *  {@link sameSelection}). Its errors are reported as warnings, never as a failed action. */
+  /** After a run that did something, once the lock is released (e.g. clear the selection if it
+   *  is still `chosen`; see {@link sameSelection}). Its errors are reported as warnings, never as
+   *  a failed action. */
   readonly afterRun?: (outcome: SelectionOutcome<T>, chosen: Selection<Q>) => unknown;
 }
 
@@ -359,6 +364,8 @@ export interface SelectionPlan<T> {
   readonly refused: readonly Refusal<T>[];
   /** Targets the list does not show now. */
   readonly hidden: number;
+  /** Their keys. */
+  readonly hiddenKeys: readonly ItemId[];
   /** The weakest reversal over the targets. */
   readonly reversal: Reversal;
   /** The confirmation to show first, or `null` to go at once. */
@@ -371,18 +378,20 @@ export interface SelectionPlan<T> {
 }
 
 export interface SelectionOutcome<T> {
+  /** `done`: it ran (some items may have failed). `stale`: nothing ran, because what would be
+   *  acted on changed since it was planned or confirmed: plan again and show it again. */
+  readonly status: 'done' | 'stale';
   readonly done: readonly T[];
   readonly failed: readonly ItemFailure<T>[];
   readonly refused: readonly Refusal<T>[];
   /** The one Undo for everything done, or `null`. Already offered through `offer`. */
   readonly undo: (() => Promise<UndoReport>) | null;
   readonly warnings: readonly string[];
-  /** Set when nothing ran because what would be acted on changed since the plan (or the
-   *  confirmation) was made: plan again and ask again. */
+  /** With `status: 'stale'`: why. */
   readonly stale?: string;
-  /** Run the action again on the items that failed: resolved and gated again, under the lock;
-   *  stale (not run) when it would now need a confirmation it did not need. `null` when the lock
-   *  is taken. */
+  /** Run the action again on the items that failed (resolved as `{kind: 'ids'}` of their keys,
+   *  gated again, under the lock); stale when it would now ask for more than the person answered.
+   *  `null` when the lock is taken, and from a stale outcome (plan again instead). */
   retry(): Promise<SelectionOutcome<T> | null>;
 }
 
@@ -416,36 +425,71 @@ export async function planSelection<T, P, Q = SelectionQuery>(
   selection: Selection<Q>,
   seams: SelectionSeams<T, Q>,
 ): Promise<SelectionPlan<T>> {
-  const { key = defaultKey } = seams;
   const plan = await prepare(action, params, selection, seams);
-  const chosenKeys = plan.targets.map(key);
-  const lockedRun = <R>(fn: () => Promise<R>): Promise<R | null> => (seams.lock ? seams.lock.run(fn) : fn());
-
-  /** Under the lock: resolve the same items again, gate again, and run only if nothing changed. */
-  const runChecked = (keys: readonly ItemId[], expected: string | null, confirmed: boolean, refusedBefore: readonly Refusal<T>[]) =>
-    lockedRun(async (): Promise<SelectionOutcome<T>> => {
-      const fresh = await prepare(action, params, { kind: 'ids', ids: keys }, seams);
-      const changed = expected !== null ? fresh.token !== expected : !!fresh.confirm;
-      if (changed) {
-        return {
-          done: [], failed: [], refused: fresh.refused, undo: null, warnings: [],
-          stale: expected !== null ? 'What would be acted on changed since it was planned.' : 'It now needs a confirmation.',
-          retry: () => runChecked(keys, expected, confirmed, refusedBefore),
-        };
-      }
-      const outcome = await execute(action, params, fresh, seams, selection, confirmed);
-      const refused = [...refusedBefore, ...fresh.refused];
-      return {
-        ...outcome,
-        refused,
-        retry: () => runChecked(outcome.failed.map((f) => key(f.item)), null, confirmed, []),
-      };
-    });
-
-  return { ...plan, go: () => runChecked(chosenKeys, plan.token, plan.confirm !== null, plan.refused) };
+  return {
+    ...plan,
+    // Under the lock, the same selection is planned again: anything changed since (targets,
+    // refusals, hidden ones, reversal) and nothing runs.
+    go: () => runGuarded(action, params, selection, seams, { expected: plan.token, confirmed: plan.confirm !== null, base: plan }),
+  };
 }
 
-interface Prepared<T> extends Omit<SelectionPlan<T>, 'go'> {}
+interface Guard<T> {
+  /** The token the run must still have (a plan or a confirmation), or null for a retry. */
+  readonly expected: string | null;
+  /** Whether the person said yes to `base`'s confirmation. */
+  readonly confirmed: boolean;
+  /** The plan the person saw (for a retry: whether the fresh one asks for more). */
+  readonly base: Prepared<T>;
+}
+
+/** Whether `fresh` asks for more than `base`, which the person already answered. */
+function asksMore<T>(base: Prepared<T>, fresh: Prepared<T>, confirmed: boolean): boolean {
+  if (!fresh.confirm) return false;
+  if (!confirmed) return true;
+  const weaker = REVERSAL_STRENGTH[fresh.reversal] < REVERSAL_STRENGTH[base.reversal];
+  return weaker || fresh.hiddenKeys.some((k) => !base.hiddenKeys.includes(k));
+}
+
+function runGuarded<T, P, Q>(
+  action: SelectionAction<T, P>,
+  params: P,
+  selection: Selection<Q>,
+  seams: SelectionSeams<T, Q>,
+  guard: Guard<T>,
+): Promise<SelectionOutcome<T> | null> {
+  const { key = defaultKey } = seams;
+  const locked = <R>(fn: () => Promise<R>): Promise<R | null> => (seams.lock ? seams.lock.run(fn) : fn());
+  const stale = (fresh: Prepared<T>, why: string): SelectionOutcome<T> => ({
+    status: 'stale', stale: why, done: [], failed: [], refused: fresh.refused, undo: null, warnings: [],
+    // Plan again from scratch: the person must see what it would do now.
+    retry: () => Promise.resolve(null),
+  });
+  return locked(async () => {
+    const fresh = await prepare(action, params, selection, seams);
+    if (guard.expected !== null ? fresh.token !== guard.expected : asksMore(guard.base, fresh, guard.confirmed)) {
+      return stale(fresh, guard.expected !== null ? 'What would be acted on changed since it was planned.' : 'It now asks for a confirmation it did not ask for.');
+    }
+    const outcome = await execute(action, params, fresh, seams, guard.confirmed);
+    const retry = () => {
+      const keys = outcome.failed.map((f) => key(f.item));
+      return runGuarded(action, params, { kind: 'ids', ids: keys } as Selection<Q>, seams, { expected: null, confirmed: guard.confirmed, base: fresh });
+    };
+    return { ...outcome, retry };
+  }).then(async (outcome) => {
+    // After the lock is released: afterRun may start another selection action.
+    if (outcome && outcome.status === 'done' && outcome.done.length && seams.afterRun) {
+      try {
+        await seams.afterRun(outcome, selection);
+      } catch (e) {
+        (outcome.warnings as string[]).push(`After the action: ${messageOf(e)}`);
+      }
+    }
+    return outcome;
+  });
+}
+
+type Prepared<T> = Omit<SelectionPlan<T>, 'go'>;
 
 /** Resolve, gate, decide whether to ask, and fingerprint: everything but running. */
 async function prepare<T, P, Q>(
@@ -502,7 +546,7 @@ async function prepare<T, P, Q>(
   }
   // What the person agrees to: these targets, this weakness, these hidden ones, these params.
   const token = fingerprint(stableJson([action.id, reversal, hiddenKeys, targets.map(key).sort(), stableJson(params)]));
-  return { targets, refused, hidden, reversal, confirm, token };
+  return { targets, refused, hidden, hiddenKeys, reversal, confirm, token };
 }
 
 /** Each part of an Undo runs once; two calls at once share one run; one that threw can retry. */
@@ -514,7 +558,12 @@ function onceUndo(raw: () => unknown, count: number): () => Promise<UndoReport> 
     if (!inFlight) {
       inFlight = (async () => {
         const r = await raw();
-        result = r && typeof r === 'object' && 'restored' in r ? (r as UndoReport) : { restored: count, conflicts: 0 };
+        // An UndoReport is taken as is; 'conflict' or {ok: false} (an undo history whose top entry
+        // is no longer this one) is a conflict: nothing was taken back, nothing overwritten.
+        const refusedIt = r === 'conflict' || (!!r && typeof r === 'object' && (r as { ok?: unknown }).ok === false);
+        result = r && typeof r === 'object' && 'restored' in r
+          ? (r as UndoReport)
+          : refusedIt ? { restored: 0, conflicts: count } : { restored: count, conflicts: 0 };
         return result;
       })().finally(() => {
         inFlight = null;
@@ -529,12 +578,12 @@ async function execute<T, P, Q>(
   params: P,
   plan: Prepared<T>,
   seams: SelectionSeams<T, Q>,
-  chosen: Selection<Q>,
   confirmed: boolean,
 ): Promise<SelectionOutcome<T>> {
   const on = plan.targets;
   const noRetry = () => Promise.resolve(null);
-  if (!on.length) return { done: [], failed: [], refused: plan.refused, undo: null, warnings: [], retry: noRetry };
+  const base = { status: 'done' as const, refused: plan.refused, retry: noRetry };
+  if (!on.length) return { ...base, done: [], failed: [], undo: null, warnings: [] };
   let outcome: RunOutcome<T> = { done: [] };
   const body = async () => {
     try {
@@ -544,32 +593,31 @@ async function execute<T, P, Q>(
       outcome = { done: [], failed: on.map((item) => ({ item, error: messageOf(e) })), undo: null };
     }
   };
-  if (seams.transaction) await seams.transaction(body);
+  let entry: unknown;
+  if (seams.transaction) entry = await seams.transaction(body);
   else await body();
   const done = outcome.done;
   const failed = outcome.failed ?? [];
   const warnings = [...(outcome.warnings ?? [])];
-  const raw = !done.length ? null : seams.transaction ? seams.transactionUndo ?? null : outcome.undo ?? null;
+  const transactionUndo = seams.transactionUndo;
+  const raw = !done.length ? null
+    : seams.transaction ? (transactionUndo ? () => transactionUndo(entry) : null)
+    : outcome.undo ?? null;
   const undo = raw ? onceUndo(raw, done.length) : null;
   const reversible = plan.reversal === 'compensating' || plan.reversal === 'deferred';
   if (done.length && reversible && !undo) warnings.push('It cannot be undone in one step.');
   const offerIt = !(confirmed && plan.confirm && plan.confirm.thenOffer === false);
   if (undo && seams.offer && offerIt) {
+    // Not awaited: a toast may stay for its whole undo window; the lock must not.
+    const report = (e: unknown) => warnings.push(`The Undo could not be offered: ${messageOf(e)}`);
     try {
-      await seams.offer({ message: action.done(done.length, params), undo, count: done.length, reversal: plan.reversal });
+      const r = seams.offer({ message: action.done(done.length, params), undo, count: done.length, reversal: plan.reversal });
+      if (r && typeof (r as Promise<unknown>).then === 'function') (r as Promise<unknown>).then(undefined, report);
     } catch (e) {
-      warnings.push(`The Undo could not be offered: ${messageOf(e)}`);
+      report(e);
     }
   }
-  const result: SelectionOutcome<T> = { done, failed, refused: plan.refused, undo, warnings, retry: noRetry };
-  if (done.length && seams.afterRun) {
-    try {
-      await seams.afterRun(result, chosen);
-    } catch (e) {
-      warnings.push(`After the action: ${messageOf(e)}`);
-    }
-  }
-  return result;
+  return { ...base, done, failed, undo, warnings };
 }
 
 /* ── Commands ──────────────────────────────────────────────────────────── */
@@ -582,6 +630,7 @@ export const SELECTION_ERRORS = {
   busy: 'busy',
   declined: 'declined',
   needsPerson: 'needs_person',
+  changed: 'selection_changed',
 } as const;
 
 const RESERVED = ['selection', 'confirmed'] as const;
@@ -668,58 +717,90 @@ export function createSelectionCommands<T, Q = SelectionQuery>(
         const { selection: passed, confirmed, ...own } = input;
         const fromParam = passed !== undefined && passed !== null;
         const chosen = fromParam ? (passed as Selection<Q>) : current();
-        const plan = await planSelection(action, own, chosen, planSeams);
-        if (!plan.targets.length) {
-          if (!plan.refused.length) return err(SELECTION_ERRORS.emptySelection, 'Nothing is selected.');
-          const why = [...new Set(plan.refused.map((r) => r.why))].join('; ');
-          return err(SELECTION_ERRORS.nothingApplies, `It applies to none of the ${plan.refused.length} selected (${why}).`);
-        }
-        // A selection from a parameter the person may not have seen: a query that does not say how
-        // many it expects, or ids when nothing tells what the list shows.
-        const unseen = fromParam && (chosen.kind === 'query' ? chosen.expectedCount === undefined : !seams.shown);
-        const confirmation = plan.confirm ?? (unseen
-          ? { question: `${action.verb(plan.targets.length, own)}?`, confirmLabel: action.verb(plan.targets.length, own), typeToConfirm: false }
-          : null);
-        if (confirmation) {
-          if (ask) {
-            if (!(await ask({ ...confirmation, count: plan.targets.length }))) {
-              return err(SELECTION_ERRORS.declined, 'The person said no.');
-            }
-          } else if (plan.reversal === 'none' || confirmation.typeToConfirm) {
-            // What cannot be undone is confirmed by the person in the app, never by a token the
-            // caller (an AI) could send back by itself.
+
+        /** What to answer before running, or null to run. */
+        const gate = (plan: Prepared<T>): Result<SelectionCommandValue> | 'ask' | null => {
+          if (!plan.targets.length) {
+            if (!plan.refused.length) return err(SELECTION_ERRORS.emptySelection, 'Nothing is selected.');
+            const why = [...new Set(plan.refused.map((r) => r.why))].join('; ');
+            return err(SELECTION_ERRORS.nothingApplies, `It applies to none of the ${plan.refused.length} selected (${why}).`);
+          }
+          const verb = action.verb(plan.targets.length, own);
+          // A selection from a parameter the person may not have seen: a query that does not say
+          // how many it expects, or ids when nothing tells what the list shows.
+          const unseen = fromParam && (chosen.kind === 'query' ? chosen.expectedCount === undefined : !seams.shown);
+          // What cannot be undone always asks, whatever the policy says.
+          const irreversible = plan.reversal === 'none';
+          const confirmation = plan.confirm ?? (unseen || irreversible ? { question: `${verb}?`, confirmLabel: verb, typeToConfirm: false } : null);
+          if (!confirmation) return null;
+          if (ask) return 'ask';
+          if (irreversible || confirmation.typeToConfirm) {
+            // Confirmed by the person in the app, never by a token the caller could send back itself.
             return err(SELECTION_ERRORS.needsPerson, `${confirmation.question} Only the person can confirm this, in the app.`, {
               confirmLabel: confirmation.confirmLabel,
               typeToConfirm: confirmation.typeToConfirm ?? false,
               count: plan.targets.length,
               reversal: plan.reversal,
             });
-          } else if (confirmed !== plan.token) {
-            const changed = typeof confirmed === 'string' && confirmed.length > 0;
-            return err(
-              SELECTION_ERRORS.needsConfirmation,
-              changed ? `The selection changed since you confirmed. ${confirmation.question}` : confirmation.question,
-              {
-                token: plan.token,
-                confirmLabel: confirmation.confirmLabel,
-                typeToConfirm: confirmation.typeToConfirm ?? false,
-                count: plan.targets.length,
-                hidden: plan.hidden,
-                reversal: plan.reversal,
-              },
-            );
+          }
+          if (confirmed === plan.token) return null;
+          const changed = typeof confirmed === 'string' && confirmed.length > 0;
+          return err(
+            SELECTION_ERRORS.needsConfirmation,
+            changed ? `The selection changed since you confirmed. ${confirmation.question}` : confirmation.question,
+            {
+              token: plan.token,
+              confirmLabel: confirmation.confirmLabel,
+              typeToConfirm: confirmation.typeToConfirm ?? false,
+              count: plan.targets.length,
+              hidden: plan.hidden,
+              reversal: plan.reversal,
+            },
+          );
+        };
+        const value = (outcome: SelectionOutcome<T> | null): Result<SelectionCommandValue> => {
+          if (!outcome) return err(SELECTION_ERRORS.busy, 'Another selection action is still running.');
+          if (outcome.status === 'stale') return err(SELECTION_ERRORS.changed, `${outcome.stale} Call it again to see what it would do now.`);
+          return ok({
+            done: outcome.done.length,
+            failed: outcome.failed.length,
+            refused: outcome.refused.length,
+            failures: outcome.failed.map((f) => f.error),
+            warnings: outcome.warnings,
+          });
+        };
+
+        if (ask) {
+          // The person is asked outside the lock; the run checks under it that nothing changed.
+          const plan = await planSelection(action, own, chosen, planSeams);
+          const answer = gate(plan);
+          if (answer !== 'ask' && answer !== null) return answer;
+          if (answer === 'ask') {
+            const confirmation = plan.confirm ?? { question: `${action.verb(plan.targets.length, own)}?`, confirmLabel: action.verb(plan.targets.length, own) };
+            if (!(await ask({ ...confirmation, count: plan.targets.length }))) return err(SELECTION_ERRORS.declined, 'The person said no.');
+          }
+          return value(await plan.go());
+        }
+        // No dialog: plan and run in one step under the lock (one resolve, nothing in between).
+        let early: Result<SelectionCommandValue> | null = null;
+        const outcome = await lock.run(async () => {
+          const plan = await prepare(action, own, chosen, planSeams);
+          const answer = gate(plan);
+          if (answer !== null) {
+            early = answer === 'ask' ? null : answer;
+            return null;
+          }
+          return execute(action, own, plan, planSeams, plan.confirm !== null);
+        });
+        if (early) return early;
+        if (outcome && outcome.done.length && seams.afterRun) {
+          try {
+            await seams.afterRun(outcome, chosen);
+          } catch (e) {
+            (outcome.warnings as string[]).push(`After the action: ${messageOf(e)}`);
           }
         }
-        const outcome = await plan.go();
-        if (!outcome) return err(SELECTION_ERRORS.busy, 'Another selection action is still running.');
-        if (outcome.stale) return err(SELECTION_ERRORS.needsConfirmation, `${outcome.stale} Call it again to see what it would do now.`);
-        return ok({
-          done: outcome.done.length,
-          failed: outcome.failed.length,
-          refused: outcome.refused.length,
-          failures: outcome.failed.map((f) => f.error),
-          warnings: outcome.warnings,
-        });
+        return value(outcome);
       },
     }) as AnyCommandRecord;
   };

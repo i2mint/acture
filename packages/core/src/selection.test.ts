@@ -465,3 +465,79 @@ describe('retry', () => {
     expect(again.refused.map((r) => [r.item.id, r.why])).toEqual([['b', 'not yours']]);
   });
 });
+
+describe('review round 3', () => {
+  it('go() rechecks with the selection as planned: a resolve that only answers queries works', async () => {
+    const lib = library();
+    const resolve = (s: Selection<{ owner?: string }>) => {
+      if (s.kind === 'ids') throw new Error('queries only');
+      return lib.resolve(s);
+    };
+    const plan = await planSelection(trash(), undefined, { kind: 'query', query: { owner: 'me' }, expectedCount: 3 }, { resolve, offer: () => {} });
+    const out = (await plan.go())!;
+    expect(out.status).toBe('done');
+    expect(out.done.map((s) => s.id)).toEqual(['a', 'b']);
+  });
+
+  it('a retry after a confirmed irreversible action is not stale', async () => {
+    const { resolve } = library();
+    const failOn = ['b'];
+    const purge = liftToSelection<Song>({ ...trash({ failOn }), reversal: 'none', runItem: (s) => { if (failOn.includes(s.id)) throw new Error('x'); s.trashed = true; return null; } });
+    const plan = await planSelection(purge, undefined, { kind: 'ids', ids: ['a', 'b'] }, { resolve });
+    expect(plan.confirm).not.toBeNull();
+    const out = (await plan.go())!;
+    failOn.length = 0;
+    const again = (await out.retry())!;
+    expect(again.status).toBe('done');
+    expect(again.done.map((s) => s.id)).toEqual(['b']);
+  });
+
+  it('a transaction undo bound to its entry: {ok:false} is a conflict, not a restore', async () => {
+    const { resolve } = library();
+    const offers: UndoOffer[] = [];
+    const batch: SelectionAction<Song> = { ...trash(), run: (t) => ({ done: t, undo: null }) };
+    const plan = await planSelection(batch, undefined, { kind: 'ids', ids: ['a', 'b'] }, {
+      resolve, offer: (o) => offers.push(o),
+      transaction: async (fn) => { await fn(); return 'entry-7'; },
+      transactionUndo: (entry) => (entry === 'entry-7' ? { ok: false } : { ok: true }), // not on top any more
+    });
+    await plan.go();
+    expect(await offers[0]!.undo()).toEqual({ restored: 0, conflicts: 2 });
+  });
+
+  it('an irreversible command needs the person even when a host policy says act', async () => {
+    const purge: SelectionAction<Song> = { ...trash(), id: 'library.selection.purge', reversal: 'none' };
+    const lib = library();
+    const registry = createRegistry();
+    for (const c of createSelectionCommands<Song, { owner?: string }>([purge], { resolve: lib.resolve, policy: () => null, current: () => ({ kind: 'ids', ids: ['a'] }) })) registry.register(c);
+    const r = await registry.dispatch('library.selection.purge', {});
+    expect(r.ok ? 'ok' : r.error.code).toBe('needs_person');
+  });
+
+  it('a selection that changes while the person is asked is selection_changed, and nothing runs', async () => {
+    const lib = library();
+    const registry = createRegistry();
+    const confirm = async () => { lib.rows.find((r) => r.id === 'b')!.owner = 'you'; return true; };
+    for (const c of createSelectionCommands<Song, { owner?: string }>([{ ...trash(), reversal: 'manual' }], { resolve: lib.resolve, confirm, current: () => ({ kind: 'ids', ids: ['a', 'b'] }) })) registry.register(c);
+    const r = await registry.dispatch('library.selection.moveToTrash', {});
+    expect(r.ok ? 'ok' : r.error.code).toBe('selection_changed');
+    expect(lib.rows.find((x) => x.id === 'a')!.trashed).toBe(false);
+  });
+
+  it('afterRun runs after the lock is released (it may start another action)', async () => {
+    const lib = library();
+    const lock = createSelectionLock();
+    let busyInAfterRun: boolean | null = null;
+    const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a'] }, { resolve: lib.resolve, lock, afterRun: () => { busyInAfterRun = lock.busy; } });
+    await plan.go();
+    expect(busyInAfterRun).toBe(false);
+  });
+
+  it('an offer that stays pending does not hold the lock', async () => {
+    const lib = library();
+    const lock = createSelectionLock();
+    const plan = await planSelection(trash(), undefined, { kind: 'ids', ids: ['a'] }, { resolve: lib.resolve, lock, offer: () => new Promise(() => {}) });
+    await plan.go();
+    expect(lock.busy).toBe(false);
+  });
+});
