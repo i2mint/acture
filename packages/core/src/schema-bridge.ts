@@ -193,11 +193,15 @@ function enforceStrict(
  * "left out" as `null`, which Zod's `.optional()` refuses, so a `null` is removed where the key is
  * optional and does not itself accept `null`, in nested objects and in objects inside arrays.
  *
- * Pass the command's Zod `params` (recommended): a `null` goes only where an object's shape says
- * the key is optional and not nullable. A real `null` is kept: a `.nullable()` field, a record
- * value (a query `{owner: null}`), a value the schema does not describe; under a union, the branch
- * whose stripped value parses decides, and when none does, every null is kept. Without `params`,
- * every `null` key is removed.
+ * Pass the command's Zod `params` (recommended): a `null` goes only where the schema says the key
+ * is optional and not nullable (an object field, a record value). A real `null` is kept: a
+ * `.nullable()` field, a record value that accepts `null` (a query `{owner: null}`), a value the
+ * schema does not describe. Wrappers (optional, nullable, default, catch, readonly, lazy, pipe and
+ * transform input), intersections (both sides), tuples and union branches are walked; under a
+ * union, a branch that parses the value as given decides, else the first whose stripped value
+ * parses. Where the schema's structure is not known, or no union branch parses, the value is kept
+ * if it parses as given, else every `null` key is removed if that parses, else it is kept.
+ * Without `params`, every `null` key is removed.
  */
 export function fromStrictArgs<T>(args: T, params?: unknown): T {
   return (params === undefined ? stripAll(args) : strip(args, params)) as T;
@@ -210,7 +214,20 @@ type ZodLike = {
   unwrap?: () => unknown;
   options?: unknown[];
   valueType?: unknown;
-  _def?: { valueType?: unknown };
+  _def?: {
+    type?: unknown;
+    valueType?: unknown;
+    options?: unknown[];
+    innerType?: unknown;
+    in?: unknown;
+    out?: unknown;
+    schema?: unknown;
+    getter?: () => unknown;
+    left?: unknown;
+    right?: unknown;
+    items?: unknown[];
+    rest?: unknown;
+  };
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -226,49 +243,100 @@ function stripAll(value: unknown): unknown {
   return out;
 }
 
-/** Guided by the schema; where it cannot tell (no schema, a schema it does not know), keep. */
-function strip(value: unknown, schema: unknown): unknown {
-  const core = coreOf(schema);
-  if (!core) return value;
-  if (Array.isArray(value)) return core.element ? value.map((v) => strip(v, core.element)) : value;
-  if (!isPlainObject(value)) return value;
-  if (Array.isArray(core.options)) {
-    for (const option of core.options) {
-      const candidate = strip(value, option);
-      if ((option as ZodLike).safeParse?.(candidate).success) return candidate;
-    }
-    return value; // no branch parses: keep every null
+/** Whether `schema` accepts `value` (false when it cannot say, or throws, e.g. on an async check). */
+function parses(schema: unknown, value: unknown): boolean {
+  try {
+    return !!(schema as ZodLike | undefined)?.safeParse?.(value).success;
+  } catch {
+    return false;
   }
+}
+
+/** A `null` here means "left out": the schema accepts the key missing but not `null`. */
+function leftOut(schema: unknown): boolean {
+  return parses(schema, undefined) && !parses(schema, null);
+}
+
+/** Guided by the schema; where it cannot tell, the value parsing decides (see `fromStrictArgs`). */
+function strip(value: unknown, schema: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  const core = coreOf(schema);
+  if (!core) return value; // no schema (a key the shape does not describe): keep
+  const def = core._def ?? {};
+  const options = core.options ?? def.options;
+  if (Array.isArray(options)) {
+    // A branch that accepts the value as given decides: its nulls are real.
+    const asGiven = options.find((option) => parses(option, value));
+    if (asGiven !== undefined) {
+      const candidate = strip(value, asGiven);
+      return parses(asGiven, candidate) ? candidate : value;
+    }
+    for (const option of options) {
+      const candidate = strip(value, option);
+      if (parses(option, candidate)) return candidate;
+    }
+    return fallback(value, core);
+  }
+  if (def.left && def.right) return strip(strip(value, def.left), def.right); // intersection
+  if (Array.isArray(value)) {
+    if (core.element) return value.map((v) => strip(v, core.element));
+    const items = def.items;
+    if (Array.isArray(items)) return value.map((v, i) => strip(v, i < items.length ? items[i] : def.rest));
+    return fallback(value, core);
+  }
+  if (!isPlainObject(value)) return value;
   if (core.shape && typeof core.shape === 'object') {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value)) {
-      const field = core.shape[k] as ZodLike | undefined;
+      const field = core.shape[k];
       if (v === null) {
-        const leftOut = !!field?.safeParse && field.safeParse(undefined).success && !field.safeParse(null).success;
-        if (!leftOut) out[k] = v;
+        if (!leftOut(field)) out[k] = v;
         continue;
       }
       out[k] = strip(v, field);
     }
     return out;
   }
-  const valueType = core.valueType ?? core._def?.valueType;
+  const valueType = core.valueType ?? def.valueType;
   if (valueType) {
     const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value)) out[k] = v === null ? v : strip(v, valueType);
+    for (const [k, v] of Object.entries(value)) {
+      if (v === null) {
+        if (!leftOut(valueType)) out[k] = v;
+        continue;
+      }
+      out[k] = strip(v, valueType);
+    }
     return out;
   }
-  return value;
+  return fallback(value, core);
 }
 
-/** The schema behind optional/nullable/default/lazy wrappers: the first with a shape, an
- *  element, union options or a record value type; undefined when there is none. */
+/** A schema whose structure is not walked: keep what parses; else drop every null if that parses. */
+function fallback(value: unknown, schema: unknown): unknown {
+  if (parses(schema, value)) return value;
+  const stripped = stripAll(value);
+  return parses(schema, stripped) ? stripped : value;
+}
+
+/** The schema behind wrappers: optional/nullable/default/catch/readonly/lazy unwrap to their inner
+ *  type, a pipe (and a transform, which is a pipe) to its input (its output after a preprocess). It
+ *  stops at the first schema with structure (a shape, an element, union options, a record value
+ *  type, intersection sides, tuple items) or that it cannot see through. */
 function coreOf(schema: unknown): ZodLike | undefined {
   let s = schema as ZodLike | undefined;
-  for (let i = 0; s && typeof s === 'object' && i < 8; i++) {
-    if ((s.shape && typeof s.shape === 'object') || s.element || Array.isArray(s.options) || s.valueType || s._def?.valueType) return s;
-    if (typeof s.unwrap !== 'function') return undefined;
-    s = s.unwrap() as ZodLike;
+  for (let i = 0; s && typeof s === 'object' && i < 16; i++) {
+    const d = s._def ?? {};
+    if ((s.shape && typeof s.shape === 'object') || s.element || Array.isArray(s.options ?? d.options)) return s;
+    if (s.valueType || d.valueType || (d.left && d.right) || Array.isArray(d.items)) return s;
+    let next: unknown;
+    if (d.in && d.out) next = (d.in as ZodLike)._def?.type === 'transform' ? d.out : d.in;
+    else if (typeof s.unwrap === 'function') next = s.unwrap();
+    else if (d.innerType) next = d.innerType;
+    else if (typeof d.getter === 'function') next = d.getter();
+    else if (d.schema) next = d.schema;
+    else return s;
+    s = next as ZodLike | undefined;
   }
-  return undefined;
+  return s && typeof s === 'object' ? s : undefined;
 }
