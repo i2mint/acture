@@ -100,8 +100,11 @@ export interface UndoHistory {
    *  the dispatches make) into one undo entry. The callback runs to
    *  completion or throws; either way one entry is pushed for whatever
    *  was captured (partial-stays-applied semantics). Nested transactions
-   *  throw. Resolves to the entry pushed, or `null` when nothing was
-   *  captured or the entry was not kept (`limit`): hand it to
+   *  throw, except inside a dispatch (a command's `execute` calling
+   *  `transaction`): there it joins the dispatch's capture, and resolves
+   *  to the entry that dispatch pushes when it closes (`undoEntry` says
+   *  `busy` until then). Resolves to the entry pushed, or `null` when
+   *  nothing was captured or the entry was not kept (`limit`): hand it to
    *  `undoEntry`. A transaction whose callback throws still pushes what
    *  was captured but rejects, so it gives no handle. */
   transaction(fn: () => void | Promise<void>): Promise<UndoEntry | null>;
@@ -131,6 +134,13 @@ interface CaptureBuffer {
   patches: Patch[];
   inversePatches: Patch[];
   effects: Effect[];
+  /** The entry this capture will push, created up front so a transaction that joins a capture
+   *  opened by a dispatch can hand it out before the dispatch closes. Frozen on close. */
+  entry: { patches: readonly Patch[]; inversePatches: readonly Patch[]; effects: readonly Effect[] };
+}
+
+function newBuffer(): CaptureBuffer {
+  return { patches: [], inversePatches: [], effects: [], entry: { patches: [], inversePatches: [], effects: [] } };
 }
 
 /**
@@ -170,6 +180,9 @@ export function createUndoHistory<S>(
 
   let buffer: CaptureBuffer | null = null;
   let captureOwner: 'dispatch' | 'transaction' | null = null;
+  /** Dispatches in flight: a transaction opened inside one (a command whose `execute` calls
+   *  `history.transaction`) joins the open capture instead of throwing. */
+  let dispatchDepth = 0;
 
   /* ── adapter.setStateWithPatches wrapper ──────────────────────────── */
 
@@ -201,9 +214,10 @@ export function createUndoHistory<S>(
     ): Promise<Result<R>> {
       const ownsCapture = captureOwner === null;
       if (ownsCapture) {
-        buffer = { patches: [], inversePatches: [], effects: [] };
+        buffer = newBuffer();
         captureOwner = 'dispatch';
       }
+      dispatchDepth += 1;
       try {
         const result = await originalDispatch<R>(id, params, ctx, opts);
         if (buffer && result.ok && result.effects && result.effects.length > 0) {
@@ -211,6 +225,7 @@ export function createUndoHistory<S>(
         }
         return result;
       } finally {
+        dispatchDepth -= 1;
         if (ownsCapture) {
           closeCapture();
         }
@@ -246,11 +261,14 @@ export function createUndoHistory<S>(
       }
     }
 
-    const entry: UndoEntry = Object.freeze({
-      patches: captured.patches,
-      inversePatches: captured.inversePatches,
-      effects: captured.effects,
-    });
+    // The same object a joined transaction already handed out, now filled in and frozen.
+    const entry: UndoEntry = Object.freeze(
+      Object.assign(captured.entry, {
+        patches: captured.patches,
+        inversePatches: captured.inversePatches,
+        effects: captured.effects,
+      }),
+    );
     entries.push(entry);
     cursor = entries.length;
 
@@ -311,10 +329,11 @@ export function createUndoHistory<S>(
   }
 
   async function transaction(fn: () => void | Promise<void>): Promise<UndoEntry | null> {
+    if (captureOwner !== null && buffer && dispatchDepth > 0) return joinCapture(buffer, fn);
     if (captureOwner !== null) {
       throw new Error('acture-undo: nested transactions are not supported');
     }
-    buffer = { patches: [], inversePatches: [], effects: [] };
+    buffer = newBuffer();
     captureOwner = 'transaction';
     let entry: UndoEntry | null = null;
     try {
@@ -323,6 +342,16 @@ export function createUndoHistory<S>(
       entry = closeCapture();
     }
     return entry;
+  }
+
+  /** A transaction inside a dispatch (a command's `execute` calling `history.transaction`, as
+   *  `acture/selection` does) is part of that dispatch's undo unit: run `fn` in the open capture
+   *  and hand out the entry the capture will push when it closes. Until then `undoEntry` says
+   *  `busy`; null when `fn` changed nothing. */
+  async function joinCapture(open: CaptureBuffer, fn: () => void | Promise<void>): Promise<UndoEntry | null> {
+    const before = open.patches.length + open.effects.length;
+    await fn();
+    return open.patches.length + open.effects.length > before ? (open.entry as UndoEntry) : null;
   }
 
   function undoEntry(entry: unknown): UndoEntryResult {

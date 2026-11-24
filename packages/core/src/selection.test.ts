@@ -505,6 +505,35 @@ describe('review round 3', () => {
     expect(await offers[0]!.undo()).toEqual({ restored: 0, conflicts: 2 });
   });
 
+  it("a transaction undo answering {ok:false, reason:'busy'} fails (retryable), not a cached conflict", async () => {
+    const { resolve } = library();
+    const offers: UndoOffer[] = [];
+    let busy = true;
+    const batch: SelectionAction<Song> = { ...trash(), run: (t) => ({ done: t, undo: null }) };
+    const plan = await planSelection(batch, undefined, { kind: 'ids', ids: ['a', 'b'] }, {
+      resolve, offer: (o) => offers.push(o),
+      transaction: async (fn) => { await fn(); return 'entry-8'; },
+      transactionUndo: () => (busy ? { ok: false, reason: 'busy' } : { ok: true }),
+    });
+    await plan.go();
+    await expect(offers[0]!.undo()).rejects.toThrow();
+    busy = false;
+    expect(await offers[0]!.undo()).toEqual({ restored: 2, conflicts: 0 });
+  });
+
+  it('an item named twice in a selection is acted on once', async () => {
+    const { rows } = library();
+    const runs: string[] = [];
+    const once: SelectionAction<Song> = { ...trash(), run: (t) => { runs.push(...t.map((s) => s.id)); return { done: t }; } };
+    // A resolver that maps each id to its row, duplicates included.
+    const resolve = (s: Selection) => (s.kind === 'ids' ? s.ids.map((id) => rows.find((r) => r.id === id)!) : []);
+    const plan = await planSelection(once, undefined, { kind: 'ids', ids: ['a', 'a', 'b'] }, { resolve });
+    expect(plan.targets.map((s) => s.id)).toEqual(['a', 'b']);
+    const out = await plan.go();
+    expect(runs).toEqual(['a', 'b']);
+    expect(out?.status === 'done' && out.done.length).toBe(2);
+  });
+
   it('an irreversible command needs the person even when a host policy says act', async () => {
     const purge: SelectionAction<Song> = { ...trash(), id: 'library.selection.purge', reversal: 'none' };
     const lib = library();

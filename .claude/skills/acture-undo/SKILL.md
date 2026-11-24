@@ -37,9 +37,9 @@ Whatever path is chosen, the project must honour these — they are what makes u
 
 > **Partial stays applied on failure.** If a dispatch inside a transaction throws or returns `ok: false`, prior mutations stay applied; the entry is still pushed for whatever was captured; the caller may then call `undo()` to rewind.
 
-**An undo toast for one action is bound to its entry:** `const entry = await history.transaction(fn)`, then the toast calls `history.undoEntry(entry)`, which undoes it only while it is the last applied (never a later edit; `busy` while another capture is open). Never `history.undo()` or `entries().at(-1)` from a toast. The wiring for `acture/selection` is in acture-undo's README.
+**An undo toast for one action is bound to its entry:** `const entry = await history.transaction(fn)`, then the toast calls `history.undoEntry(entry)`, which undoes it only while it is the last applied (never a later edit; `busy` while another capture is open: map that to `false`, a retryable failure, never to `'conflict'`). Never `history.undo()` or `entries().at(-1)` from a toast. The wiring for `acture/selection` is in acture-undo's README.
 
-This is the predictable choice — it matches acture's errors-as-data discipline, and it keeps the host in control rather than hiding state changes behind a magic rollback. If the host wants atomicity, it checks after each dispatch and undoes explicitly. Nested transactions throw.
+This is the predictable choice — it matches acture's errors-as-data discipline, and it keeps the host in control rather than hiding state changes behind a magic rollback. If the host wants atomicity, it checks after each dispatch and undoes explicitly. Nested transactions throw, except one opened inside a dispatch (a command's `execute` calling `history.transaction`, as `acture/selection` does): it joins the dispatch's capture and resolves to the entry the dispatch pushes.
 
 ## Effects — the host-callback lifecycle
 

@@ -335,7 +335,8 @@ export interface SelectionSeams<T, Q = SelectionQuery> {
   readonly transaction?: (fn: () => Promise<void>) => Promise<unknown>;
   /** With `transaction`: take back exactly the entry `transaction` recorded (its handle), and
    *  return `'conflict'` (or `{ok: false}`) when that entry is no longer the last one applied —
-   *  never `history.undo()` blindly, which would undo whatever came after. */
+   *  never `history.undo()` blindly, which would undo whatever came after. `false` (or
+   *  `{ok: false, reason: 'busy'}`) when it cannot be taken back yet: a failure, tried again. */
   readonly transactionUndo?: (entry: unknown) => unknown;
   /** One action at a time (default: none for a plan; the commands create one unless given).
    *  Pass the same `createSelectionLock()` to buttons and commands. Not reentrant. */
@@ -507,7 +508,12 @@ async function prepare<T, P, Q>(
 
   const targets: T[] = [];
   const refused: Refusal<T>[] = [];
+  const seen = new Set<ItemId>();
   for (const item of items) {
+    // An item named twice (`ids: ['a', 'a']`, a query and an include) is acted on once.
+    const k = key(item);
+    if (seen.has(k)) continue;
+    seen.add(k);
     const verdict = action.appliesTo ? action.appliesTo(item, params) : true;
     if (verdict === true) targets.push(item);
     else refused.push({ item, why: typeof verdict === 'string' ? verdict : 'does not apply' });
@@ -563,6 +569,11 @@ function onceUndo(raw: () => unknown, count: number): () => Promise<UndoReport> 
         // `false` is a failed undo (undo-toast's convention, and what store calls answer): it
         // rejects, so the toast says so and Try again runs it again.
         if (r === false) throw new Error('Could not undo.');
+        // {ok: false, reason: 'busy'} (acture-undo while another change is in flight): nothing was
+        // taken back and nothing is in the way, so it fails and can be tried again.
+        if (!!r && typeof r === 'object' && (r as { ok?: unknown }).ok === false && (r as { reason?: unknown }).reason === 'busy') {
+          throw new Error('Could not undo yet: another change is in progress.');
+        }
         // An UndoReport is taken as is; 'conflict' or {ok: false} (an undo history whose top entry
         // is no longer this one) is a conflict: nothing was taken back, nothing overwritten.
         const refusedIt = r === 'conflict' || (!!r && typeof r === 'object' && (r as { ok?: unknown }).ok === false);
