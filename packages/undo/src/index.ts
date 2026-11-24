@@ -38,6 +38,7 @@
 export { createUndoHistory } from './undo.js';
 export type {
   UndoEntryResult,
+  TransactionOptions,
   CreateUndoHistoryOptions,
   UndoEffectContext,
   UndoEffectHandler,

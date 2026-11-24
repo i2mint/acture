@@ -100,18 +100,23 @@ export interface UndoHistory {
    *  the dispatches make) into one undo entry. The callback runs to
    *  completion or throws; either way one entry is pushed for whatever
    *  was captured (partial-stays-applied semantics). Nested transactions
-   *  throw. Resolves to the entry pushed, or `null` when nothing was
-   *  captured or the entry was not kept (`limit`): hand it to
-   *  `undoEntry`. A transaction whose callback throws still pushes what
-   *  was captured but rejects, so it gives no handle. */
-  transaction(fn: () => void | Promise<void>): Promise<UndoEntry | null>;
+   *  throw, unless `{ join: true }` (a command's `execute` calling
+   *  `transaction`): it then joins the open capture and resolves to the
+   *  entry that capture pushes when it closes (`undoEntry` says `busy`
+   *  until then; an entry `limit` then evicts is `unknown`). Resolves to
+   *  the entry pushed, or `null` when nothing was captured or the entry
+   *  was not kept (`limit`): hand it to `undoEntry`. A transaction whose
+   *  callback throws still pushes what was captured but rejects, so it
+   *  gives no handle. */
+  transaction(fn: () => void | Promise<void>, options?: TransactionOptions): Promise<UndoEntry | null>;
   /** Undo exactly this entry, and only while it is the last one applied:
    *  an undo toast bound to its own action must not undo a later edit
    *  (`not-on-top`) or an earlier one after Cmd/Ctrl+Z took this one
    *  (`already-undone`). */
   undoEntry(entry: unknown): UndoEntryResult;
   /** Whether this entry is in the history and applied now (a toast can
-   *  dismiss itself when Cmd/Ctrl+Z took its entry). False too for an
+   *  dismiss itself when Cmd/Ctrl+Z took its entry); true too for a
+   *  joined entry whose dispatch has not closed yet. False too for an
    *  entry the `limit` evicted (its changes stay applied, but it can no
    *  longer be undone). */
   isApplied(entry: unknown): boolean;
@@ -123,14 +128,39 @@ export interface UndoHistory {
   dispose(): void;
 }
 
+export interface TransactionOptions {
+  /** Called from inside a dispatch (a command's `execute`): join the capture already open (the
+   *  dispatch's) instead of throwing, and resolve to the entry it pushes when it closes. With no
+   *  capture open, it is an ordinary transaction. Only a caller that knows it runs inside a
+   *  dispatch should pass it: a transaction started elsewhere while an unrelated dispatch is in
+   *  flight must not merge into that dispatch's entry. */
+  readonly join?: boolean;
+}
+
 export type UndoEntryResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: 'not-on-top' | 'already-undone' | 'busy' | 'unknown' };
+  | {
+      readonly ok: false;
+      /** `shared`: a joined entry whose capture also recorded another command running at the same
+       *  time; undoing it would take that command back too. */
+      readonly reason: 'not-on-top' | 'already-undone' | 'busy' | 'shared' | 'unknown';
+    };
 
 interface CaptureBuffer {
   patches: Patch[];
   inversePatches: Patch[];
   effects: Effect[];
+  /** The entry this capture will push, created up front so a transaction that joins a capture
+   *  opened by a dispatch can hand it out before the dispatch closes. Frozen on close. */
+  entry: { patches: readonly Patch[]; inversePatches: readonly Patch[]; effects: readonly Effect[] };
+  /** Dispatches that ran in this capture (overlapping async dispatches share one). */
+  dispatches: number;
+  /** A joined transaction handed `entry` out. */
+  joined: boolean;
+}
+
+function newBuffer(): CaptureBuffer {
+  return { patches: [], inversePatches: [], effects: [], entry: { patches: [], inversePatches: [], effects: [] }, dispatches: 0, joined: false };
 }
 
 /**
@@ -170,6 +200,8 @@ export function createUndoHistory<S>(
 
   let buffer: CaptureBuffer | null = null;
   let captureOwner: 'dispatch' | 'transaction' | null = null;
+  /** Joined entries that also hold another, overlapping command: `undoEntry` refuses them. */
+  const shared = new WeakSet<UndoEntry>();
 
   /* ── adapter.setStateWithPatches wrapper ──────────────────────────── */
 
@@ -201,9 +233,10 @@ export function createUndoHistory<S>(
     ): Promise<Result<R>> {
       const ownsCapture = captureOwner === null;
       if (ownsCapture) {
-        buffer = { patches: [], inversePatches: [], effects: [] };
+        buffer = newBuffer();
         captureOwner = 'dispatch';
       }
+      if (buffer) buffer.dispatches += 1;
       try {
         const result = await originalDispatch<R>(id, params, ctx, opts);
         if (buffer && result.ok && result.effects && result.effects.length > 0) {
@@ -246,11 +279,15 @@ export function createUndoHistory<S>(
       }
     }
 
-    const entry: UndoEntry = Object.freeze({
-      patches: captured.patches,
-      inversePatches: captured.inversePatches,
-      effects: captured.effects,
-    });
+    // The same object a joined transaction already handed out, now filled in and frozen.
+    const entry: UndoEntry = Object.freeze(
+      Object.assign(captured.entry, {
+        patches: captured.patches,
+        inversePatches: captured.inversePatches,
+        effects: captured.effects,
+      }),
+    );
+    if (captured.joined && captured.dispatches > 1) shared.add(entry);
     entries.push(entry);
     cursor = entries.length;
 
@@ -310,11 +347,15 @@ export function createUndoHistory<S>(
     cursor = 0;
   }
 
-  async function transaction(fn: () => void | Promise<void>): Promise<UndoEntry | null> {
+  async function transaction(
+    fn: () => void | Promise<void>,
+    options: TransactionOptions = {},
+  ): Promise<UndoEntry | null> {
+    if (options.join && captureOwner !== null && buffer) return joinCapture(buffer, fn);
     if (captureOwner !== null) {
       throw new Error('acture-undo: nested transactions are not supported');
     }
-    buffer = { patches: [], inversePatches: [], effects: [] };
+    buffer = newBuffer();
     captureOwner = 'transaction';
     let entry: UndoEntry | null = null;
     try {
@@ -325,6 +366,20 @@ export function createUndoHistory<S>(
     return entry;
   }
 
+  /** `{join: true}` from inside a dispatch (a command's `execute` calling `history.transaction`,
+   *  as `acture/selection` does): `fn` is part of that dispatch's undo unit, so run it in the open
+   *  capture and hand out the entry the capture pushes when it closes (`undoEntry` says `busy`
+   *  until then). Null when `fn` changed nothing, and when the capture closed before `fn` finished
+   *  (its later changes were not recorded with it, so a handle would undo only part of them). */
+  async function joinCapture(open: CaptureBuffer, fn: () => void | Promise<void>): Promise<UndoEntry | null> {
+    const before = open.patches.length + open.effects.length;
+    await fn();
+    if (buffer !== open) return null;
+    if (open.patches.length + open.effects.length === before) return null;
+    open.joined = true;
+    return open.entry as UndoEntry;
+  }
+
   function undoEntry(entry: unknown): UndoEntryResult {
     // A later change still in flight (an async dispatch or another transaction) has mutated state
     // but not pushed its entry: undoing now would take it too.
@@ -333,11 +388,15 @@ export function createUndoHistory<S>(
     if (at < 0) return { ok: false, reason: 'unknown' };
     if (at >= cursor) return { ok: false, reason: 'already-undone' };
     if (at !== cursor - 1) return { ok: false, reason: 'not-on-top' };
+    // A joined handle stands for its own command; this entry also holds another one that ran at
+    // the same time (overlapping dispatches share a capture), so it cannot be taken back alone.
+    if (shared.has(entry as UndoEntry)) return { ok: false, reason: 'shared' };
     undo(); // the entry is on top: this cannot be a no-op
     return { ok: true };
   }
 
   function isApplied(entry: unknown): boolean {
+    if (buffer && entry === buffer.entry) return true; // joined, its dispatch still open: applied, not yet pushed
     const at = entries.indexOf(entry as UndoEntry);
     return at >= 0 && at < cursor;
   }
