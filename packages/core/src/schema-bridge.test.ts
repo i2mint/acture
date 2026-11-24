@@ -203,4 +203,44 @@ describe('toJsonSchema', () => {
     expect(fromStrictArgs(call, params)).toEqual({ note: null, items: [{}] });
     expect(params.safeParse(fromStrictArgs(call, params)).success).toBe(true);
   });
+
+  it('fromStrictArgs with the params keeps a null under a record and inside a union (a query for "owner is null")', async () => {
+    const { fromStrictArgs } = await import('./schema-bridge.js');
+    const { selectionSchema } = await import('./selection.js');
+    const params = z.object({
+      meta: z.record(z.string(), z.string().nullable()),
+      selection: selectionSchema().nullable().optional(),
+      tags: z.array(z.object({ name: z.string(), note: z.string().optional() })).optional(),
+      label: z.string().nullable(),
+      opt: z.string().optional(),
+    });
+    const call = {
+      meta: { k: null },
+      selection: { kind: 'query', query: { owner: null }, include: null, exclude: null, expectedCount: null },
+      tags: [{ name: 'x', note: null }],
+      label: null,
+      opt: null,
+    };
+    const out = fromStrictArgs(call, params);
+    expect(out).toEqual({
+      meta: { k: null },
+      selection: { kind: 'query', query: { owner: null } },
+      tags: [{ name: 'x' }],
+      label: null,
+    });
+    expect(params.safeParse(out).success).toBe(true);
+  });
+
+  it('fromStrictArgs picks the union branch that parses, and keeps nulls where it cannot tell', async () => {
+    const { fromStrictArgs } = await import('./schema-bridge.js');
+    const params = z.object({
+      sel: z.discriminatedUnion('kind', [
+        z.object({ kind: z.literal('a'), n: z.number().optional() }),
+        z.object({ kind: z.literal('b'), m: z.string().nullable() }),
+      ]),
+      anything: z.unknown(),
+    });
+    expect(fromStrictArgs({ sel: { kind: 'a', n: null }, anything: { x: null } }, params)).toEqual({ sel: { kind: 'a' }, anything: { x: null } });
+    expect(fromStrictArgs({ sel: { kind: 'b', m: null }, anything: null }, params)).toEqual({ sel: { kind: 'b', m: null }, anything: null });
+  });
 });
