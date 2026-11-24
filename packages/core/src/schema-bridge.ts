@@ -193,51 +193,80 @@ function enforceStrict(
  * "left out" as `null`, which Zod's `.optional()` refuses, so a `null` is removed where the key is
  * optional and does not itself accept `null`, in nested objects and in objects inside arrays.
  *
- * Pass the command's Zod `params` (recommended): only those nulls go, and a real `null` (a
- * `.nullable()` field, a record value) is kept. Without it, every `null` key is removed.
+ * Pass the command's Zod `params` (recommended): a `null` goes only where an object's shape says
+ * the key is optional and not nullable. A real `null` is kept: a `.nullable()` field, a record
+ * value (a query `{owner: null}`), a value the schema does not describe; under a union, the branch
+ * whose stripped value parses decides, and when none does, every null is kept. Without `params`,
+ * every `null` key is removed.
  */
 export function fromStrictArgs<T>(args: T, params?: unknown): T {
-  return strip(args, params) as T;
+  return (params === undefined ? stripAll(args) : strip(args, params)) as T;
 }
 
-type ZodLike = { safeParse?: (v: unknown) => { success: boolean }; shape?: Record<string, unknown>; element?: unknown; unwrap?: () => unknown; options?: unknown[] };
+type ZodLike = {
+  safeParse?: (v: unknown) => { success: boolean };
+  shape?: Record<string, unknown>;
+  element?: unknown;
+  unwrap?: () => unknown;
+  options?: unknown[];
+  valueType?: unknown;
+  _def?: { valueType?: unknown };
+};
 
-function strip(value: unknown, schema: unknown): unknown {
-  if (Array.isArray(value)) return value.map((v) => strip(v, elementOf(schema)));
-  if (value === null || typeof value !== 'object' || Object.getPrototypeOf(value) !== Object.prototype) return value;
-  const shape = shapeOf(schema);
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype;
+}
+
+/** No schema: every `null` key is "left out". */
+function stripAll(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripAll);
+  if (!isPlainObject(value)) return value;
   const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    const field = shape?.[k];
-    if (v === null) {
-      if (!schema) continue; // no schema: every null is "left out"
-      const f = field as ZodLike | undefined;
-      const acceptsNull = !!f?.safeParse && f.safeParse(null).success;
-      const optional = !f?.safeParse || f.safeParse(undefined).success;
-      if (optional && !acceptsNull) continue;
-      out[k] = v;
-      continue;
-    }
-    out[k] = strip(v, field); // under a field the shape does not describe (a union), every null goes
-  }
+  for (const [k, v] of Object.entries(value)) if (v !== null) out[k] = stripAll(v);
   return out;
 }
 
-/** The object shape behind optional/nullable/default wrappers, or undefined. */
-function shapeOf(schema: unknown): Record<string, unknown> | undefined {
-  let s = schema as ZodLike | undefined;
-  for (let i = 0; s && i < 8; i++) {
-    if (s.shape && typeof s.shape === 'object') return s.shape;
-    if (typeof s.unwrap !== 'function') return undefined;
-    s = s.unwrap() as ZodLike;
+/** Guided by the schema; where it cannot tell (no schema, a schema it does not know), keep. */
+function strip(value: unknown, schema: unknown): unknown {
+  const core = coreOf(schema);
+  if (!core) return value;
+  if (Array.isArray(value)) return core.element ? value.map((v) => strip(v, core.element)) : value;
+  if (!isPlainObject(value)) return value;
+  if (Array.isArray(core.options)) {
+    for (const option of core.options) {
+      const candidate = strip(value, option);
+      if ((option as ZodLike).safeParse?.(candidate).success) return candidate;
+    }
+    return value; // no branch parses: keep every null
   }
-  return undefined;
+  if (core.shape && typeof core.shape === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      const field = core.shape[k] as ZodLike | undefined;
+      if (v === null) {
+        const leftOut = !!field?.safeParse && field.safeParse(undefined).success && !field.safeParse(null).success;
+        if (!leftOut) out[k] = v;
+        continue;
+      }
+      out[k] = strip(v, field);
+    }
+    return out;
+  }
+  const valueType = core.valueType ?? core._def?.valueType;
+  if (valueType) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = v === null ? v : strip(v, valueType);
+    return out;
+  }
+  return value;
 }
 
-function elementOf(schema: unknown): unknown {
+/** The schema behind optional/nullable/default/lazy wrappers: the first with a shape, an
+ *  element, union options or a record value type; undefined when there is none. */
+function coreOf(schema: unknown): ZodLike | undefined {
   let s = schema as ZodLike | undefined;
-  for (let i = 0; s && i < 8; i++) {
-    if (s.element) return s.element;
+  for (let i = 0; s && typeof s === 'object' && i < 8; i++) {
+    if ((s.shape && typeof s.shape === 'object') || s.element || Array.isArray(s.options) || s.valueType || s._def?.valueType) return s;
     if (typeof s.unwrap !== 'function') return undefined;
     s = s.unwrap() as ZodLike;
   }
