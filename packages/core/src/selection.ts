@@ -331,8 +331,9 @@ export interface SelectionSeams<T, Q = SelectionQuery> {
   /** Wrap the run, e.g. acture-undo's `history.transaction`, for actions that change local
    *  state through a patch-capable adapter. What it resolves to (a handle on the entry it
    *  recorded) is handed to `transactionUndo`, which is what is offered (the action's own `undo`,
-   *  if any, is not: they would undo twice). */
-  readonly transaction?: (fn: () => Promise<void>) => Promise<unknown>;
+   *  if any, is not: they would undo twice). `inDispatch` is true when the run is a selection
+   *  command's `execute`, i.e. inside a `registry.dispatch` (acture-undo: pass it as `join`). */
+  readonly transaction?: (fn: () => Promise<void>, how: { readonly inDispatch: boolean }) => Promise<unknown>;
   /** With `transaction`: take back exactly the entry `transaction` recorded (its handle), and
    *  return `'conflict'` (or `{ok: false}`) when that entry is no longer the last one applied —
    *  never `history.undo()` blindly, which would undo whatever came after. `false` (or
@@ -508,10 +509,11 @@ async function prepare<T, P, Q>(
 
   const targets: T[] = [];
   const refused: Refusal<T>[] = [];
-  const seen = new Set<ItemId>();
+  const seen = new Set<unknown>();
   for (const item of items) {
-    // An item named twice (`ids: ['a', 'a']`, a query and an include) is acted on once.
-    const k = key(item);
+    // An item named twice (`ids: ['a', 'a']`, a query and an include) is acted on once. Without a
+    // `key` seam an item with no `id` has no key to compare: only the same object counts as twice.
+    const k = seams.key || (item as { id?: unknown })?.id != null ? key(item) : item;
     if (seen.has(k)) continue;
     seen.add(k);
     const verdict = action.appliesTo ? action.appliesTo(item, params) : true;
@@ -610,7 +612,7 @@ async function execute<T, P, Q>(
     }
   };
   let entry: unknown;
-  if (seams.transaction) entry = await seams.transaction(body);
+  if (seams.transaction) entry = await seams.transaction(body, { inDispatch: false });
   else await body();
   const done = outcome.done;
   const failed = outcome.failed ?? [];
@@ -709,7 +711,11 @@ export function createSelectionCommands<T, Q = SelectionQuery>(
 ): AnyCommandRecord[] {
   const { current, category = 'selection', confirm: ask, querySchema } = seams;
   const lock = seams.lock ?? createSelectionLock();
-  const planSeams: SelectionSeams<T, Q> = { ...seams, lock };
+  // A command's run is inside its own dispatch: tell the transaction seam (acture-undo joins it).
+  const inner = seams.transaction;
+  const planSeams: SelectionSeams<T, Q> = inner
+    ? { ...seams, lock, transaction: (fn) => inner(fn, { inDispatch: true }) }
+    : { ...seams, lock };
   const selectionParam = selectionSchema(querySchema);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

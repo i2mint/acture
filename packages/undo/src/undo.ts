@@ -100,21 +100,23 @@ export interface UndoHistory {
    *  the dispatches make) into one undo entry. The callback runs to
    *  completion or throws; either way one entry is pushed for whatever
    *  was captured (partial-stays-applied semantics). Nested transactions
-   *  throw, except inside a dispatch (a command's `execute` calling
-   *  `transaction`): there it joins the dispatch's capture, and resolves
-   *  to the entry that dispatch pushes when it closes (`undoEntry` says
-   *  `busy` until then). Resolves to the entry pushed, or `null` when
-   *  nothing was captured or the entry was not kept (`limit`): hand it to
-   *  `undoEntry`. A transaction whose callback throws still pushes what
-   *  was captured but rejects, so it gives no handle. */
-  transaction(fn: () => void | Promise<void>): Promise<UndoEntry | null>;
+   *  throw, unless `{ join: true }` (a command's `execute` calling
+   *  `transaction`): it then joins the open capture and resolves to the
+   *  entry that capture pushes when it closes (`undoEntry` says `busy`
+   *  until then; an entry `limit` then evicts is `unknown`). Resolves to
+   *  the entry pushed, or `null` when nothing was captured or the entry
+   *  was not kept (`limit`): hand it to `undoEntry`. A transaction whose
+   *  callback throws still pushes what was captured but rejects, so it
+   *  gives no handle. */
+  transaction(fn: () => void | Promise<void>, options?: TransactionOptions): Promise<UndoEntry | null>;
   /** Undo exactly this entry, and only while it is the last one applied:
    *  an undo toast bound to its own action must not undo a later edit
    *  (`not-on-top`) or an earlier one after Cmd/Ctrl+Z took this one
    *  (`already-undone`). */
   undoEntry(entry: unknown): UndoEntryResult;
   /** Whether this entry is in the history and applied now (a toast can
-   *  dismiss itself when Cmd/Ctrl+Z took its entry). False too for an
+   *  dismiss itself when Cmd/Ctrl+Z took its entry); true too for a
+   *  joined entry whose dispatch has not closed yet. False too for an
    *  entry the `limit` evicted (its changes stay applied, but it can no
    *  longer be undone). */
   isApplied(entry: unknown): boolean;
@@ -124,6 +126,15 @@ export interface UndoHistory {
    *  `dispatch` to the references captured at install time. Dispose in
    *  reverse install order if other instrumenters wrap this registry. */
   dispose(): void;
+}
+
+export interface TransactionOptions {
+  /** Called from inside a dispatch (a command's `execute`): join the capture already open (the
+   *  dispatch's) instead of throwing, and resolve to the entry it pushes when it closes. With no
+   *  capture open, it is an ordinary transaction. Only a caller that knows it runs inside a
+   *  dispatch should pass it: a transaction started elsewhere while an unrelated dispatch is in
+   *  flight must not merge into that dispatch's entry. */
+  readonly join?: boolean;
 }
 
 export type UndoEntryResult =
@@ -180,9 +191,6 @@ export function createUndoHistory<S>(
 
   let buffer: CaptureBuffer | null = null;
   let captureOwner: 'dispatch' | 'transaction' | null = null;
-  /** Dispatches in flight: a transaction opened inside one (a command whose `execute` calls
-   *  `history.transaction`) joins the open capture instead of throwing. */
-  let dispatchDepth = 0;
 
   /* ── adapter.setStateWithPatches wrapper ──────────────────────────── */
 
@@ -217,7 +225,6 @@ export function createUndoHistory<S>(
         buffer = newBuffer();
         captureOwner = 'dispatch';
       }
-      dispatchDepth += 1;
       try {
         const result = await originalDispatch<R>(id, params, ctx, opts);
         if (buffer && result.ok && result.effects && result.effects.length > 0) {
@@ -225,7 +232,6 @@ export function createUndoHistory<S>(
         }
         return result;
       } finally {
-        dispatchDepth -= 1;
         if (ownsCapture) {
           closeCapture();
         }
@@ -328,8 +334,11 @@ export function createUndoHistory<S>(
     cursor = 0;
   }
 
-  async function transaction(fn: () => void | Promise<void>): Promise<UndoEntry | null> {
-    if (captureOwner !== null && buffer && dispatchDepth > 0) return joinCapture(buffer, fn);
+  async function transaction(
+    fn: () => void | Promise<void>,
+    options: TransactionOptions = {},
+  ): Promise<UndoEntry | null> {
+    if (options.join && captureOwner !== null && buffer) return joinCapture(buffer, fn);
     if (captureOwner !== null) {
       throw new Error('acture-undo: nested transactions are not supported');
     }
@@ -344,13 +353,15 @@ export function createUndoHistory<S>(
     return entry;
   }
 
-  /** A transaction inside a dispatch (a command's `execute` calling `history.transaction`, as
-   *  `acture/selection` does) is part of that dispatch's undo unit: run `fn` in the open capture
-   *  and hand out the entry the capture will push when it closes. Until then `undoEntry` says
-   *  `busy`; null when `fn` changed nothing. */
+  /** `{join: true}` from inside a dispatch (a command's `execute` calling `history.transaction`,
+   *  as `acture/selection` does): `fn` is part of that dispatch's undo unit, so run it in the open
+   *  capture and hand out the entry the capture pushes when it closes (`undoEntry` says `busy`
+   *  until then). Null when `fn` changed nothing, and when the capture closed before `fn` finished
+   *  (its later changes were not recorded with it, so a handle would undo only part of them). */
   async function joinCapture(open: CaptureBuffer, fn: () => void | Promise<void>): Promise<UndoEntry | null> {
     const before = open.patches.length + open.effects.length;
     await fn();
+    if (buffer !== open) return null;
     return open.patches.length + open.effects.length > before ? (open.entry as UndoEntry) : null;
   }
 
@@ -367,6 +378,7 @@ export function createUndoHistory<S>(
   }
 
   function isApplied(entry: unknown): boolean {
+    if (buffer && entry === buffer.entry) return true; // joined, its dispatch still open: applied, not yet pushed
     const at = entries.indexOf(entry as UndoEntry);
     return at >= 0 && at < cursor;
   }

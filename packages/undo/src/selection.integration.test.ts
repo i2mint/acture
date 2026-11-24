@@ -72,7 +72,7 @@ describe('acture/selection with acture-undo', () => {
         id: 'app.noop',
         title: 'Noop',
         execute: async () => {
-          handle = await history.transaction(() => {});
+          handle = await history.transaction(() => {}, { join: true });
           return ok(undefined);
         },
       }),
@@ -80,6 +80,70 @@ describe('acture/selection with acture-undo', () => {
     await registry.dispatch('app.noop', {});
     expect(handle).toBeNull();
     expect(history.entries()).toHaveLength(0);
+  });
+
+  it('a transaction without join, started while an unrelated dispatch is in flight, still throws', async () => {
+    const { adapter, registry, history } = setup();
+    let release!: () => void;
+    registry.registerAll([
+      defineCommand({
+        id: 'app.slow',
+        title: 'Slow',
+        execute: async () => {
+          adapter.setStateWithPatches((d) => { d.trashed.a = true; });
+          await new Promise<void>((r) => { release = r; });
+          return ok(undefined);
+        },
+      }),
+    ]);
+    const slow = registry.dispatch('app.slow', {});
+    await expect(history.transaction(() => { adapter.setStateWithPatches((d) => { d.trashed.b = true; }); })).rejects.toThrow(/nested transactions/);
+    release();
+    await slow;
+  });
+
+  it('a joined entry is applied (isApplied) while its dispatch is still open', async () => {
+    const { adapter, registry, history } = setup();
+    const seen: boolean[] = [];
+    let handle: unknown;
+    registry.registerAll([
+      defineCommand({
+        id: 'app.joined',
+        title: 'Joined',
+        execute: async () => {
+          handle = await history.transaction(() => { adapter.setStateWithPatches((d) => { d.trashed.a = true; }); }, { join: true });
+          seen.push(history.isApplied(handle));
+          return ok(undefined);
+        },
+      }),
+    ]);
+    await registry.dispatch('app.joined', {});
+    expect(seen).toEqual([true]);
+    expect(history.isApplied(handle)).toBe(true);
+    expect(history.undoEntry(handle)).toEqual({ ok: true });
+  });
+
+  it('a joined transaction whose capture closes before it finishes gives no handle', async () => {
+    const { adapter, registry, history } = setup();
+    let pending: Promise<unknown> | undefined;
+    let go!: () => void;
+    registry.registerAll([
+      defineCommand({
+        id: 'app.unawaited',
+        title: 'Unawaited',
+        execute: () => {
+          pending = history.transaction(async () => {
+            adapter.setStateWithPatches((d) => { d.trashed.a = true; });
+            await new Promise<void>((r) => { go = r; });
+            adapter.setStateWithPatches((d) => { d.trashed.b = true; });
+          }, { join: true });
+          return ok(undefined);
+        },
+      }),
+    ]);
+    await registry.dispatch('app.unawaited', {});
+    go();
+    expect(await pending).toBeNull(); // a handle would undo only part of what it did
   });
 
   it('a transaction directly inside a transaction still throws', async () => {

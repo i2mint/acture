@@ -6,7 +6,9 @@ import type { UndoHistory } from './undo.js';
 type Item = { id: string };
 
 export const undoSeamsFor = (history: UndoHistory): Pick<SelectionSeams<Item>, 'transaction' | 'transactionUndo'> => ({
-  transaction: (fn) => history.transaction(fn), // resolves to the entry, or null (nothing to undo)
+  // Resolves to the entry, or null (nothing to undo). A selection command runs inside its own
+  // dispatch: join that dispatch's capture rather than throw "nested transactions".
+  transaction: (fn, { inDispatch }) => history.transaction(fn, { join: inDispatch }),
   transactionUndo: (entry) => {
     const r = history.undoEntry(entry);
     if (r.ok || r.reason === 'already-undone') return undefined; // Cmd/Ctrl+Z already took it: restored

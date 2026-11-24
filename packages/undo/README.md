@@ -58,7 +58,9 @@ await history.transaction(async () => {
 import type { SelectionSeams } from 'acture/selection';
 
 const undoSeams: Pick<SelectionSeams<Item>, 'transaction' | 'transactionUndo'> = {
-  transaction: (fn) => history.transaction(fn), // resolves to the entry, or null (nothing to undo)
+  // Resolves to the entry, or null (nothing to undo). A selection command runs inside its own
+  // dispatch: join that dispatch's capture rather than throw "nested transactions".
+  transaction: (fn, { inDispatch }) => history.transaction(fn, { join: inDispatch }),
   transactionUndo: (entry) => {
     const r = history.undoEntry(entry);
     if (r.ok || r.reason === 'already-undone') return undefined; // Cmd/Ctrl+Z already took it: restored
@@ -70,11 +72,11 @@ const undoSeams: Pick<SelectionSeams<Item>, 'transaction' | 'transactionUndo'> =
 
 `undoEntry` answers `busy` while another dispatch or transaction is still open (its changes are applied but not yet recorded, so undoing now would take them too). That is not a conflict: map it to `false`, a failed Undo the toast offers to try again, never to `'conflict'`, which is final.
 
-A selection command calls `transaction` inside its own `execute`, so when it runs through `registry.dispatch` the transaction opens inside the dispatch's capture. It joins that capture rather than throwing: the dispatch is the one undo entry, and the transaction resolves to it (`undoEntry` says `busy` until the dispatch closes).
+A selection command calls `transaction` inside its own `execute`, so when it runs through `registry.dispatch` the transaction opens inside the dispatch's capture. `history.transaction(fn, { join: true })` joins that capture rather than throwing: the dispatch is the one undo entry, and the transaction resolves to it (`undoEntry` says `busy` and `isApplied` says `true` until the dispatch closes). Pass `join` only from inside a dispatch: a transaction started elsewhere (a button) while an unrelated command is in flight would merge into that command's entry, so without `join` it still throws.
 
 **Partial-failure semantics (settled with the user):** if a dispatch inside a transaction throws or returns `ok: false`, prior mutations stay applied; the entry is still pushed for whatever was captured; the caller may `history.undo()` to rewind. acture-undo does *not* hide failures behind a magic rollback — the host stays in control.
 
-Nested transactions throw — keep them flat. The exception is a transaction opened inside a dispatch (a command whose `execute` calls `history.transaction`): it joins the dispatch's capture, as above.
+Nested transactions throw — keep them flat. The exception is `{ join: true }` from inside a dispatch (a command whose `execute` calls `history.transaction`): it joins the dispatch's capture, as above.
 
 ## Effects
 

@@ -534,6 +534,17 @@ describe('review round 3', () => {
     expect(out?.status === 'done' && out.done.length).toBe(2);
   });
 
+  it('items without an id (and no key seam) are not collapsed into one', async () => {
+    const rows = [{ name: 'x' }, { name: 'y' }];
+    const runs: string[] = [];
+    const act: SelectionAction<{ name: string }> = {
+      id: 'lib.selection.touch', title: 'Touch', reversal: 'none', verb: (n) => `Touch ${n}`, done: (n) => `${n} touched`,
+      run: (t) => { runs.push(...t.map((r) => r.name)); return { done: t }; },
+    };
+    const plan = await planSelection(act, undefined, { kind: 'query', query: {} }, { resolve: () => [rows[0]!, rows[1]!, rows[0]!] });
+    expect(plan.targets.map((r) => r.name)).toEqual(['x', 'y']);
+  });
+
   it('an irreversible command needs the person even when a host policy says act', async () => {
     const purge: SelectionAction<Song> = { ...trash(), id: 'library.selection.purge', reversal: 'none' };
     const lib = library();
