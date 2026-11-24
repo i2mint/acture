@@ -101,7 +101,8 @@ export interface UndoReport {
 }
 
 /** What one item's undo returns: nothing (restored), or `'conflict'` when the item is no longer
- *  in the state the action left (compare-and-set refused). Throwing means it failed: try again. */
+ *  in the state the action left (compare-and-set refused). Throwing or `false` means it failed:
+ *  try again. */
 export type ItemUndoResult = void | 'conflict' | undefined;
 
 /** What `run` did: the items changed, the ones that failed, and one Undo for exactly the former. */
@@ -218,6 +219,7 @@ export function composeUndo(undos: readonly ItemUndo[]): () => Promise<UndoRepor
       if (!pending.has(i)) continue;
       try {
         const r = await (undos[i] as ItemUndo)();
+        if ((r as unknown) === false) throw new Error('Could not undo.'); // a failed item undo: retried next call
         pending.delete(i);
         if (r === 'conflict') conflicts++;
         else restored++;
@@ -558,6 +560,9 @@ function onceUndo(raw: () => unknown, count: number): () => Promise<UndoReport> 
     if (!inFlight) {
       inFlight = (async () => {
         const r = await raw();
+        // `false` is a failed undo (undo-toast's convention, and what store calls answer): it
+        // rejects, so the toast says so and Try again runs it again.
+        if (r === false) throw new Error('Could not undo.');
         // An UndoReport is taken as is; 'conflict' or {ok: false} (an undo history whose top entry
         // is no longer this one) is a conflict: nothing was taken back, nothing overwritten.
         const refusedIt = r === 'conflict' || (!!r && typeof r === 'object' && (r as { ok?: unknown }).ok === false);
