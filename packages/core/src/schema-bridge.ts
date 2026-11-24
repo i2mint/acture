@@ -102,6 +102,18 @@ function defaultConverter(schema: unknown): Record<string, unknown> {
  *
  * Per `acture-schema-bridge` skill §"Strict mode (OpenAI)".
  */
+/** `schema`, or null (how strict mode says "optional"). */
+function nullable(schema: Record<string, unknown>): Record<string, unknown> {
+  const t = schema['type'];
+  if (typeof t === 'string') return t === 'null' ? schema : { ...schema, type: [t, 'null'] };
+  if (Array.isArray(t)) return t.includes('null') ? schema : { ...schema, type: [...t, 'null'] };
+  if (Array.isArray(schema['anyOf'])) {
+    const branches = schema['anyOf'] as Record<string, unknown>[];
+    return branches.some((b) => b['type'] === 'null') ? schema : { ...schema, anyOf: [...branches, { type: 'null' }] };
+  }
+  return { anyOf: [schema, { type: 'null' }] };
+}
+
 function enforceStrict(
   schema: Record<string, unknown>,
   warnings: string[],
@@ -109,11 +121,29 @@ function enforceStrict(
 ): Record<string, unknown> {
   if (schema === null || typeof schema !== 'object') return schema;
   const t = schema['type'];
+  for (const union of ['anyOf', 'oneOf'] as const) {
+    const branches = schema[union];
+    if (Array.isArray(branches)) {
+      return {
+        ...schema,
+        [union]: branches.map((b, i) => enforceStrict(b as Record<string, unknown>, warnings, [...path, `${union}[${i}]`])),
+      };
+    }
+  }
   if (t === 'object' || schema['properties'] !== undefined) {
     const properties = (schema['properties'] ?? {}) as Record<string, unknown>;
+    const wasRequired = new Set((schema['required'] as string[] | undefined) ?? []);
+    const extra = schema['additionalProperties'];
+    if (Object.keys(properties).length === 0 && extra !== undefined && extra !== false) {
+      // An open record (z.record): strict mode cannot express "any keys". Kept as is, flagged.
+      warnings.push(`${path.join('.') || '<root>'}: an open record (any keys) cannot be strict; kept as is`);
+      return schema;
+    }
     const newProps: Record<string, unknown> = {};
     for (const [key, child] of Object.entries(properties)) {
-      newProps[key] = enforceStrict(child as Record<string, unknown>, warnings, [...path, key]);
+      const strictChild = enforceStrict(child as Record<string, unknown>, warnings, [...path, key]);
+      // Strict mode requires every key: an optional one becomes "this, or null".
+      newProps[key] = wasRequired.has(key) ? strictChild : nullable(strictChild);
     }
     return {
       ...schema,

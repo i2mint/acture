@@ -119,4 +119,39 @@ describe('toJsonSchema', () => {
     expect(env.warnings).toBeDefined();
     expect((env.warnings ?? []).join(' ')).toMatch(/minLength|maxLength/);
   });
+
+  it('strict mode walks union branches and makes optional keys nullable (#90)', () => {
+    const cmd = defineCommand({
+      id: 'app.t.strictUnion',
+      title: 'strict union',
+      params: z.object({
+        selection: z.union([
+          z.object({ kind: z.literal('ids'), ids: z.array(z.string()) }),
+          z.object({ kind: z.literal('query'), search: z.string().optional(), expectedCount: z.number().int().optional() }),
+        ]).optional(),
+        tag: z.string(),
+      }),
+      execute: () => ok(undefined as void),
+    });
+    const s = toJsonSchema(cmd, { strict: true }).inputSchema as any;
+    expect(s.required).toEqual(['selection', 'tag']);
+    expect(s.properties.tag.type).toBe('string');
+    const branches = s.properties.selection.anyOf;
+    expect(branches.at(-1)).toEqual({ type: 'null' }); // optional at the top: or null
+    const query = branches.find((b: any) => b.properties?.kind?.const === 'query');
+    expect(query.additionalProperties).toBe(false);
+    expect(query.required).toEqual(['kind', 'search', 'expectedCount']);
+    expect(query.properties.search.type).toEqual(['string', 'null']);
+  });
+
+  it('strict mode flags an open record instead of closing it', () => {
+    const cmd = defineCommand({
+      id: 'app.t.strictRecord',
+      title: 'strict record',
+      params: z.object({ query: z.record(z.string(), z.unknown()) }),
+      execute: () => ok(undefined as void),
+    });
+    const env = toJsonSchema(cmd, { strict: true });
+    expect((env.warnings ?? []).join(' ')).toMatch(/open record/);
+  });
 });
