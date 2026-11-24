@@ -202,7 +202,7 @@ describe('the checks at go()', () => {
     const offers: UndoOffer[] = [];
     const batch: SelectionAction<Song> = { ...trash(), run: (t) => ({ done: t, undo: null }) };
     const plan = await planSelection(batch, undefined, { kind: 'ids', ids: ['a', 'b'] }, {
-      resolve, offer: (o) => offers.push(o), transaction: (fn) => fn(), transactionUndo,
+      resolve, offer: (o) => offers.push(o), transaction: async (fn) => { await fn(); return 'entry-1'; }, transactionUndo,
     });
     expect(plan.confirm).toBeNull();
     await plan.go();
