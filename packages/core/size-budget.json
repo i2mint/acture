@@ -21,6 +21,15 @@
         "err"
       ],
       "maxBytes": 12500
+    },
+    {
+      "entry": "acture/selection",
+      "imports": [
+        "createSelectionCommands",
+        "liftToSelection",
+        "planSelection"
+      ],
+      "maxBytes": 19000
     }
   ]
 }

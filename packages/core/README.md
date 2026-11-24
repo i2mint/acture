@@ -158,6 +158,47 @@ It leaves out the two things that make up most of the full entry's size:
 
 `acture/lite` loads no Zod at runtime: `dispatch` calls the `params` object's own `safeParse`, so a hand-written `{ safeParse }` guard works. `params` is typed structurally (anything with a `safeParse` returning `{ success, data }` or `{ success, error: { issues } }`), so a hand-written guard type-checks with no cast and no Zod types. The schema bridge (`toJsonSchema`) and the full entry's `defineCommand` checks need a Zod schema. The full entry imports Zod at runtime. Budgets per entry live in `size-budget.json` and are checked in CI by `pnpm --filter acture size`; the lite budget also fails if its bundle keeps any import (Zod included).
 
+### `acture/selection`: bulk actions on a selection
+
+A **selection action** (bulk action) applies one action to a selection: explicit ids, or a query with exceptions ("all 340 matching, except these 3"). `acture/selection` gives it a per-item gate whose refusals show before the click, one Undo for the whole operation (compare-and-set per item: an item changed since is reported as a conflict, not overwritten; still offered for the part done when some items fail, with `retry()` for the rest), and the rule for asking first: a bulk action confirms, with the count, unless one Undo takes it all back in place; it always confirms when a query now matches a different number than the person saw (or that cannot be counted), or, given `shown`, when some targets are not shown.
+
+```ts
+import { createSelectionCommands, liftToSelection, sameSelection } from 'acture/selection';
+import { offerUndo } from 'undo-toast';
+
+const moveToTrash = liftToSelection<Song>({
+  id: 'library.selection.moveToTrash',
+  title: 'Move the selection to the Trash',
+  reversal: 'compensating',                          // one Undo restores all: act, then offer Undo
+  verb: (n) => `Move ${n} songs to Trash`,
+  done: (n) => `${n} songs moved to Trash`,
+  appliesTo: (s) => s.owner === me || 'not yours',   // refusals are counted before anything runs
+  runItem: async (s) => {
+    const { version } = await api.trash(s.id);
+    // compare-and-set: restore only if it is still as this action left it
+    return async () => ((await api.restore(s.id, { ifVersion: version })).ok ? undefined : 'conflict');
+  },
+});
+
+for (const c of createSelectionCommands([moveToTrash], {
+  current: () => selectionStore.getState().selection,
+  resolve: (sel) => resolveSelection(rows(), sel),
+  shown: () => shownIds(),                            // targets not shown make it ask first
+  offer: ({ message, undo, count, reversal }) => offerUndo({
+    message, context: { reversal, count },
+    undo: async () => {
+      const { conflicts } = await undo();
+      if (conflicts) notify(`${conflicts} changed since, left as they are`);   // a plain notice, no Undo button
+    },
+  }),
+  afterRun: (_, chosen) => { if (sameSelection(selectionStore.getState().selection, chosen)) selectionStore.getState().clear(); },
+})) registry.register(c);
+```
+
+A command that needs a yes returns `err('needs_confirmation', question, { token, count, confirmLabel, typeToConfirm, hidden })`; calling again with `confirmed: <token>` runs it only if the plan is unchanged (a selection that grew since asks again). The token proves only that; the caller (an AI) is trusted to have shown the person the question. What cannot be undone (`reversal: 'none'`, or a type-to-confirm question) is never confirmed by token: it returns `needs_person` unless a `confirm` seam (a dialog) lets the command ask the person itself. A selection passed as a parameter that the person may not have seen (a query without `expectedCount`, or ids with no `shown`) always asks. Without a dialog, the command plans and runs in one step under the lock; with one, the run checks under the lock that nothing changed while the person was asked (`selection_changed` otherwise). Other codes: `empty_selection`, `nothing_applies`, `declined`, `busy` (`SELECTION_ERRORS`).
+
+`planSelection(action, params, selection, seams)` is the same logic for a button: it returns the targets, the refusals, the weakest `reversal` over the targets (`reversalOf(item)` marks an item Undo cannot take back), and the confirmation; `go()` runs it, after planning the same selection again under the lock: if anything changed since (targets, refusals, hidden ones, reversal), it runs nothing and returns `status: 'stale'`. `resolve` answers both kinds of selection; the ids of a selection are `key` values (a retry asks for the failed items by id). The seams are one argument each: `resolve`, `key`, `shown`, `policy` (receives the action id, reversal, count, verb, `undoAvailable`, hidden and the action's `policyContext`, so undo-toast's `advise` with a preset plugs in; `thenOffer: false` means confirm or Undo, never both), `offer`, `transaction` with `transactionUndo` (for actions on local state through acture-undo: `transaction` resolves to a handle on the entry it recorded (null when it recorded nothing: then no Undo is offered), and `transactionUndo(entry)` takes back exactly that entry, returning `'conflict'` when it is no longer the last applied; never a blind `history.undo()`. acture-undo cannot give that handle yet (#91): until it does, use `transaction` without `transactionUndo`, so the policy asks first and no toast is offered), `lock` (pass the same `createSelectionLock()` to buttons and commands) and `afterRun`. Every Undo runs once, even on a double click. The hand-written version, for a project that wants no dependency, is [`docs/hand-written-selection-commands.md`](../../docs/hand-written-selection-commands.md).
+
 ## When-clause DSL
 
 A small expression language compiled at registration time and evaluated at dispatch time.

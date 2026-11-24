@@ -1,0 +1,5 @@
+---
+"acture": minor
+---
+
+New subpath `acture/selection`: selection commands (bulk actions). `liftToSelection` turns a per-item action into a selection action with one Undo for the whole operation (compare-and-set per item: `'conflict'` items are reported, not overwritten; idempotent and safe to double-click; reverse completion order; still offered for the part done when some items fail). `planSelection` resolves a `Selection` (explicit ids, or a query with include/exclude and `expectedCount`), gates it per item with reasons shown before the click, takes the weakest reversal over the targets (`reversalOf`), and decides whether to ask first (the default rule: confirm with the count unless one Undo takes it all back in place and can be offered; always on a query count drift or hidden targets). `createSelectionCommands` projects the actions as commands that run on the current selection or on a `selection` param; a confirmation is a token bound to the plan (`needs_confirmation` → `confirmed: <token>`), or a `confirm` seam asks the person directly. Seams: `resolve`, `key`, `shown`, `policy`, `offer`, `transaction`, `lock`, `afterRun`.
