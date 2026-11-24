@@ -101,16 +101,20 @@ export interface UndoHistory {
    *  completion or throws; either way one entry is pushed for whatever
    *  was captured (partial-stays-applied semantics). Nested transactions
    *  throw. Resolves to the entry pushed, or `null` when nothing was
-   *  captured (then there is nothing to undo): hand it to `undoEntry`. */
+   *  captured or the entry was not kept (`limit`): hand it to
+   *  `undoEntry`. A transaction whose callback throws still pushes what
+   *  was captured but rejects, so it gives no handle. */
   transaction(fn: () => void | Promise<void>): Promise<UndoEntry | null>;
   /** Undo exactly this entry, and only while it is the last one applied:
    *  an undo toast bound to its own action must not undo a later edit
    *  (`not-on-top`) or an earlier one after Cmd/Ctrl+Z took this one
    *  (`already-undone`). */
-  undoEntry(entry: UndoEntry): UndoEntryResult;
-  /** Whether this entry is applied now (a toast can dismiss itself when
-   *  Cmd/Ctrl+Z took its entry). */
-  isApplied(entry: UndoEntry): boolean;
+  undoEntry(entry: unknown): UndoEntryResult;
+  /** Whether this entry is in the history and applied now (a toast can
+   *  dismiss itself when Cmd/Ctrl+Z took its entry). False too for an
+   *  entry the `limit` evicted (its changes stay applied, but it can no
+   *  longer be undone). */
+  isApplied(entry: unknown): boolean;
   /** Read-only snapshot of the current entries. */
   entries(): readonly UndoEntry[];
   /** Restore the adapter's `setStateWithPatches` and the registry's
@@ -121,7 +125,7 @@ export interface UndoHistory {
 
 export type UndoEntryResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: 'not-on-top' | 'already-undone' | 'unknown' };
+  | { readonly ok: false; readonly reason: 'not-on-top' | 'already-undone' | 'busy' | 'unknown' };
 
 interface CaptureBuffer {
   patches: Patch[];
@@ -255,7 +259,7 @@ export function createUndoHistory<S>(
       entries = entries.slice(drop);
       cursor -= drop;
     }
-    return entry;
+    return entries.includes(entry) ? entry : null; // `limit: 0` keeps nothing
   }
 
   /* ── public API ────────────────────────────────────────────────── */
@@ -321,8 +325,11 @@ export function createUndoHistory<S>(
     return entry;
   }
 
-  function undoEntry(entry: UndoEntry): UndoEntryResult {
-    const at = entries.indexOf(entry);
+  function undoEntry(entry: unknown): UndoEntryResult {
+    // A later change still in flight (an async dispatch or another transaction) has mutated state
+    // but not pushed its entry: undoing now would take it too.
+    if (captureOwner !== null) return { ok: false, reason: 'busy' };
+    const at = entries.indexOf(entry as UndoEntry);
     if (at < 0) return { ok: false, reason: 'unknown' };
     if (at >= cursor) return { ok: false, reason: 'already-undone' };
     if (at !== cursor - 1) return { ok: false, reason: 'not-on-top' };
@@ -330,8 +337,8 @@ export function createUndoHistory<S>(
     return { ok: true };
   }
 
-  function isApplied(entry: UndoEntry): boolean {
-    const at = entries.indexOf(entry);
+  function isApplied(entry: unknown): boolean {
+    const at = entries.indexOf(entry as UndoEntry);
     return at >= 0 && at < cursor;
   }
 

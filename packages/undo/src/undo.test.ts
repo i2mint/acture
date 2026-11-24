@@ -428,3 +428,27 @@ describe('undoEntry: an undo bound to its own transaction', () => {
     expect(history.undoEntry(bulk)).toEqual({ ok: false, reason: 'already-undone' });
   });
 });
+
+describe('undoEntry: the review cases', () => {
+  it('refuses while a later change is still being captured (it would be undone too)', async () => {
+    const { adapter, registry } = setup();
+    const history = createUndoHistory(adapter, registry);
+    const bulk = (await history.transaction(async () => { await registry.dispatch('app.add', { by: 10 }); }))!;
+    let release!: () => void;
+    const later = history.transaction(async () => {
+      await registry.dispatch('app.increment');
+      await new Promise<void>((r) => (release = r));
+    });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(history.undoEntry(bulk)).toEqual({ ok: false, reason: 'busy' });
+    release();
+    await later;
+    expect(adapter.getState().count).toBe(11);
+  });
+
+  it('a transaction whose entry the limit does not keep gives no handle', async () => {
+    const { adapter, registry } = setup();
+    const history = createUndoHistory(adapter, registry, { limit: 0 });
+    expect(await history.transaction(async () => { await registry.dispatch('app.increment'); })).toBeNull();
+  });
+});
