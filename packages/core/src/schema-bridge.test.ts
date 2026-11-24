@@ -162,4 +162,45 @@ describe('toJsonSchema', () => {
     expect(params.safeParse(strictCall).success).toBe(false);
     expect(params.safeParse(fromStrictArgs(strictCall)).data).toEqual({ tag: 'x', sel: { ids: ['a'] } });
   });
+
+  it('strict: discriminated unions become anyOf, recursive $defs are walked, optional enums allow null (#97 review)', () => {
+    type Node = { name: string; kids?: Node[] };
+    const Node: z.ZodType<Node> = z.lazy(() => z.object({ name: z.string(), kids: z.array(Node).optional() }));
+    const cmd = defineCommand({
+      id: 'app.t.strictMore',
+      title: 'strict more',
+      params: z.object({
+        sel: z.discriminatedUnion('kind', [z.object({ kind: z.literal('a'), n: z.number() }), z.object({ kind: z.literal('b') })]),
+        color: z.enum(['red', 'blue']).optional(),
+        tree: Node,
+      }),
+      execute: () => ok(undefined as void),
+    });
+    const s = toJsonSchema(cmd, { strict: true }).inputSchema as any;
+    const text = JSON.stringify(s);
+    expect(text).not.toMatch(/"oneOf"/);
+    expect(s.properties.sel.anyOf).toHaveLength(2);
+    expect(s.properties.color.enum).toContain(null);
+    // every object anywhere (definitions included) lists all its keys and is closed
+    const objects: any[] = [];
+    const walk = (x: any) => { if (x && typeof x === 'object') { if (x.properties) objects.push(x); Object.values(x).forEach(walk); } };
+    walk(s);
+    for (const o of objects) {
+      expect(o.required).toEqual(Object.keys(o.properties));
+      expect(o.additionalProperties).toBe(false);
+    }
+  });
+
+  it('strict: a root union and a catchall are flagged', () => {
+    const env = toJsonSchema({ id: 'x', title: 'x', params: z.object({ a: z.string() }).catchall(z.number()), execute: () => ok(undefined) } as never, { strict: true });
+    expect((env.warnings ?? []).join(' ')).toMatch(/catchall/);
+  });
+
+  it('fromStrictArgs with the params keeps a real null and drops a left-out one', async () => {
+    const { fromStrictArgs } = await import('./schema-bridge.js');
+    const params = z.object({ note: z.string().nullable(), tag: z.string().optional(), items: z.array(z.object({ x: z.number().optional() })) });
+    const call = { note: null, tag: null, items: [{ x: null }] };
+    expect(fromStrictArgs(call, params)).toEqual({ note: null, items: [{}] });
+    expect(params.safeParse(fromStrictArgs(call, params)).success).toBe(true);
+  });
 });
