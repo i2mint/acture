@@ -74,15 +74,25 @@ const evaluateFunctionWhen: WhenEvaluator = (when, ctx) =>
  * throws `RegistrationError`, rather than silently treating it as true.
  */
 export function createRegistry(options?: LiteRegistryOptions): Registry {
-  if (options?.evaluateWhen) return createRegistryCore(options.evaluateWhen, options);
-  return createRegistryCore(evaluateFunctionWhen, options, (cmd) => {
-    if (typeof cmd.when === 'string') {
+  const evaluateWhen = options?.evaluateWhen;
+  const admit = (cmd: { id: string; when?: unknown }) => {
+    const when = cmd.when;
+    if (when === undefined || typeof when === 'function') return;
+    if (typeof when === 'string') {
+      if (evaluateWhen) return;
       throw new RegistrationError(
         `${cmd.id}: string when needs evaluateWhen (acture/lite)`,
         cmd.id,
       );
     }
-  });
+    // null, false, 0, {}, new String(...): the full registry throws on these
+    // at list/dispatch, so refuse them here at register time.
+    throw new RegistrationError(
+      `${cmd.id}: when must be a function${evaluateWhen ? ' or a string' : ''}, or omitted`,
+      cmd.id,
+    );
+  };
+  return createRegistryCore(evaluateWhen ?? evaluateFunctionWhen, options, admit);
 }
 
 /** Freeze a command spec. Unlike the full entry's `defineCommand`, no
