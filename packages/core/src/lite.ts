@@ -75,22 +75,12 @@ const evaluateFunctionWhen: WhenEvaluator = (when, ctx) =>
  */
 export function createRegistry(options?: LiteRegistryOptions): Registry {
   const evaluateWhen = options?.evaluateWhen;
-  const admit = (cmd: { id: string; when?: unknown }) => {
-    const when = cmd.when;
+  const admit = ({ id, when }: { id: string; when?: unknown }) => {
     if (when === undefined || typeof when === 'function') return;
-    if (typeof when === 'string') {
-      if (evaluateWhen) return;
-      throw new RegistrationError(
-        `${cmd.id}: string when needs evaluateWhen (acture/lite)`,
-        cmd.id,
-      );
-    }
-    // null, false, 0, {}, new String(...): the full registry throws on these
-    // at list/dispatch, so refuse them here at register time.
-    throw new RegistrationError(
-      `${cmd.id}: when must be a function${evaluateWhen ? ' or a string' : ''}, or omitted`,
-      cmd.id,
-    );
+    // Strings need an injected evaluator; null, false, 0, {} and the like are
+    // never valid (the full registry throws on them at list/dispatch).
+    if (typeof when !== 'string' || !evaluateWhen)
+      throw new RegistrationError(`${id}: invalid when (acture/lite): needs a function, or a string with evaluateWhen`, id);
   };
   return createRegistryCore(evaluateWhen ?? evaluateFunctionWhen, options, admit);
 }
