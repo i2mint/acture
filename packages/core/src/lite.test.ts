@@ -132,3 +132,24 @@ describe('acture/lite — structural params', () => {
     expect(bad.ok).toBe(false);
   });
 });
+
+describe('acture/lite — invalid when is refused at register time', () => {
+  const bad: [string, unknown][] = [
+    ['null', null],
+    ['false', false],
+    ['0', 0],
+    ['{}', {}],
+    ['new String', new String('open')],
+  ];
+  it.each(bad)('refuses when: %s', (_label, when) => {
+    const r = createLiteRegistry();
+    expect(() => r.register(cmd('app.a.bad', { when }))).toThrow(RegistrationError);
+    expect(r.has('app.a.bad')).toBe(false);
+  });
+
+  it('also refuses them when evaluateWhen is injected, but accepts strings', () => {
+    const r = createLiteRegistry({ evaluateWhen });
+    expect(() => r.register(cmd('app.a.null', { when: null }))).toThrow(RegistrationError);
+    expect(() => r.register(cmd('app.a.ok', { when: 'open' }))).not.toThrow();
+  });
+});
